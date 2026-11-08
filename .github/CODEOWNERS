@@ -1,0 +1,10 @@
+# CODEOWNERS — GitHub requests review from these owners on pull requests.
+# Replaces the AgentOS template placeholder (@lead-engineer) with the repository owner (ADR-0059).
+
+*                                   @yeshika-02
+
+# Security-sensitive: inference execution, input validation, health
+astra-platform/src/lib/server/      @yeshika-02
+astra-platform/src/app/api/         @yeshika-02
+training/*_inference.py             @yeshika-02
+.github/workflows/                  @yeshika-02

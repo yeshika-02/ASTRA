@@ -1,0 +1,39 @@
+project:
+  name: ASTRA
+  version: 0.1.0
+  profile: ml
+  framework: TBD
+  languages:
+  - TBD
+  owner: Lenovo
+  deadline: TBD
+  status: INITIALIZED
+enabled_features:
+  standards:
+  - code_quality
+  - testing
+  - documentation
+  - ai_ml
+  - data_engineering
+  - research
+  - security
+  agents:
+  - orchestrator
+  - chief-architect
+  - planner
+  - ai-reviewer
+  - science-reviewer
+  - security-reviewer
+  - docs-reviewer
+  - qa-reviewer
+  quality_gates:
+  - QG-001
+  - QG-002
+  - QG-003
+  - QG-004
+  - QG-005
+  - QG-008
+  metrics:
+  - quality
+  - performance
+  - benchmarks

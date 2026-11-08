@@ -1,0 +1,4 @@
+metric,description,target,current
+bootstrap_time_s,Time from clone to validated bootstrap,<60,
+validator_repair_time_min,Time to restore validator to 100/100 after a warning,<10,
+loop_iterations_per_task,Average loop iterations before quality threshold,3-5,
