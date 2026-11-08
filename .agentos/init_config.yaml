@@ -1,0 +1,11 @@
+project:
+  name: ASTRA
+  version: 0.1.0
+  profile: ml
+  framework: TBD
+  languages:
+  - TBD
+  owner: Lenovo
+  goals: Audit and harden the ASTRA ML classification pipeline and web platform; plan
+    next development phases
+  deadline: TBD
