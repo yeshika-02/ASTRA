@@ -15,8 +15,8 @@ interface OsintData {
   period_source: string;
   ra: number;
   dec: number;
-  cross_matches: { catalog: string; identifier: string; otype: string; distance_arcsec: number; notes: string }[];
-  observational_history: { observatory: string; instrument: string; filters: string; observations: number; first_obs: string; last_obs: string; cadence: string }[];
+  cross_matches: { catalog: string; identifier: string | null; otype: string | null; distance_arcsec: number | null; notes: string }[];
+  observational_history: { observatory: string; instrument: string; filters: string; observations: number | null; first_obs: string | null; last_obs: string | null; cadence: string | null }[];
   related_objects: { identifier: string; class: string; ra: number; dec: number; separation: string; notes: string }[];
   provenance: { step: string; agent: string; detail: string }[];
   scientific_notes: string;
@@ -153,8 +153,8 @@ export default function SpaceOsintPage() {
                       <tr key={idx} className="hover:bg-[#111922]">
                         <td className="px-3 py-2 font-medium">{item.catalog}</td>
                         <td className="px-3 py-2 font-mono text-[#6EA8FE]">{item.identifier}</td>
-                        <td className="px-3 py-2 text-[#8B97A7] font-mono">{item.otype}</td>
-                        <td className="px-3 py-2 text-right font-mono">{item.distance_arcsec.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-[#8B97A7] font-mono">{item.otype ?? 'N/A'}</td>
+                        <td className="px-3 py-2 text-right font-mono">{item.distance_arcsec === null ? 'not computed' : item.distance_arcsec.toFixed(2)}</td>
                         <td className="px-3 py-2 text-[#8B97A7]">{item.notes}</td>
                       </tr>
                     ))}
@@ -183,9 +183,9 @@ export default function SpaceOsintPage() {
                         <td className="px-3 py-2 font-sans font-medium text-[#D7DEE7]">{item.observatory}</td>
                         <td className="px-3 py-2 font-sans text-[#8B97A7]">{item.instrument}</td>
                         <td className="px-3 py-2 text-[#8B97A7]">{item.filters}</td>
-                        <td className="px-3 py-2 text-right">{item.observations.toLocaleString()}</td>
-                        <td className="px-3 py-2 text-[#8B97A7]">{item.first_obs} · {item.last_obs}</td>
-                        <td className="px-3 py-2 font-sans text-[#8B97A7]">{item.cadence}</td>
+                        <td className="px-3 py-2 text-right">{item.observations === null ? 'N/A' : item.observations.toLocaleString()}</td>
+                        <td className="px-3 py-2 text-[#8B97A7]">{item.first_obs && item.last_obs ? `${item.first_obs} · ${item.last_obs}` : 'not recorded'}</td>
+                        <td className="px-3 py-2 font-sans text-[#8B97A7]">{item.cadence ?? 'N/A'}</td>
                       </tr>
                     ))}
                   </tbody>

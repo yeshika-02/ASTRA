@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseSync } from 'node:sqlite';
 import { pathToFileURL } from 'node:url';
 import * as path from 'path';
+import { parseTicId } from '@/lib/server/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +12,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const ticId = parseInt(id.replace('TIC_', ''));
-    
+    const ticId = parseTicId(id);
+    if (ticId === null) {
+      return NextResponse.json({ error: 'Invalid TIC identifier.' }, { status: 400 });
+    }
+
     const dbPath = path.join(process.cwd(), 'data', 'astra.sqlite');
     const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
     
@@ -35,35 +39,39 @@ export async function GET(
     
     const crossMatches: any[] = [];
     
-    // Only construct VSX catalog entry if VSX is actually referenced as the primary source or in source catalogs
+    // Only fields stored in the ASTRA registry are reported. No positional cross-match is run here,
+    // so match distance and observation dates are null rather than invented.
     const isVsx = star.primary_source === 'VSX' || star.source_catalogs.includes('VSX');
     if (isVsx) {
       crossMatches.push({
         catalog: 'International Variable Star Index (VSX)',
-        identifier: star.catalog_label ?? `VSX J${ra.toFixed(4)}${dec >= 0 ? '+' : ''}${dec.toFixed(4)}`,
-        otype: star.astra_class === 'rr_lyrae' ? 'RRAB' : star.astra_class === 'cepheid' ? 'DCEP' : star.astra_class === 'eclipsing_binary' ? 'EA' : 'VAR',
-        distance_arcsec: 0.24,
-        notes: star.catalog_period ? `Period: ${star.catalog_period.toFixed(6)} d` : 'Period unvalidated in VSX.',
+        identifier: star.catalog_label ?? null,
+        otype: star.catalog_label ?? null,
+        distance_arcsec: null,
+        notes: star.catalog_period ? `Catalog period: ${star.catalog_period.toFixed(6)} d` : 'No catalog period stored.',
       });
     }
-    
+
     const observationalHistory = [
       {
         observatory: 'TESS Spacecraft',
         instrument: 'TESS Camera',
         filters: 'TESS',
-        observations: star.n_sectors,
-        first_obs: '2018-07-25',
-        last_obs: '2023-04-12',
-        cadence: star.cadence_type ?? '2-minute',
+        observations: star.n_sectors ?? null,
+        first_obs: null,
+        last_obs: null,
+        cadence: star.cadence_type ?? null,
       }
     ];
-    
+
     const dataProvenance = [
-      { step: 'Photometric Acquisition', agent: 'NASA/MIT TESS Science Office', detail: 'TESS sectors raw FFI and 2-min target pixel files.' },
-      { step: 'Quality Gate Filtering', agent: 'ASTRA-PRE-PROCESS', detail: `Outlier sigma clipping (3σ) and gap filling. Reduced points to ${star.n_points_clean}.` },
-      { step: 'Lineage Verification', agent: 'ASTRA-GOVERNANCE', detail: `Manifest validated · SHA256 matches ${star.preprocessing_hash?.slice(0, 8)}…` }
+      { step: 'Photometric Acquisition', agent: 'NASA/MIT TESS Science Office', detail: `TESS light curves (${star.cadence_type ?? 'unknown'} cadence, ${star.n_sectors ?? 'unknown'} sectors).` },
+      { step: 'Quality Filtering', agent: 'ASTRA preprocess.py', detail: `5σ sigma clipping (3 iterations) and NaN removal. ${star.n_points_clean ?? 'Unknown number of'} clean points.` },
+      { step: 'Preprocessing Record', agent: 'ASTRA registry', detail: star.preprocessing_hash ? `Preprocessing hash recorded: ${star.preprocessing_hash.slice(0, 8)}…` : 'No preprocessing hash recorded.' }
     ];
+
+    const periodText = typeof star.period === 'number' ? `${star.period.toFixed(6)} d` : 'not available';
+    const periodSourceText = star.period_source === 'catalog' ? 'an external catalog' : star.period_source === 'BLS' ? 'a BLS search on the TESS light curve' : 'an unknown source';
     
     return NextResponse.json({
       tic_id: star.tic_id,
@@ -80,7 +88,7 @@ export async function GET(
       observational_history: observationalHistory,
       related_objects: [], // Remove invented companion objects
       provenance: dataProvenance,
-      scientific_notes: `Target TIC ${ticId} exhibits a well-defined ${star.astra_class.replace('_', ' ')} signature with a period of ${star.period.toFixed(6)} days. The period estimation is validated via ${star.period_source === 'catalog' ? 'catalog matches' : 'BLS searching'}. Phase 7C audit shows zero coordinate duplicates.`,
+      scientific_notes: `TIC ${ticId} carries the catalog label "${star.astra_class.replace('_', ' ')}" (ground truth, not a model prediction). Stored period: ${periodText}, taken from ${periodSourceText}.`,
       audit_hash: star.preprocessing_hash ?? 'N/A',
     });
   } catch (error: any) {

@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useStars, useLightCurve, useExplain } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
 import { MetricCard, Panel, ConfidenceBar, EmptyState } from '@/components/shared/UI';
-import { formatRA, formatDec, formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS, generateProbabilities } from '@/lib/utils';
+import { formatRA, formatDec, formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS } from '@/lib/utils';
+import { InferenceUnavailable } from '@/components/shared/UI';
 import type { Star, AstraClass } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -101,7 +102,10 @@ export default function MissionReplayPage() {
   });
 
   const { data: lc, isLoading: lcLoading } = useLightCurve(selectedStar?.tic_id ?? null);
-  const { data: explainData, isLoading: explainLoading } = useExplain(selectedStar?.tic_id ?? null);
+  const { data: explainResult, isLoading: explainLoading } = useExplain(selectedStar?.tic_id ?? null);
+  // Only real model output is shown; when inference is unavailable the steps say so.
+  const explainData = explainResult?.available ? explainResult.data : null;
+  const inferenceReasons = explainResult && !explainResult.available ? explainResult.reasons : [];
 
   const handleSelectStar = (star: Star) => {
     setSelectedStar(star);
@@ -142,8 +146,8 @@ export default function MissionReplayPage() {
 
   const activeStageId = getActiveStageId();
 
-  const probabilities: Record<string, number> = explainData?.probabilities || (selectedStar ? generateProbabilities(selectedStar.tic_id, selectedStar.astra_class) : {} as Record<string, number>);
-  const topProb = explainData?.calibrated_confidence || (selectedStar ? (probabilities[selectedStar.astra_class] || 0.7) : 0.7);
+  const probabilities: Record<string, number> | null = explainData?.probabilities ?? null;
+  const topProb: number | null = explainData?.calibrated_confidence ?? null;
 
   return (
     <div className="flex gap-4 h-[calc(100vh-7rem)] select-text">
@@ -507,9 +511,7 @@ export default function MissionReplayPage() {
                           ) : explainData?.attention_weights ? (
                             <AttentionHeatmap matrix={explainData.attention_weights} />
                           ) : (
-                            <div className="p-2 astra-glass rounded font-mono text-[9px] text-[#6EA8FE]">
-                              Query/Key/Value Attention weight maps verified in Phase 8 checkpoint audit.
-                            </div>
+                            <InferenceUnavailable reasons={inferenceReasons} compact />
                           )}
                         </div>
                       )}
@@ -533,8 +535,9 @@ export default function MissionReplayPage() {
                       {activeStep === 8 && (
                         <div className="space-y-3">
                           <p className="text-[10px] uppercase text-[#8B97A7] tracking-wider font-mono">Logit Probabilities</p>
+                          {!probabilities && <InferenceUnavailable reasons={inferenceReasons} />}
                           <div className="space-y-2">
-                            {Object.entries(probabilities).map(([key, val]) => (
+                            {probabilities && Object.entries(probabilities).map(([key, val]) => (
                               <div key={key}>
                                 <div className="flex justify-between items-baseline text-[9px] font-mono text-[#8B97A7]">
                                   <span>{CLASS_LABELS[key as keyof typeof CLASS_LABELS]}</span>
@@ -569,14 +572,25 @@ export default function MissionReplayPage() {
                       {activeStep === 10 && (
                         <div className="space-y-3 text-center">
                           <p className="text-[10px] uppercase text-[#8B97A7] tracking-wider font-mono">Classification Assignment</p>
-                          <div className="inline-block px-5 py-2.5 border border-emerald-500/20 bg-emerald-500/5 rounded">
-                            <p className="text-[9px] text-[#8B97A7] uppercase font-mono">Predicted class</p>
-                            <p className="text-base font-semibold text-white mt-1">
-                              {CLASS_LABELS[selectedStar.astra_class]}
-                            </p>
-                          </div>
+                          {explainData ? (
+                            <>
+                              <div className="inline-block px-5 py-2.5 border border-emerald-500/20 bg-emerald-500/5 rounded">
+                                <p className="text-[9px] text-[#8B97A7] uppercase font-mono">Predicted class (model)</p>
+                                <p className="text-base font-semibold text-white mt-1">
+                                  {CLASS_LABELS[explainData.predicted_class]}
+                                </p>
+                              </div>
+                              {topProb !== null && (
+                                <p className="text-[11px] text-[#8B97A7]">
+                                  Calibrated Confidence: <span className="font-mono text-emerald-400 font-semibold">{formatPercent(topProb)}</span>
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <InferenceUnavailable reasons={inferenceReasons} />
+                          )}
                           <p className="text-[11px] text-[#8B97A7]">
-                            Calibrated Confidence: <span className="font-mono text-emerald-400 font-semibold">{formatPercent(topProb)}</span>
+                            Catalog label (ground truth): <span className="font-mono text-[#D7DEE7]">{CLASS_LABELS[selectedStar.astra_class]}</span>
                           </p>
                         </div>
                       )}

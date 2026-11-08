@@ -81,23 +81,3 @@ export function confidenceToColor(confidence: number): string {
   return '#F85149';
 }
 
-export function generateProbabilities(tic_id: number, true_class: AstraClass): Record<AstraClass, number> {
-  const classes: AstraClass[] = ['rr_lyrae', 'cepheid', 'eclipsing_binary', 'solar_like', 'stable'];
-  const seed = tic_id % 1000;
-  const noise = (i: number) => (((seed * 31 + i * 17) % 100) / 100) * 0.15;
-  
-  const raw: Record<AstraClass, number> = {} as Record<AstraClass, number>;
-  let sum = 0;
-  for (let i = 0; i < classes.length; i++) {
-    const cls = classes[i];
-    const base = cls === true_class ? 0.7 + noise(i * 3) : 0.05 + noise(i);
-    raw[cls] = Math.max(0.01, Math.min(0.99, base));
-    sum += raw[cls];
-  }
-  
-  const result: Record<AstraClass, number> = {} as Record<AstraClass, number>;
-  for (const cls of classes) {
-    result[cls] = raw[cls] / sum;
-  }
-  return result;
-}

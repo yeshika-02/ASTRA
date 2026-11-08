@@ -21,8 +21,9 @@ interface HealthInfo {
   status: 'READY' | 'DEGRADED' | 'BLOCKED' | 'LOADING';
   dataset_verified: boolean;
   model_verified: boolean;
-  onnx_loaded: boolean;
+  inference_available: boolean;
   sqlite_loaded: boolean;
+  summary: string;
 }
 
 export function TopBar() {
@@ -32,8 +33,9 @@ export function TopBar() {
     status: 'LOADING',
     dataset_verified: false,
     model_verified: false,
-    onnx_loaded: false,
+    inference_available: false,
     sqlite_loaded: false,
+    summary: '',
   });
 
   const { 
@@ -59,10 +61,11 @@ export function TopBar() {
         .then((data) => {
           setHealth({
             status: data.status || 'BLOCKED',
-            dataset_verified: data.details?.dataset_hash_match ?? false,
-            model_verified: (data.details?.onnx_exists ?? false) && (data.details?.dataset_hash_match ?? false),
-            onnx_loaded: data.onnx_loaded ?? false,
-            sqlite_loaded: data.sqlite_loaded ?? false,
+            dataset_verified: data.dataset?.hash_match === true,
+            model_verified: data.model?.checkpoint?.hash_match === true,
+            inference_available: ['predict', 'explain', 'upload'].some((k) => data.inference?.[k]?.available === true),
+            sqlite_loaded: data.database?.ok === true,
+            summary: typeof data.summary === 'string' ? data.summary : '',
           });
         })
         .catch(() => {
@@ -70,8 +73,9 @@ export function TopBar() {
             status: 'BLOCKED',
             dataset_verified: false,
             model_verified: false,
-            onnx_loaded: false,
+            inference_available: false,
             sqlite_loaded: false,
+            summary: 'Health check unreachable.',
           });
         });
     };
@@ -101,7 +105,10 @@ export function TopBar() {
     }
   };
 
+  const showInferenceNotice = health.status !== 'LOADING' && !health.inference_available;
+
   return (
+    <>
     <header
       className="flex items-center justify-between h-12 px-4 border-b shrink-0 astra-glass"
       style={{ borderColor: '#1A2430' }}
@@ -118,7 +125,7 @@ export function TopBar() {
           className="text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase tracking-widest"
           style={{ color: '#6EA8FE', borderColor: '#1D3A6B', background: '#1D3A6B30' }}
         >
-          Phase 8 Locked
+          Research Preview
         </span>
       </div>
 
@@ -139,15 +146,15 @@ export function TopBar() {
             <span className="text-[#5A6878]">MODEL</span>
             <span style={{ color: getStatusDotColor(health.model_verified) }}>●</span>
             <span style={{ color: health.model_verified ? '#D7DEE7' : '#8B97A7' }}>
-              {health.model_verified ? 'VERIFIED' : 'DEGRADED'}
+              {health.model_verified ? 'VERIFIED' : 'NOT LOADED'}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-[#5A6878]">ONNX</span>
-            <span style={{ color: getStatusDotColor(health.onnx_loaded) }}>●</span>
-            <span style={{ color: health.onnx_loaded ? '#D7DEE7' : '#8B97A7' }}>
-              {health.onnx_loaded ? 'VERIFIED' : 'FAILED'}
+            <span className="text-[#5A6878]">INFERENCE</span>
+            <span style={{ color: getStatusDotColor(health.inference_available) }}>●</span>
+            <span style={{ color: health.inference_available ? '#D7DEE7' : '#8B97A7' }}>
+              {health.inference_available ? 'ONLINE' : 'OFFLINE'}
             </span>
           </div>
 
@@ -231,5 +238,16 @@ export function TopBar() {
         </div>
       </div>
     </header>
+    {showInferenceNotice && (
+      <div
+        role="status"
+        className="shrink-0 px-4 py-1.5 border-b text-[10px] font-mono"
+        style={{ borderColor: '#D2992240', background: '#D299220D', color: '#D29922' }}
+      >
+        Model inference is offline on this deployment. No predictions, probabilities or attention maps are shown;
+        class labels are catalog ground truth.{health.summary ? ` (${health.summary})` : ''}
+      </div>
+    )}
+    </>
   );
 }
