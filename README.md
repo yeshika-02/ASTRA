@@ -43,6 +43,13 @@
 > [!WARNING]
 > **Experimental / Under-Represented Class** — The **Solar-like** class achieves the lowest per-class F1 of **0.52** on the test set, significantly below all other classes. This class contains only 142 samples in the full dataset (15.04%) and has notably higher predictive uncertainty. Solar-like classification results should be interpreted with caution and are not considered production-ready. Additional data collection is recommended before deploying ASTRA predictions for Solar-like targets in any scientific analysis.
 
+> [!CAUTION]
+> **Known limitations (audit of 2026-11-09 — see [`PROJECT_AUDIT.md`](PROJECT_AUDIT.md) and [`PROJECT_STATUS.md`](PROJECT_STATUS.md))**
+> - **Model weights are not published in this repository.** The metrics above are internally consistent with the committed confusion matrix, but can't yet be reproduced from a clean clone.
+> - **The web platform does not run the model on its current deployment.** Prediction, explanation and upload endpoints return `503 inference_unavailable`, and the UI says so. Earlier versions showed synthetic outputs derived from catalog labels; those have been removed.
+> - **The class labels are confounded with pipeline metadata** (period source, source catalog, cadence), so the catalog-vs-BLS subgroup gap and the headline accuracy need re-evaluation. A 3-feature metadata baseline scores 86.6% on the same test split. This is being addressed in the roadmap ([`UPDATED_ROADMAP.md`](UPDATED_ROADMAP.md)).
+> - Some commands and paths in the sections below don't match the current scripts. Corrections are tracked as task T7.
+
 ---
 
 ## ✨ Key Results
