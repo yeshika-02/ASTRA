@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "astra-stellar"
@@ -60,6 +60,11 @@ Repository = "https://github.com/soumyadebtripathy/ASTRA"
 Documentation = "https://github.com/soumyadebtripathy/ASTRA/tree/main/docs"
 "Bug Tracker" = "https://github.com/soumyadebtripathy/ASTRA/issues"
 Changelog = "https://github.com/soumyadebtripathy/ASTRA/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+# Only the research code is packaged (not the web platform, docs or the AgentOS framework).
+include = ["pipeline*", "training*", "data*"]
+namespaces = true
 
 [tool.ruff]
 line-length = 100

@@ -2,9 +2,16 @@ name: CI — ASTRA Pipeline Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: ['**']
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -19,9 +26,10 @@ jobs:
       - run: ruff check pipeline/ training/ data/ tests/
 
   test:
-    name: Unit Tests
+    name: Python tests (${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.11', '3.12']
     steps:
@@ -35,68 +43,56 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
           pip install pytest pytest-cov
+      # Includes the model forward-pass smoke tests (tests/test_model_smoke.py),
+      # which replace the old inline snippet that called the wrong model API.
       - name: Run tests
-        run: |
-          python -m pytest tests/ -v --tb=short
-      - name: Pipeline smoke test
-        run: |
-          python -c "
-          import sys
-          sys.path.insert(0, '.')
-          from training.models.star_cnn import StarCNN
-          from training.models.hybrid_transformer import HybridTransformer
-          import torch
-          
-          # Verify CNN
-          m = StarCNN()
-          x = torch.randn(2, 1, 1000)
-          out = m(x)
-          assert out.shape == (2, 5), f'CNN output shape mismatch: {out.shape}'
-          print('✅ StarCNN forward pass OK')
-          
-          # Verify HybridTransformer (shared)
-          m = HybridTransformer(variant='shared')
-          x_raw = torch.randn(2, 1, 1000)
-          x_fold = torch.randn(2, 1, 200)
-          out = m(x_raw, x_fold)
-          assert out.shape == (2, 5), f'Transformer output shape mismatch: {out.shape}'
-          print('✅ HybridTransformer (shared) forward pass OK')
-          print('✅ All model smoke tests passed')
-          "
+        run: python -m pytest tests/ -v --tb=short
 
   dataset-integrity:
-    name: Dataset Integrity Check
+    name: Dataset integrity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Verify split files exist
+      - name: Verify manifest hash, split hashes and split disjointness
         run: |
-          python -c "
-          import json, os
+          python - <<'EOF'
+          import hashlib, json, pathlib, sys
 
-          for fname in ['phase6_train_ids.json', 'phase6_val_ids.json', 'phase6_test_ids.json']:
-              assert os.path.exists(fname), f'Missing split file: {fname}'
-              with open(fname) as f:
-                  data = json.load(f)
-              assert len(data) > 0, f'Empty split file: {fname}'
-              print(f'✅ {fname}: {len(data)} entries')
+          def sha(p):
+              return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
 
-          # Verify no overlap
-          with open('phase6_train_ids.json') as f: train = set(json.load(f))
-          with open('phase6_val_ids.json') as f: val = set(json.load(f))
-          with open('phase6_test_ids.json') as f: test = set(json.load(f))
+          expected = {
+              'astra-platform/data/scientific_dataset_freeze_v2.csv': 'f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58',
+              'docs/engineering-log/phase6_train_ids.json': '5a9bf6c6ad40757a52d0f4a044626e82a4876839b175f5070fb28834c815eed0',
+              'docs/engineering-log/phase6_val_ids.json': 'c733ab95c4a22ebc29ca123b2e923c8b8069933ccdff2e9f03a3fdc882f761b3',
+              'docs/engineering-log/phase6_test_ids.json': '2b62970d610f66f12711b6d9594305b33961a04d17c48807bd6123562350f4c0',
+          }
+          failed = False
+          for path, want in expected.items():
+              got = sha(path)
+              ok = got == want
+              failed |= not ok
+              print(('OK  ' if ok else 'FAIL'), path, got)
 
-          assert not (train & val), 'Data leakage: train/val overlap!'
-          assert not (train & test), 'Data leakage: train/test overlap!'
-          assert not (val & test), 'Data leakage: val/test overlap!'
-          print('✅ No data leakage detected')
-          "
+          splits = {k: set(json.load(open(f'docs/engineering-log/phase6_{k}_ids.json'))) for k in ['train', 'val', 'test']}
+          sizes = {k: len(v) for k, v in splits.items()}
+          print('split sizes', sizes)
+          if sizes != {'train': 661, 'val': 141, 'test': 142}:
+              failed = True
+              print('FAIL unexpected split sizes')
+          for a, b in [('train', 'val'), ('train', 'test'), ('val', 'test')]:
+              overlap = splits[a] & splits[b]
+              if overlap:
+                  failed = True
+                  print(f'FAIL leakage {a}/{b}: {len(overlap)} ids')
+          sys.exit(1 if failed else 0)
+          EOF
 
   frontend:
-    name: Next.js Build
+    name: Web platform (typecheck, tests, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -109,6 +105,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: astra-platform/package-lock.json
       - run: npm ci
+      - run: npm run typecheck
+      # API, security (injection), no-fabrication and health tests
+      - run: npm test
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1

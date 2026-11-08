@@ -119,3 +119,7 @@ secrets.yaml
 *.seed
 *.pid.lock
 .vercel
+
+# Next.js generated files
+astra-platform/next-env.d.ts
+astra-platform/tsconfig.tsbuildinfo
