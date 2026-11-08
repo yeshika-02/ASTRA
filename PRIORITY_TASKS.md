@@ -14,7 +14,7 @@ Effort: **S** ≤ 1 day · **M** 2–5 days.
 | T2 | ✅ Close the command injection in `/api/upload` (and harden predict/explain) | 🔴 Very high | S | 0 | P2 |
 | T3 | ✅ Make `/api/health` truthful + add a "known limitations" notice | 🟠 High | S | 0 | P5, E3 |
 | T4 | Recover or regenerate the model weights and host them with hashes | 🔴 Very high | S–M | 1 | R1 |
-| T5 | ✅ Get CI green (verified locally; first GitHub run on push) | 🟠 High | S | 1 | E1, U2, R5 |
+| T5 | ✅ Get CI green (GitHub run 42519045208: 5/5 jobs pass) | 🟠 High | S | 1 | E1, U2, R5 |
 | T6 | Commit the metadata baseline and report it next to the model | 🟠 High | S | 1–2 | S2 |
 | T7 | Replace hardcoded paths with one config; make README commands run | 🟠 High | M | 1 | R2, R3 |
 | T8 | Artifact + SQLite generator; remove duplicated metrics in `constants.ts` | 🟠 High | M | 1 | R4, S11 |

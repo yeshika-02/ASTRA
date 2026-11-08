@@ -29,7 +29,7 @@ Status is based on what the code, data and runs show, not on README or engineeri
 | Web platform: inference | 🟨 | Phase 0: fabricated output removed; honest 503 + "unavailable" UI [P1 ✅]. Still no real inference: no weights [R1], no runtime [P3, P4] |
 | Security | 🟨 | Command injection fixed (no shell, strict validation) [P2 ✅]; no rate limiting or dependency audit yet |
 | Tests | 🟨 | 21 Python + 88 web tests pass (API, security, health, no-fabrication, model smoke); `training/` coverage still low [E2] |
-| CI | 🟨 | Fixed and verified locally (all jobs' commands pass); first GitHub run happens on push [E1 ✅] |
+| CI | ✅ | All 5 jobs green on GitHub (run 42519045208, first green run in the repo's history) [E1 ✅] |
 | Deployment | 🟨 | Vercel live still runs the old code until this branch is merged and deployed; Docker image broken [P4] |
 | Documentation | 🟨 | Extensive, but contains false claims and broken links [E3] |
 
@@ -42,7 +42,7 @@ Status is based on what the code, data and runs show, not on README or engineeri
 | T1 Remove fabricated output | ✅ | Synthetic branches deleted from `api/predict`, `api/explain`, `api/upload`; client generator and 0.7 defaults removed; Mission Replay shows the model class only when the model ran; OSINT invented fields nulled; static guard test |
 | T2 Close command injection | ✅ | `lib/server/inference.ts` (spawn, `shell: false`, stdin for flux), `lib/server/validation.ts`; `upload_inference.py` file-path read removed; tests fail on the old code, pass on the new |
 | T3 Truthful health + notices | ✅ | `lib/server/health.ts` (recomputed hashes, DB query, ONNX weight check, Python module probe); TopBar INFERENCE indicator + site-wide notice; README "Known limitations" |
-| T5 CI | ✅ locally | `package-lock.json`, `postcss.config.mjs`, `eslint.config.mjs`, `.gitattributes`, fixed `pyproject.toml`; rewritten `ci.yml` (lint, Python tests incl. smoke, dataset integrity with hashes, web typecheck/tests/build) |
+| T5 CI | ✅ | `package-lock.json`, `postcss.config.mjs`, `eslint.config.mjs`, `.gitattributes`, fixed `pyproject.toml`; rewritten `ci.yml` (lint, Python tests incl. smoke, dataset integrity with hashes, web typecheck/tests/build) |
 | AgentOS GitHub files | ✅ | Adapted and committed per ADR-0059 |
 
 ## ✅ Completed and verified
@@ -122,7 +122,7 @@ Status is based on what the code, data and runs show, not on README or engineeri
 | CV accuracy (claimed) | 84.68% | ❌ biased estimate |
 | Tests | 21 Python + 88 web pass | ✅ |
 | Python coverage | 8% before Phase 0; `training/` still mostly untested | ❌ |
-| CI status | Fixed on the Phase 0 branch (verified locally) | 🟨 |
+| CI status | All 5 jobs green on the Phase 0 branch (GitHub run 42519045208) | ✅ |
 | Hardcoded foreign paths | 27 in 11 files | ❌ |
 | Committed media | ~310 MB | ❌ |
 | AgentOS validator | 94/100 (Cross-reference 0/100 from ASTRA's broken doc links) | 🟨 |
