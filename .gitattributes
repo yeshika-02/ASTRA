@@ -1,10 +1,18 @@
-# Hash-locked research artifacts must be byte-identical on every OS.
-# Without this, Git on Windows (core.autocrlf=true) converts LF to CRLF on checkout and the
-# published SHA256 checks fail. See PROJECT_AUDIT.md finding R6.
-*.json  -text
-*.csv   -text
-*.npy   binary
-*.npz   binary
-*.onnx  binary
-*.pt    binary
-*.sqlite binary
+# Hash-locked research artifacts must be byte-identical on every OS, so line-ending
+# conversion is disabled for them only. Without this, Git on Windows (core.autocrlf=true)
+# converts LF to CRLF on checkout and the published SHA256 checks fail (PROJECT_AUDIT.md R6).
+# Every other text file gets Git's normal handling (stored with LF).
+docs/engineering-log/*.json           -text
+astra-platform/data/**/*.json         -text
+astra-platform/data/*.csv             -text
+astra-platform/public/data/*.json     -text
+data/*.json                           -text
+models/saved/*.json                   -text
+lineage.json                          -text
+
+# Binary data and model files
+*.npy     binary
+*.npz     binary
+*.onnx    binary
+*.pt      binary
+*.sqlite  binary
