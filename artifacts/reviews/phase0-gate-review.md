@@ -45,6 +45,10 @@ On a local `next start` production server:
 - injection id → 400; upload with injected `tic_id` → 400; valid upload without a model → 503
 - the target page shows "Model confidence: UNAVAILABLE", the unavailable panel and the site-wide notice
 
+## GitHub CI
+
+Run 42519045208 on the pushed branch: Lint, Python tests 3.11 and 3.12 (21 passed each, model smoke tests included), Dataset integrity and Web platform (88 tests, build) all passed.
+
 ## Exit decision
 
 **PASS (with one documented lint exception).** Phase 0 is complete. Phase 1 starts only after owner review.
