@@ -107,11 +107,11 @@ export function Sidebar() {
       {sidebarOpen && (
         <div className="border-t border-white/5 px-3 py-2">
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#56D364] animate-pulse" />
-            <span className="text-[10px] text-[#8B97A7] uppercase tracking-widest font-semibold">Operational</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#6EA8FE]" />
+            <span className="text-[10px] text-[#8B97A7] uppercase tracking-widest font-semibold">Research Preview</span>
           </div>
           <p className="text-[10px] text-[#5A6878] mt-0.5 font-mono">
-            Phase 8 · Verified
+            Live status: top bar
           </p>
         </div>
       )}

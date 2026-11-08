@@ -1,5 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Star, StarsResponse, LightCurveData } from '../types';
+import type { Star, StarsResponse, LightCurveData, AstraClass } from '../types';
+
+export interface PredictResult {
+  tic_id: number;
+  predicted_class: AstraClass;
+  calibrated_confidence: number;
+  entropy: number;
+  variance: number;
+  probabilities: Record<AstraClass, number>;
+  source: 'model';
+}
+
+export interface ExplainResult {
+  tic_id: number;
+  predicted_class: AstraClass;
+  calibrated_confidence: number;
+  entropy: number;
+  probabilities: Record<AstraClass, number>;
+  attention_weights: number[][];
+  source: 'model';
+}
 
 // Robust fetch helper that checks r.ok and parses the JSON error details if present
 async function fetchJson<T>(url: string): Promise<T> {
@@ -120,21 +140,39 @@ export function useCalibrationDetails() {
   });
 }
 
-// ─── Explainability (ONNX) ─────────────────────────────────────────────────────
+// ─── Model inference (predict / explain) ──────────────────────────────────────
+// A 503 "inference_unavailable" answer is a normal outcome, not an error: the UI must show
+// that no model ran instead of inventing output.
+export type InferenceResult<T> =
+  | { available: true; data: T }
+  | { available: false; reasons: string[] };
+
+async function fetchInference<T>(url: string): Promise<InferenceResult<T>> {
+  const r = await fetch(url);
+  if (r.status === 503) {
+    const body = await r.json().catch(() => ({}));
+    return { available: false, reasons: Array.isArray(body?.reasons) ? body.reasons : [] };
+  }
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body?.error || `HTTP error! status: ${r.status}`);
+  }
+  return { available: true, data: (await r.json()) as T };
+}
+
 export function useExplain(id: string | number | null) {
   return useQuery({
     queryKey: ['explain', id],
-    queryFn: () => fetchJson<any>(`/api/explain/${id}`),
+    queryFn: () => fetchInference<ExplainResult>(`/api/explain/${id}`),
     enabled: id !== null,
     staleTime: Infinity,
   });
 }
 
-// ─── Predict (PyTorch MC Dropout) ──────────────────────────────────────────────
 export function usePredict(id: string | number | null) {
   return useQuery({
     queryKey: ['predict', id],
-    queryFn: () => fetchJson<any>(`/api/predict/${id}`),
+    queryFn: () => fetchInference<PredictResult>(`/api/predict/${id}`),
     enabled: id !== null,
     staleTime: Infinity,
   });

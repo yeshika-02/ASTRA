@@ -356,8 +356,8 @@ export default function Home() {
               >
                 <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                 <div className="flex-1">
-                  <p className="text-emerald-400 font-bold leading-none uppercase tracking-wider">Zero-Trust Audit Verified</p>
-                  <p className="text-white/50 mt-1 leading-tight">Database integrity checks match lineage specifications. Model ONNX signatures verified.</p>
+                  <p className="text-emerald-400 font-bold leading-none uppercase tracking-wider">Integrity Checks Passed</p>
+                  <p className="text-white/50 mt-1 leading-tight">{health.summary ?? 'Dataset hash, star database and model checkpoint hash verified.'}</p>
                 </div>
               </motion.div>
             )}

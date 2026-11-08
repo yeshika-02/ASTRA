@@ -157,6 +157,30 @@ export function HashBadge({ hash, label }: { hash: string; label?: string }) {
   );
 }
 
+/** Shown wherever a model output would appear but no real inference ran. */
+export function InferenceUnavailable({ reasons, compact = false }: { reasons?: string[]; compact?: boolean }) {
+  return (
+    <div
+      role="status"
+      className={cn(
+        'rounded border border-[#D29922]/30 bg-[#D29922]/5 font-mono text-[#D29922]',
+        compact ? 'p-2 text-[10px]' : 'p-3 text-[11px] space-y-1',
+      )}
+    >
+      <p className="font-semibold uppercase tracking-wider">Model inference unavailable</p>
+      {!compact && (
+        <p className="text-[#8B97A7] font-sans leading-normal">
+          The trained model is not running on this deployment, so no prediction, probability or attention map is
+          shown. Catalog labels elsewhere on this page are ground truth, not model output.
+        </p>
+      )}
+      {!compact && reasons && reasons.length > 0 && (
+        <p className="text-[#5A6878] text-[10px]">Reason: {reasons.join(', ')}</p>
+      )}
+    </div>
+  );
+}
+
 export function EmptyState({ message, sub }: { message: string; sub?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">

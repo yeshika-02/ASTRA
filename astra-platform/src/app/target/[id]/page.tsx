@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useStar, useLightCurve, usePredict } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
-import { MetricCard, Panel, DataRow, ConfidenceBar, HashBadge, EmptyState } from '@/components/shared/UI';
+import { MetricCard, Panel, DataRow, ConfidenceBar, HashBadge, EmptyState, InferenceUnavailable } from '@/components/shared/UI';
 import { formatRA, formatDec, formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS, confidenceToColor } from '@/lib/utils';
 import type { AstraClass } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -25,7 +25,10 @@ export default function TargetPage() {
 
   const { data: star, isLoading: starLoading, isError: starError } = useStar(ticId);
   const { data: lc, isLoading: lcLoading, isError: lcError } = useLightCurve(ticId);
-  const { data: prediction, isLoading: predLoading, isError: predError } = usePredict(ticId);
+  const { data: predictionResult, isLoading: predLoading, isError: predError } = usePredict(ticId);
+  // Only real model output is ever shown. No defaults, no label-derived guesses.
+  const prediction = predictionResult?.available ? predictionResult.data : null;
+  const inferenceReasons = predictionResult && !predictionResult.available ? predictionResult.reasons : [];
 
   if (starLoading) {
     return (
@@ -46,7 +49,7 @@ export default function TargetPage() {
     );
   }
 
-  const topProb = prediction && typeof prediction.calibrated_confidence === 'number' ? prediction.calibrated_confidence : 0.7;
+  const topProb = prediction && typeof prediction.calibrated_confidence === 'number' ? prediction.calibrated_confidence : null;
 
   // Format light curve data
   const rawChartData = lc ? sampleArray(lc.flux_1000, 500) : [];
@@ -86,14 +89,16 @@ export default function TargetPage() {
         </div>
         <div className="w-full md:w-56 space-y-1">
           <div className="flex justify-between items-baseline text-[10px]">
-            <span className="text-[#8B97A7] uppercase tracking-wider">Classification Confidence</span>
+            <span className="text-[#8B97A7] uppercase tracking-wider">Model Confidence</span>
             {predLoading ? (
               <span className="font-mono text-[#6EA8FE] animate-pulse">CALCULATING…</span>
+            ) : topProb === null ? (
+              <span className="font-mono text-[#D29922] font-semibold">UNAVAILABLE</span>
             ) : (
               <span className="font-mono text-[#6EA8FE] font-semibold">{formatPercent(topProb)}</span>
             )}
           </div>
-          <ConfidenceBar value={topProb} color={confidenceToColor(topProb)} />
+          {topProb !== null && <ConfidenceBar value={topProb} color={confidenceToColor(topProb)} />}
         </div>
       </div>
 
@@ -129,10 +134,12 @@ export default function TargetPage() {
                 ))}
               </div>
             </div>
-          ) : predError || !prediction ? (
+          ) : predError ? (
             <div className="text-[11px] text-red-400 font-mono py-4">
-              Error: Failed to fetch live PyTorch predictions. Ensure local inference engine is online.
+              Error: the prediction request failed.
             </div>
+          ) : !prediction ? (
+            <InferenceUnavailable reasons={inferenceReasons} />
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 mb-2 astra-glass p-2.5 rounded font-mono text-[11px]">
