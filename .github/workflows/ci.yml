@@ -132,7 +132,7 @@ jobs:
               "seed": (meta.get("seed"), 42),
               "git commit": (prov["git"]["commit"], os.environ["GITHUB_SHA"]),
               "git_commit field": (meta.get("git_commit"), os.environ["GITHUB_SHA"]),
-              "clean tree": (prov["git"]["dirty"], False),
+              "tree dirty": (prov["git"]["dirty"], False),
               "frozen split used": (prov["data"]["frozen_split"], True),
           }
           failed = [k for k, (got, want) in checks.items() if got != want]
@@ -152,7 +152,8 @@ jobs:
           record = json.load(open("outputs/eval/evaluation_best_star_transformer_shared_val.json"))
           checks = {
               "stars": (record["split"]["n"], 141),
-              "published": (record["published"], None),
+              # Same file name as the published checkpoint, different bytes: must not be trusted.
+              "published name, hash verified": (record["published"]["verified"], False),
               "split hash": (record["provenance"]["data"]["split_hash"], "ebcdc44c3dba849579675369b1559c77e50b6fead06abd40d3fc187425a7d4e4"),
               "commit": (record["provenance"]["git"]["commit"], os.environ["GITHUB_SHA"]),
               "predictions": (len(record["predictions"]), 141),
