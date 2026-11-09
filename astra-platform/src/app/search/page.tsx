@@ -5,7 +5,7 @@ import { useStars } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
 import { EmptyState, LoadingRows } from '@/components/shared/UI';
 import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
-import type { AstraClass, PeriodSource } from '@/lib/types';
+
 import Link from 'next/link';
 
 export default function TargetSearchPage() {

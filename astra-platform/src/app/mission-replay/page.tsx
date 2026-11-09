@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStars, useLightCurve, useExplain } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
-import { MetricCard, Panel, ConfidenceBar, EmptyState } from '@/components/shared/UI';
-import { formatRA, formatDec, formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS } from '@/lib/utils';
+import { ConfidenceBar, EmptyState } from '@/components/shared/UI';
+import { formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS } from '@/lib/utils';
 import { InferenceUnavailable } from '@/components/shared/UI';
-import type { Star, AstraClass } from '@/lib/types';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import type { Star } from '@/lib/types';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Play, Pause, RotateCcw, AlertCircle } from 'lucide-react';
+import { ChevronRight, Play, Pause, RotateCcw } from 'lucide-react';
 
 function AttentionHeatmap({ matrix }: { matrix: number[][] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

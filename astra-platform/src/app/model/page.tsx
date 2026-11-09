@@ -1,6 +1,6 @@
 'use client';
 
-import { MetricCard, Panel, HashBadge, ConfidenceBar } from '@/components/shared/UI';
+import { MetricCard, Panel, HashBadge } from '@/components/shared/UI';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useModelDetails, useCheckpoints, useCalibrationDetails, useBenchmarkMetrics } from '@/lib/hooks';
 import { CLASS_COLORS, CLASS_LABELS, formatParams, formatPercent, formatHash } from '@/lib/utils';

@@ -2,30 +2,27 @@
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { MetricCard, Panel } from '@/components/shared/UI';
+import { Panel } from '@/components/shared/UI';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails, useModelDetails } from '@/lib/hooks';
 import { AUDIT_EVENTS, CLASS_LABELS, CLASS_COLORS, SHARED_BEST_VAL_ACCURACY } from '@/lib/data/constants';
-import { formatParams, formatPercent } from '@/lib/utils';
+import { formatParams } from '@/lib/utils';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { 
-  ChevronDown, 
-  ArrowRight, 
-  ShieldCheck, 
-  Cpu, 
-  Database, 
-  Compass, 
-  Globe, 
-  Sparkles, 
-  AlertTriangle, 
-  Activity, 
-  Play, 
-  TrendingUp, 
-  Search, 
-  BarChart2, 
-  FileText, 
-  CheckCircle2 
+import {
+  ChevronDown,
+  ArrowRight,
+  ShieldCheck,
+  Cpu,
+  Database,
+  Globe,
+  AlertTriangle,
+  Activity,
+  Play,
+  TrendingUp,
+  Search,
+  BarChart2,
+  FileText,
 } from 'lucide-react';
 
 const sectionNames = [
@@ -42,22 +39,6 @@ const sectionVariants = {
     opacity: 1, 
     y: 0,
     transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const }
-  }
-};
-
-const staggerContainer = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { duration: 0.25, ease: 'easeOut' as const }
   }
 };
 
