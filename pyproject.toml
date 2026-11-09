@@ -63,7 +63,7 @@ Changelog = "https://github.com/soumyadebtripathy/ASTRA/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 # Only the research code is packaged (not the web platform, docs or the AgentOS framework).
-include = ["pipeline*", "training*", "data*"]
+include = ["astra*", "pipeline*", "training*", "data*"]
 namespaces = true
 
 [tool.ruff]

@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install ruff
-      - run: ruff check pipeline/ training/ data/ tests/
+      - run: ruff check astra/ pipeline/ training/ data/ tests/
 
   test:
     name: Python tests (${{ matrix.python-version }})
