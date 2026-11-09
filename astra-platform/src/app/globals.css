@@ -59,7 +59,7 @@ html, body {
 
 /* ── Typography ─────────────────────────────────────────── */
 .font-mono {
-  font-family: 'IBM Plex Mono', 'Fira Code', 'JetBrains Mono', ui-monospace, monospace !important;
+  font-family: var(--font-plex-mono), 'Fira Code', 'JetBrains Mono', ui-monospace, monospace !important;
 }
 
 /* ── Scrollbar ──────────────────────────────────────────── */
