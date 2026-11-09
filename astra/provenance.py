@@ -76,8 +76,14 @@ def file_sha256(path: Path) -> str | None:
     return digest.hexdigest()
 
 
-def data_fingerprint(manifest: Path, splits_dir: Path) -> dict[str, Any]:
-    """Hashes of the dataset manifest, the frozen split files and the recorded split hash."""
+def data_fingerprint(manifest: Path, splits_dir: Path | None) -> dict[str, Any]:
+    """Hashes of the dataset manifest, the frozen split files and the recorded split hash.
+
+    Pass ``splits_dir=None`` when no frozen split files were used (a random split): the
+    split fields are then ``None`` rather than describing files the run never read.
+    """
+    if splits_dir is None:
+        return {"manifest_sha256": file_sha256(manifest), "split_hash": None, "split_file_sha256": None}
     split_hash = None
     meta_path = Path(splits_dir) / "split_metadata.json"
     if meta_path.is_file():

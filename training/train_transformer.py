@@ -656,7 +656,7 @@ def main(argv: list[str] | None = None) -> None:
         device=str(device),
         data={
             **provenance.data_fingerprint(paths.phase6_root / "scientific_dataset_freeze_v2.csv",
-                                          train_dataset.splits_dir or paths.splits_dir),
+                                          train_dataset.splits_dir if train_dataset.frozen_split else None),
             "frozen_split": train_dataset.frozen_split and val_dataset.frozen_split,
         },
     )
