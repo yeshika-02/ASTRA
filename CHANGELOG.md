@@ -8,7 +8,25 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-> Changes staged for the next release will appear here.
+> On `main` since 2026-11-09 ([PR #1](https://github.com/yeshika-02/ASTRA/pull/1)); not yet released or deployed. The repository also carries a `v1.1.0` tag that has no matching entry in this file; to be reconciled in sprint task SP-35.
+
+### Security
+- **Command injection in `POST /api/upload` fixed.** Request fields were interpolated into a shell command; inference now spawns Python with an argument array (`shell: false`), sends flux over stdin, and validates every input. `upload_inference.py` no longer reads a server file when `--flux` is a path.
+
+### Fixed
+- Prediction, explanation and upload endpoints no longer return probabilities, uncertainty or attention maps derived from ground-truth labels or random numbers when the model can't run. They return `503 inference_unavailable`, and the UI shows that no inference ran.
+- `/api/health` now measures readiness (dataset and checkpoint hashes, database row count, ONNX weights, Python modules) instead of reporting a hardcoded model hash.
+- OSINT endpoint no longer reports invented match distances or observation dates; null-period crash fixed.
+- Tailwind CSS v4 build: the missing `postcss.config.mjs` meant no utility classes were generated from a fresh clone.
+- CI: every job had failed since creation (missing lockfile, wrong split-file paths, wrong model API in the smoke test); all 5 jobs now pass.
+- Hash-locked research files keep their bytes on Windows checkouts (`.gitattributes`).
+- `pyproject.toml` build backend corrected; a wheel now builds.
+
+### Added
+- API, security, health and no-fabrication test suites for the web platform (88 Vitest tests); Python tests for upload input parsing and model forward passes (21 total).
+- AgentOS (Raptors Way) development framework, `ml` profile; ADR-0057–ADR-0060.
+- Project audit and planning documents: `PROJECT_AUDIT.md`, `PROJECT_STATUS.md`, `UPDATED_ROADMAP.md`, `PRIORITY_TASKS.md`, `TASK_CHECKLIST.md`, `7_DAY_SPRINT.md`.
+- README "Known limitations" notice (no published weights, no live inference, confounded labels).
 
 ---
 
