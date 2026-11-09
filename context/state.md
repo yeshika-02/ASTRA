@@ -1,9 +1,15 @@
 # Project Heartbeat & Task State
 
-> **Last Heartbeat:** 2026-11-09
-> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–2 complete, PRs #3–#8 in review (see 7_DAY_SPRINT.md)
+> **Last Heartbeat:** 2026-11-10
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–3 complete, PRs #3–#9 in review (see 7_DAY_SPRINT.md)
 
 ---
+
+## Session 2026-11-10 — Sprint Day 3
+
+- WS-07 [#9](https://github.com/yeshika-02/ASTRA/pull/9) (stacked on #8): weights investigation (`docs/model_recovery.md`), `models/published_weights.json`, `verify_weights.py`, ADR-0061; `evaluate.py` with bootstrap CIs and hash gate; `astra.provenance`; CI provenance and evaluation checks; reproducibility guide rewritten. 22 commits, 132 tests in a clean locked venv.
+- Key facts: weights never on GitHub; upstream repo = this repo; `.onnx.data` hash recorded; published confusion matrices reproduce all published metrics.
+- SP-17 blocked (D1). Next: Day 4 (WS-08 metrics single source, SP-18–SP-20).
 
 ## Session 2026-11-09 (e) — Sprint Day 2
 
