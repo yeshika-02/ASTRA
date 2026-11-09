@@ -481,47 +481,42 @@ By thresholding on model confidence (30 stochastic MC Dropout passes), accuracy 
 
 ## 🔁 Reproducing Results
 
-All experimental results are fully reproducible from the hash-locked splits and checkpoints.
+What can be reproduced from a clone today:
+
+| Step | Status |
+|---|---|
+| Dataset, manifest and frozen splits | ✅ verified by `pipeline/prepare_from_repo.py` |
+| Training and cross-validation runs | ✅ runnable (CI trains one epoch from a fresh clone and checks the recorded data hashes) |
+| The published test metrics (78.17%) | ❌ not yet: the checkpoint (`best_star_transformer_shared.pt`, SHA256 `bf374ce4…`) is not in the repository, and a test-set evaluation script is planned (SP-15) |
 
 ### Verify Split Integrity
+
+The split files are verified, and the split hash recomputed, by `python pipeline/prepare_from_repo.py`. To check the shipped files by hand:
 
 ```bash
 python -c "
 import hashlib, pathlib
 
 hashes = {
-    'splits/train_ids.json': '5a9bf6c6ad40757a52d0f4a044626e82a4876839b175f5070fb28834c815eed0',
-    'splits/val_ids.json':   'c733ab95c4a22ebc29ca123b2e923c8b8069933ccdff2e9f03a3fdc882f761b3',
-    'splits/test_ids.json':  '2b62970d610f66f12711b6d9594305b33961a04d17c48807bd6123562350f4c0',
+    'docs/engineering-log/phase6_train_ids.json': '5a9bf6c6ad40757a52d0f4a044626e82a4876839b175f5070fb28834c815eed0',
+    'docs/engineering-log/phase6_val_ids.json':   'c733ab95c4a22ebc29ca123b2e923c8b8069933ccdff2e9f03a3fdc882f761b3',
+    'docs/engineering-log/phase6_test_ids.json':  '2b62970d610f66f12711b6d9594305b33961a04d17c48807bd6123562350f4c0',
 }
 
 for path, expected in hashes.items():
     actual = hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
-    status = '✅' if actual == expected else '❌'
-    print(f'{status}  {path}')
+    print('OK  ' if actual == expected else 'FAIL', path)
 "
-```
-
-### Evaluate Checkpoint on Test Set
-
-```bash
-# Reproduce the 78.17% test accuracy from the frozen checkpoint
-python training/predict.py \
-  --model transformer_shared \
-  --checkpoint models/saved/best_star_transformer_shared.pt \
-  --split test \
-  --temperature models/saved/optimal_temperature_transformer_shared.txt
 ```
 
 ### Reproduce Cross-Validation
 
 ```bash
-# 5-fold CV × 3 seeds = 15 total runs (approx 2–3 hours on Apple M-series)
-python training/cross_validate.py \
-  --variant shared \
-  --seeds 42 100 2026 \
-  --folds 5
+# 5-fold CV x 3 seeds = 15 runs of 50 epochs (hours on CPU; MPS/CUDA used when available)
+python training/cross_validate.py --seeds 42 100 2026 --folds 5 --epochs 50
 ```
+
+Note that `pipeline/freeze_phase6_splits.py` cannot regenerate the committed split: it uses 70/10/10/10 ratios, while the frozen split is 70/15/15/0. Use the shipped split files.
 
 ### Cryptographic Artifact Registry
 
