@@ -4,7 +4,7 @@ import { MetricCard, Panel, HashBadge, DataRow } from '@/components/shared/UI';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails } from '@/lib/hooks';
 import { DATASET_LINEAGE, AUDIT_EVENTS } from '@/lib/data/constants';
-import { CLASS_COLORS, CLASS_LABELS, formatPercent } from '@/lib/utils';
+import { CLASS_COLORS, CLASS_LABELS } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 export default function DatasetIntelligencePage() {
@@ -61,7 +61,7 @@ export default function DatasetIntelligencePage() {
 
   // Dynamic breakdown of classes in splits from database matrix
   const matrix = datasetDetails.classSplitMatrix || {};
-  const trainBreakdown = Object.entries(matrix).map(([key, counts]: [string, any]) => ({
+  const trainBreakdown = Object.entries(matrix).map(([key, counts]) => ({
     label: CLASS_LABELS[key as keyof typeof CLASS_LABELS] || key,
     train: counts.train || 0,
     val: counts.val || 0,

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Compass, Target, Shield, HelpCircle, Activity, Layout, Volume2, Cpu } from 'lucide-react';
 import { useAstraStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { SearchResult as ApiSearchResult } from '@/lib/types/artifacts';
 
 interface SearchResult {
   id: string;
@@ -40,12 +41,24 @@ export function CommandPalette() {
   
   const { audioState, setAudioState, qualityState, setQualityState } = useAstraStore();
 
-  // Toggle open state with Command+K / Ctrl+K
+  // Latest open state for the global key handler, which is registered once.
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // Toggle with Command+K / Ctrl+K. Opening always starts from an empty query.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        if (isOpenRef.current) {
+          setIsOpen(false);
+        } else {
+          setQuery('');
+          setSelectedIndex(0);
+          setIsOpen(true);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -54,11 +67,9 @@ export function CommandPalette() {
 
   // Autofocus input on open
   useEffect(() => {
-    if (isOpen) {
-      setQuery('');
-      setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+    if (!isOpen) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   // Click outside to close
@@ -136,10 +147,10 @@ export function CommandPalette() {
           if (res.ok) {
             const data = await res.json();
             if (active && data.results) {
-              remoteMatches = data.results.map((r: any) => ({
+              remoteMatches = (data.results as ApiSearchResult[]).map((r) => ({
                 id: `target-${r.tic_id}`,
                 title: `TIC ${r.tic_id}`,
-                subtitle: `${r.astra_class} — Period: ${parseFloat(r.period).toFixed(4)} d (${r.period_source})`,
+                subtitle: `${r.astra_class} — Period: ${r.period.toFixed(4)} d (${r.period_source})`,
                 type: 'target' as const,
                 url: `/target/${r.tic_id}`,
                 icon: Target,

@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Clock, Volume2, VolumeX, ShieldCheck, Cpu, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Clock, Volume2, VolumeX, Cpu } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAstraStore } from '@/lib/store';
 
@@ -94,15 +94,6 @@ export function TopBar() {
     if (statusVal === 'DEGRADED') return '#D29922';
     if (statusVal === 'LOADING') return '#8B97A7';
     return '#F85149';
-  };
-
-  const getStatusLabel = (statusVal: string) => {
-    switch (statusVal) {
-      case 'READY': return 'VERIFIED';
-      case 'DEGRADED': return 'DEGRADED';
-      case 'BLOCKED': return 'ABORTED';
-      default: return 'CHECKING';
-    }
   };
 
   const showInferenceNotice = health.status !== 'LOADING' && !health.inference_available;

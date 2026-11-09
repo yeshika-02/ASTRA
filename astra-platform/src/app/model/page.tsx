@@ -1,10 +1,11 @@
 'use client';
 
-import { MetricCard, Panel, HashBadge, ConfidenceBar } from '@/components/shared/UI';
+import { MetricCard, Panel, HashBadge } from '@/components/shared/UI';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useModelDetails, useCheckpoints, useCalibrationDetails, useBenchmarkMetrics } from '@/lib/hooks';
 import { CLASS_COLORS, CLASS_LABELS, formatParams, formatPercent, formatHash } from '@/lib/utils';
 import { BarChart, Bar, Cell, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { SHARED_BEST_VAL_ACCURACY } from '@/lib/data/constants';
 
 export default function ModelOperationsPage() {
   const { data: modelDetails, isLoading: modelLoading } = useModelDetails();
@@ -49,7 +50,7 @@ export default function ModelOperationsPage() {
   };
 
   const performance = {
-    val_accuracy: modelDetails.val_accuracy || 0.8582,
+    val_accuracy: SHARED_BEST_VAL_ACCURACY,
     test_accuracy: modelDetails.benchmark.test_accuracy,
     macro_f1: modelDetails.benchmark.macro_f1,
     weighted_f1: modelDetails.benchmark.weighted_f1,
@@ -77,7 +78,7 @@ export default function ModelOperationsPage() {
   };
 
   // Convert per-class ECE from calibration.json
-  const perClassEceData = Object.entries(calibration.per_class).map(([cls, metrics]: [string, any]) => ({
+  const perClassEceData = Object.entries(calibration.per_class).map(([cls, metrics]) => ({
     class: cls,
     before: metrics.transformer_raw,
     after: metrics.transformer_calibrated,
@@ -181,7 +182,7 @@ export default function ModelOperationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1A2430]">
-              {checkpoints.map((ckpt: any, idx: number) => {
+              {checkpoints.map((ckpt, idx) => {
                 const isProduction = ckpt.filename === 'best_star_transformer_shared.pt';
                 const hasKeysMismatch = ckpt.missing_keys > 0 || ckpt.unexpected_keys > 0;
                 const benchData = getBenchmarkForCheckpoint(ckpt.filename);

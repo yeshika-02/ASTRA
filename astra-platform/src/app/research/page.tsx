@@ -1,6 +1,6 @@
 'use client';
 
-import { MetricCard, Panel } from '@/components/shared/UI';
+import { Panel } from '@/components/shared/UI';
 import { useResearchFindings, useCalibrationDetails } from '@/lib/hooks';
 import { CLASS_LABELS, CLASS_COLORS, formatPercent } from '@/lib/utils';
 import {
@@ -59,8 +59,8 @@ export default function ResearchFindingsPage() {
   const thresholds = [0.5, 0.6, 0.7, 0.8, 0.9];
   const sweep = uncertainty.coverage_sweep || [];
   const lineData = thresholds.map((t) => {
-    const cnnItem = sweep.find((d: any) => d.model === 'cnn_dual' && Math.abs(d.confidence_threshold - t) < 0.01);
-    const transItem = sweep.find((d: any) => d.model === 'shared' && Math.abs(d.confidence_threshold - t) < 0.01);
+    const cnnItem = sweep.find((d) => d.model === 'cnn_dual' && Math.abs(d.confidence_threshold - t) < 0.01);
+    const transItem = sweep.find((d) => d.model === 'shared' && Math.abs(d.confidence_threshold - t) < 0.01);
     
     return {
       threshold: t.toFixed(1),
