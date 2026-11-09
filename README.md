@@ -34,11 +34,11 @@
 ## ⚠️ Scientific Integrity Notice
 
 > [!IMPORTANT]
-> **Verified Results** — The following numbers have been independently recomputed from checkpoint weights and test-set IDs and confirmed to zero mismatches in the ground truth audit. They are the authoritative, reportable metrics for this project:
-> - **Test Accuracy:** 78.17% (95% CI: [71.13%, 85.21%])
+> **Published results** — The project's reported metrics, from the original author's ground-truth audit (Phase 7C). The trained weights are not in this repository, so they can't be recomputed from a clone. The committed test confusion matrices do reproduce the point metrics. [`docs/metrics.md`](docs/metrics.md) lists every number with its source and status.
+> - **Test Accuracy:** 78.17% (111/142; 95% CI: [71.13%, 85.21%])
 > - **Macro F1:** 0.7677 (95% CI: [0.6944, 0.8320])
-> - **Dataset:** 944 stars, SHA256 fingerprint `f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58`
-> - **Ground Truth Audit:** All 8 checks **PASS**, 0 mismatches.
+> - **Dataset:** 944 stars, SHA256 fingerprint `f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58` (verified from the shipped files by `pipeline/prepare_from_repo.py`)
+> - **Ground Truth Audit:** all 8 checks reported PASS with 0 mismatches by the original author.
 
 > [!WARNING]
 > **Experimental / Under-Represented Class** — The **Solar-like** class achieves the lowest per-class F1 of **0.52** on the test set, significantly below all other classes. This class contains only 142 samples in the full dataset (15.04%) and has notably higher predictive uncertainty. Solar-like classification results should be interpreted with caution and are not considered production-ready. Additional data collection is recommended before deploying ASTRA predictions for Solar-like targets in any scientific analysis.
@@ -59,10 +59,12 @@
 | Model | Params | Test Accuracy | 95% CI | Macro F1 | 95% CI |
 |:---|:---:|:---:|:---:|:---:|:---:|
 | **HybridTransformer (shared)** ⭐ | 1,373,701 | **78.17%** | [71.13%, 85.21%] | **0.7677** | [0.6944, 0.8320] |
-| CNN Dual-Branch | 1,043,333 | 78.17% | [71.13%, 84.51%] | 0.7654 | [0.6840, 0.8317] |
-| HybridTransformer (cross) | — | 80.99% | [73.94%, 87.32%] | 0.7949 | [0.7252, 0.8594] |
-| HybridTransformer (separate) | — | 84.51% | [78.17%, 90.16%] | 0.8394 | [0.7712, 0.9012] |
-| HybridTransformer (only) | — | 72.54% | [64.79%, 80.28%] | 0.7127 | [0.6420, 0.7834] |
+| CNN Dual-Branch | 1,043,333 | 78.17% | [71.83%, 84.51%] | 0.7635 | [0.6923, 0.8301] |
+| HybridTransformer (cross) | 1,240,965 | 80.99% | [73.94%, 87.32%] | 0.7949 | [0.7252, 0.8594] |
+| HybridTransformer (separate) | 1,687,557 | 84.51% | [78.17%, 90.16%] | 0.8394 | [0.7712, 0.9012] |
+| HybridTransformer (only) | 316,933 | 72.54% | [64.79%, 80.28%] | 0.7127 | [0.6420, 0.7834] |
+
+Accuracy and F1 are recomputed from each model's committed test confusion matrix; the CIs are recorded from the audit reports. The CNN row follows its confusion matrix and the Phase 7C audit; an earlier report (Phase 7A) lists different CNN figures that its matrix contradicts. Sources and status for every number: [`docs/metrics.md`](docs/metrics.md).
 
 > **Note:** The `shared` variant is the production model selected for calibration, ONNX/TorchScript export, and the web platform — chosen for its balance of accuracy, parameter efficiency, and interpretable attention maps. The `separate` and `cross` variants achieved higher raw test accuracy but were not selected as the production model.
 
@@ -76,14 +78,10 @@
 | Stable | **0.66** | Moderate — confusion with low-amplitude variables |
 | Solar-like | **0.52** | ⚠️ Experimental — low sample count, high ambiguity |
 
-### 📊 5-Fold Cross-Validation (3 Random Seeds: 42, 100, 2026)
+### 📊 Cross-Validation
 
-| Metric | Mean | Std Dev | 95% CI |
-|:---|:---:|:---:|:---:|
-| Validation Accuracy | 84.68% | 2.12% | [83.60%, 85.75%] |
-| Macro F1 | 0.8349 | — | — |
-| Catalog Subgroup Accuracy | 89.90% | 2.67% | — |
-| BLS Fallback Subgroup Accuracy | 75.69% | 4.27% | — |
+> [!NOTE]
+> No cross-validation result exists yet for the frozen 944-star dataset. The 5-fold, 3-seed table that used to be here (mean validation accuracy 84.68%) came from an earlier experiment on a 269-star dataset ([`phase7_benchmark_report.md`](docs/engineering-log/phase7_benchmark_report.md)). The current cross-validation script also draws folds from the test stars; sprint task SP-21 fixes the protocol.
 
 ---
 
@@ -455,9 +453,11 @@ A convolutional baseline with two parallel branches (raw + folded) using deeper 
 |:---|:---:|:---:|
 | Accuracy | **78.17%** | [71.13%, 85.21%] |
 | Macro F1 | **0.7677** | [0.6944, 0.8320] |
-| Weighted F1 | 0.7784 | — |
-| ECE (calibrated) | 0.0478 | — |
-| NLL (calibrated) | 0.5332 | — |
+| Weighted F1 | 0.7784 | [0.7076, 0.8485] |
+| ECE (raw → calibrated, T = 1.257665) | 0.0810 → 0.0442 | — |
+| NLL (calibrated) | not recorded | — |
+
+Calibration values come from [`ground_truth_calibration.md`](docs/engineering-log/ground_truth_calibration.md). That audit lists NLL equal to ECE, a copy error, so no valid NLL is recorded. The ECE 0.0478 and NLL 0.5332 shown here before came from the earlier 269-star experiment.
 
 <p align="center">
   <img src="models/saved/test_confusion_matrix_transformer_shared.png" alt="Test set confusion matrix — HybridTransformer (shared)" width="480"/>
@@ -465,17 +465,17 @@ A convolutional baseline with two parallel branches (raw + folded) using deeper 
 
 ### Selective Prediction via MC Dropout Uncertainty
 
-By thresholding on model confidence (30 stochastic MC Dropout passes), accuracy can be traded for coverage:
+By thresholding on model confidence (30 stochastic MC Dropout passes), accuracy can be traded for coverage. These values are recorded in [`ground_truth_uncertainty.md`](docs/engineering-log/ground_truth_uncertainty.md), which does not state the split:
 
 | Confidence Threshold | Coverage | Accuracy |
 |:---:|:---:|:---:|
-| 0.0 (all predictions) | 100.0% | 85.82% |
-| 0.5 | 92.2% | 88.46% |
-| 0.7 | 75.9% | 93.46% |
-| 0.8 | 68.1% | 94.79% |
-| 0.9 | 48.2% | 92.65% |
+| 0.5 | 86.6% | 84.6% |
+| 0.6 | 78.9% | 88.4% |
+| 0.7 | 71.8% | 92.2% |
+| 0.8 | 63.4% | 93.3% |
+| 0.9 | 43.0% | 98.4% |
 
-**Uncertainty correlation:** Incorrect predictions show mean entropy of **0.84 nats** vs. **0.53 nats** for correct predictions, confirming uncertainty is a reliable proxy for classification difficulty.
+**Uncertainty correlation:** incorrect predictions have a mean entropy of **0.9998 nats**, against **0.4973 nats** for correct ones. Predictive entropy flags errors with an AUROC of **0.8628**. The table shown here before (starting at 85.82%, with entropies 0.84 / 0.53 nats) came from the earlier 269-star experiment.
 
 ### Period Source Subgroup Analysis (Test Set, SHARED)
 
