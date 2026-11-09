@@ -388,6 +388,16 @@ def main(argv: list[str] | None = None) -> None:
         "variance_f1_per_class": {c: float(var_f1_classes[i]) for i, c in enumerate(["rr_lyrae", "cepheid", "eclipsing_binary", "solar_like", "stable"])},
     }
 
+    # Protocol and provenance (SP-16). CV folds are drawn from every star found in data_dir.
+    from astra import provenance
+
+    agg_metrics["protocol"] = {"seeds": seeds, "folds": n_folds, "epochs": n_epochs, "stars": n_samples,
+                               "data_dir": str(data_dir)}
+    agg_metrics["provenance"] = provenance.collect(
+        device=str(device),
+        data={"manifest_sha256": provenance.file_sha256(PATHS.phase6_root / "scientific_dataset_freeze_v2.csv")},
+    )
+
     # Write to aggregate_metrics.json
     agg_path = out_dir / "aggregate_metrics.json"
     with open(agg_path, "w") as f:
