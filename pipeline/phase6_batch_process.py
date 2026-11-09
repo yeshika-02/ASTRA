@@ -301,7 +301,7 @@ def _write_checkpoint(results: list[dict], processed: int, total: int, start_tim
     }
 
     path = LOG_DIR / f"checkpoint_{processed:04d}.json"
-    path.write_text(json.dumps(checkpoint, indent=2))
+    path.write_text(json.dumps(checkpoint, indent=2), encoding="utf-8")
     log.info("Checkpoint %d/%d → %s (%.1f%% success)",
              processed, total, path.name, checkpoint["success_rate"])
 
@@ -377,7 +377,7 @@ def _write_final_report(
     }
 
     report_path = REPORT_DIR / "phase6_processing_report.json"
-    report_path.write_text(json.dumps(report, indent=2, default=str))
+    report_path.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
     log.info("Report → %s", report_path)
 
     # Summary log

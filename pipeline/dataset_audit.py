@@ -220,7 +220,7 @@ def _rejection_counts(data_root: Path) -> Counter:
 
 def _write_report(path: Path, title: str, status: str, lines: list[str]) -> None:
     content = [f"# {title}", "", f"Status: **{status}**", "", *lines, ""]
-    path.write_text("\n".join(content))
+    path.write_text("\n".join(content), encoding="utf-8")
 
 
 def run_audit(data_root: Path = DEFAULT_PHASE6_ROOT, stage: int = 0) -> dict[str, Any]:
@@ -349,7 +349,7 @@ def run_audit(data_root: Path = DEFAULT_PHASE6_ROOT, stage: int = 0) -> dict[str
             "split_integrity_report.md",
         ],
     }
-    (audits_dir / "audit_status.json").write_text(json.dumps(status, indent=2))
+    (audits_dir / "audit_status.json").write_text(json.dumps(status, indent=2), encoding="utf-8")
     return status
 
 

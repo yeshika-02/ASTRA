@@ -280,7 +280,7 @@ def _write_report(success_count, failure_count, skipped_count,
         "class_name": class_name,
     }
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(REPORT_PATH, "w") as fp:
+    with open(REPORT_PATH, "w", encoding="utf-8") as fp:
         json.dump(report, fp, indent=2)
     log.info("Saved report → %s", REPORT_PATH)
 

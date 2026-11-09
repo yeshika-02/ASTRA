@@ -104,7 +104,7 @@ def freeze_splits(
     split_dir = data_root / "splits"
     split_dir.mkdir(parents=True, exist_ok=True)
     for split, ids in split_ids.items():
-        (split_dir / f"{split}_ids.json").write_text(json.dumps(ids, indent=2))
+        (split_dir / f"{split}_ids.json").write_text(json.dumps(ids, indent=2), encoding="utf-8")
 
     metadata = {
         "seed": seed,
@@ -120,7 +120,7 @@ def freeze_splits(
         "minimum_samples_required": minimum_samples,
         "audit_override_used": allow_unpassed_audit,
     }
-    (split_dir / "split_metadata.json").write_text(json.dumps(metadata, indent=2))
+    (split_dir / "split_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     return metadata
 
 

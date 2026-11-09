@@ -377,7 +377,7 @@ def save_diagnostics(
         zero_division=0,
     )
     report_path = save_dir / f"classification_report_transformer_{tag}.txt"
-    report_path.write_text(report)
+    report_path.write_text(report, encoding="utf-8")
     logger.info("Classification report saved → %s", report_path)
     print(f"\n  Classification Report ({tag}):")
     print(report)

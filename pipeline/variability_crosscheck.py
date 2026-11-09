@@ -501,7 +501,7 @@ def _generate_contamination_report(
         lines.append("| *None* | | | |")
 
     audit_path.parent.mkdir(parents=True, exist_ok=True)
-    audit_path.write_text("\n".join(lines) + "\n")
+    audit_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     log.info("Contamination audit → %s", audit_path)
 
     # Write per-star CSV
@@ -514,7 +514,7 @@ def _generate_contamination_report(
         "contamination_status", "contamination_reason",
         "catalogs_checked", "catalog_failures", "check_timestamp",
     ]
-    with open(detail_path, "w", newline="") as fp:
+    with open(detail_path, "w", newline="", encoding="utf-8") as fp:
         writer = csv.DictWriter(fp, fieldnames=fieldnames)
         writer.writeheader()
         for r in results:

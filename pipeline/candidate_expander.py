@@ -823,7 +823,7 @@ def run_expansion(
     # Write stats JSON
     stats_path = data_root / "audits" / "expansion_stats.json"
     stats_path.parent.mkdir(parents=True, exist_ok=True)
-    stats_path.write_text(json.dumps(stats, indent=2))
+    stats_path.write_text(json.dumps(stats, indent=2), encoding="utf-8")
     log.info("Expansion stats → %s", stats_path)
 
     return stats

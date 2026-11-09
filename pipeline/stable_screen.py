@@ -554,7 +554,7 @@ def generate_screening_report(
         lines.append(f"| {r.tic_id} | {r.n_points} | {rms_s} | {amp_s} | {fap_s} | {bls_s} | {out_s} | {status} | {reason} |")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text("\n".join(lines) + "\n")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     log.info("Stable screening report saved → %s", output_path)
 
     return {

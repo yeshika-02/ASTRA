@@ -162,7 +162,7 @@ def generate_summary(results: list[dict], save_dir: Path) -> Path:
             f"- `confusion_matrix_{b['tag']}.png`",
         ])
 
-    summary_path.write_text("\n".join(lines) + "\n")
+    summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"\n📊 Experiment summary saved → {summary_path}")
     return summary_path
 

@@ -427,7 +427,7 @@ def main() -> None:
         })
 
     csv_path = ARTIFACT_DIR / "corruption_tables.csv"
-    with open(csv_path, "w", newline="") as f:
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=csv_rows[0].keys())
         writer.writeheader()
         writer.writerows(csv_rows)
@@ -492,7 +492,7 @@ def main() -> None:
     ])
 
     report_path = ARTIFACT_DIR / "stress_test_report.md"
-    report_path.write_text("\n".join(report_lines) + "\n")
+    report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     print(f"Stress test report saved successfully → {report_path}")
 
     # 7. Generate failure_taxonomy.md
@@ -525,7 +525,7 @@ def main() -> None:
     ]
 
     tax_path = ARTIFACT_DIR / "failure_taxonomy.md"
-    tax_path.write_text("\n".join(taxonomy_lines) + "\n")
+    tax_path.write_text("\n".join(taxonomy_lines) + "\n", encoding="utf-8")
     print(f"Failure taxonomy report saved successfully → {tax_path}")
 
 
