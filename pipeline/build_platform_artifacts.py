@@ -316,7 +316,7 @@ def render_markdown(record: dict, results: dict, calibration: dict, validation: 
     ]
     for name, model in models.items():
         m, ci = results[name]["metrics"], results[name]["ci"]
-        star = " (production)" if model.get("production") else ""
+        star = ", production model" if model.get("production") else ""
         lines.append(f"| {model['label']}{star} | {model['parameters']:,} | {m['accuracy'] * 100:.2f}% "
                      f"({m['correct']}/{m['n']}) | {_pct_interval(ci['accuracy'])} | {m['macro_f1']:.4f} | "
                      f"{_interval(ci['macro_f1'])} | {m['weighted_f1']:.4f} |")
@@ -344,8 +344,9 @@ def render_markdown(record: dict, results: dict, calibration: dict, validation: 
                      f"{summary['ece_calibrated']:.4f} | {summary['brier_raw']:.4f} | "
                      f"{summary['brier_calibrated']:.4f} | {nll_text} |")
     lines += ["", f"Source: `{models['shared']['calibration']['source']}`. "
-              "ECE uses 5 equal-frequency bins. The audit reports NLL equal to ECE (a copy error), so no valid NLL "
-              "is recorded; `build_platform_artifacts.py --evaluation` recomputes it from per-star logits.", "",
+              "The audit does not state its ECE binning; `training/calibration.py` and this generator use 5 "
+              "equal-frequency bins. The audit reports NLL equal to ECE (a copy error), so no valid NLL is "
+              "recorded; `build_platform_artifacts.py --evaluation` recomputes it from per-star logits.", "",
               "## Uncertainty (MC Dropout) — *recorded*", "",
               "| Model | Error-detection AUROC | Mean entropy, correct | Mean entropy, incorrect |",
               "|---|---:|---:|---:|"]
