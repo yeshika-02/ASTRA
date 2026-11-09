@@ -59,6 +59,18 @@ def _resolve(value: str, root: Path) -> Path:
     return path if path.is_absolute() else (root / path)
 
 
+def resolve_cli_path(value: str | Path | None, default: Path, project_root: Path | None = None) -> Path:
+    """Resolve a command-line path argument.
+
+    ``None`` (argument not given) returns ``default``. Relative values are resolved
+    against the repository root, matching the environment-variable overrides, so a
+    command works the same from any working directory.
+    """
+    if value is None or str(value) == "":
+        return default
+    return _resolve(str(value), (project_root or PROJECT_ROOT).resolve())
+
+
 def get_paths(env: Mapping[str, str] | None = None, project_root: Path | None = None) -> AstraPaths:
     """Resolve all ASTRA paths from ``env`` (default: ``os.environ``)."""
     env = os.environ if env is None else env
