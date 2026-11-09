@@ -61,7 +61,7 @@ export default function DatasetIntelligencePage() {
 
   // Dynamic breakdown of classes in splits from database matrix
   const matrix = datasetDetails.classSplitMatrix || {};
-  const trainBreakdown = Object.entries(matrix).map(([key, counts]: [string, any]) => ({
+  const trainBreakdown = Object.entries(matrix).map(([key, counts]) => ({
     label: CLASS_LABELS[key as keyof typeof CLASS_LABELS] || key,
     train: counts.train || 0,
     val: counts.val || 0,

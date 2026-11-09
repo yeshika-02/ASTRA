@@ -15,7 +15,9 @@ export class SpaceHum {
 
   private init() {
     if (this.ctx) return;
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    // Older Safari only exposes the prefixed constructor.
+    const AudioContextClass =
+      window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
 
     this.ctx = new AudioContextClass();
