@@ -122,16 +122,44 @@ jobs:
       - name: Check recorded provenance
         run: |
           python - <<'EOF'
-          import json, sys
+          import json, os, sys
           meta = json.load(open("outputs/smoke/experiment_metadata_shared.json"))
+          prov = meta["provenance"]
           checks = {
-              "dataset_fingerprint_hash": "f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58",
-              "split_hash_root": "ebcdc44c3dba849579675369b1559c77e50b6fead06abd40d3fc187425a7d4e4",
-              "parameter_count": 1373701,
-              "seed": 42,
+              "dataset_fingerprint_hash": (meta.get("dataset_fingerprint_hash"), "f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58"),
+              "split_hash_root": (meta.get("split_hash_root"), "ebcdc44c3dba849579675369b1559c77e50b6fead06abd40d3fc187425a7d4e4"),
+              "parameter_count": (meta.get("parameter_count"), 1373701),
+              "seed": (meta.get("seed"), 42),
+              "git commit": (prov["git"]["commit"], os.environ["GITHUB_SHA"]),
+              "git_commit field": (meta.get("git_commit"), os.environ["GITHUB_SHA"]),
+              "clean tree": (prov["git"]["dirty"], False),
+              "frozen split used": (prov["data"]["frozen_split"], True),
           }
-          failed = [k for k, v in checks.items() if meta.get(k) != v]
-          print("provenance:", {k: meta.get(k) for k in checks})
+          failed = [k for k, (got, want) in checks.items() if got != want]
+          print("provenance:", {k: got for k, (got, _) in checks.items()})
+          print("failed:", failed)
+          sys.exit(1 if failed else 0)
+          EOF
+      # Shipped ONNX graphs and temperature file must match models/published_weights.json.
+      - name: Verify shipped model artifacts against the published hashes
+        run: python training/verify_weights.py
+      - name: Evaluate the smoke checkpoint on the frozen validation split
+        run: |
+          python training/evaluate.py --checkpoint outputs/smoke/best_star_transformer_shared.pt \
+            --split val --bootstrap 200 --out-dir outputs/eval > outputs/eval.log 2>&1 || { tail -40 outputs/eval.log; exit 1; }
+          python - <<'EOF'
+          import json, os, sys
+          record = json.load(open("outputs/eval/evaluation_best_star_transformer_shared_val.json"))
+          checks = {
+              "stars": (record["split"]["n"], 141),
+              "published": (record["published"], None),
+              "split hash": (record["provenance"]["data"]["split_hash"], "ebcdc44c3dba849579675369b1559c77e50b6fead06abd40d3fc187425a7d4e4"),
+              "commit": (record["provenance"]["git"]["commit"], os.environ["GITHUB_SHA"]),
+              "predictions": (len(record["predictions"]), 141),
+          }
+          failed = [k for k, (got, want) in checks.items() if got != want]
+          print("accuracy", round(record["metrics"]["accuracy"], 4), "CI", record["bootstrap"]["ci"]["accuracy"])
+          print("failed:", failed)
           sys.exit(1 if failed else 0)
           EOF
 
