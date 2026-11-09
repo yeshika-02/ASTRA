@@ -3,8 +3,18 @@ import { DatabaseSync } from 'node:sqlite';
 import { pathToFileURL } from 'node:url';
 import * as path from 'path';
 import { parseTicId } from '@/lib/server/validation';
+import { errorMessage } from '@/lib/server/errors';
+import type { StarRow } from '@/lib/types/artifacts';
 
 export const dynamic = 'force-dynamic';
+
+interface CrossMatch {
+  catalog: string;
+  identifier: string | null;
+  otype: string | null;
+  distance_arcsec: number | null;
+  notes: string;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -21,7 +31,7 @@ export async function GET(
     const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
     
     const stmt = db.prepare('SELECT * FROM stars WHERE tic_id = ?');
-    const r = stmt.get(ticId) as any;
+    const r = stmt.get(ticId) as StarRow | undefined;
     
     if (!r) {
       return NextResponse.json({ error: 'Star not found in ASTRA registry' }, { status: 404 });
@@ -37,7 +47,7 @@ export async function GET(
     const ra = star.ra;
     const dec = star.dec;
     
-    const crossMatches: any[] = [];
+    const crossMatches: CrossMatch[] = [];
     
     // Only fields stored in the ASTRA registry are reported. No positional cross-match is run here,
     // so match distance and observation dates are null rather than invented.
@@ -91,10 +101,10 @@ export async function GET(
       scientific_notes: `TIC ${ticId} carries the catalog label "${star.astra_class.replace('_', ' ')}" (ground truth, not a model prediction). Stored period: ${periodText}, taken from ${periodSourceText}.`,
       audit_hash: star.preprocessing_hash ?? 'N/A',
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json({ 
       error: 'Failed to generate OSINT report', 
-      details: error.message || String(error)
+      details: errorMessage(error)
     }, { status: 500 });
   }
 }

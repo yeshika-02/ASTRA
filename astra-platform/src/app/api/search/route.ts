@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseSync } from 'node:sqlite';
 import { pathToFileURL } from 'node:url';
 import * as path from 'path';
+import { errorMessage } from '@/lib/server/errors';
+import type { StarRow } from '@/lib/types/artifacts';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
     `);
     
     const searchLike = `%${query}%`;
-    const rows = stmt.all(searchLike, searchLike, searchLike, searchLike) as any[];
+    const rows = stmt.all(searchLike, searchLike, searchLike, searchLike) as unknown as StarRow[];
     
     const results = rows.map((r) => ({
       tic_id: r.tic_id,
@@ -42,10 +44,10 @@ export async function GET(request: NextRequest) {
     }));
     
     return NextResponse.json({ results });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json({ 
       error: 'Failed to search database', 
-      details: error.message || String(error)
+      details: errorMessage(error)
     }, { status: 500 });
   }
 }
