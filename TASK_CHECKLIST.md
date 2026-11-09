@@ -21,7 +21,7 @@ Never stop after creating a PR when the task includes merging it. Never deploy m
 - Default branch `main`, no branch protection.
 - Merge strategy: **rebase merge**. History is linear, with no merge commits, and this keeps logical commits intact.
 - Commits authored as `yeshika-02`.
-- CI must pass all 5 jobs: Lint, Python 3.11, Python 3.12, Dataset integrity, Web platform.
+- CI must pass all 5 jobs on `main` today: Lint, Python 3.11, Python 3.12, Dataset integrity, Web platform. After #8 there are 6 (plus Fresh-clone reproduction), and after #4 the AgentOS Health Check runs on every push and PR.
 - During the sprint: one branch and PR per workstream, merged together on Day 7 in dependency order (7_DAY_SPRINT.md §6).
 
 ---
@@ -98,6 +98,16 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 | 2026-11-10 | SP-15 | Published test confusion matrices exist only as PNGs; transcribed, they reproduce all published test metrics and match the shipped test split | test fixtures in #9 |
 | 2026-11-10 | SP-15 | `docs/reproducibility.md`: every step had a failing command, and its dataset check compared an array hash with the manifest hash (could never pass) | fixed in #9 |
 | 2026-11-10 | SP-16 | `git_commit` was taken from the caller's working directory ("unknown" or a wrong repository when run elsewhere) | fixed in #9 |
+| 2026-11-10 | Review | Without `--out-dir`, `train_transformer.py`/`train_cnn.py` overwrote the published records in `models/saved/` (experiment metadata, history, confusion matrix, report), and `calibration.py` overwrote `optimal_temperature.txt`; pre-sprint behaviour kept by #7 | fixed in #9 (defaults now `outputs/`) |
+| 2026-11-10 | Review | Random-split training runs recorded the frozen split's hashes next to `frozen_split: false` | fixed in #9 |
+| 2026-11-10 | Review | `--require-published` passed a hash-verified checkpoint that did not reproduce the published numbers; no tool compared the confusion matrix | fixed in #9 |
+| 2026-11-10 | Review | `evaluate.py` crashed with tracebacks on invalid numbers or a missing frozen split | fixed in #9 |
+| 2026-11-10 | Review | Existing Windows clones keep a CRLF temperature file after the `.gitattributes` change, failing its hash check | #9 prints the refresh command; refresh once after merge |
+| 2026-11-10 | Review | `release.yml` release notes still claim "Verified Metrics (Zero-Hallucination)" and "8/8 PASS"; a tag on Day 7 (SP-35) would publish them | SP-18, blocker for SP-35 |
+| 2026-11-10 | Review | Coverage step (#3) measures `pipeline`, `training`, `data` but not `astra` (#7) | SP-34 (add `--cov=astra` after merge) |
+| 2026-11-10 | Review | #7–#9 alone score below 100/100 on the validator (ADR-0060 keeps the ADR index and ADR-0060 on this branch); the gate (>= 85, no broken links) still passes, and the simulated final `main` scores 100/100 | Day 7 note |
+| 2026-11-10 | Review | Day 7 simulation: all 8 PRs rebase onto `main` in the planned order without conflicts; merged Python suite 173 passed + 1 expected failure (after the CRLF refresh); merged `ci.yml`/`validate.yml` coherent | SP-33 input |
+| 2026-11-10 | Review | Process slip: 14 review-fix commits on #9 were authored as `day7-sim` (simulation script wrote the shared git config); identity restored | owner decision on rewriting those commits' author |
 
 ### Acceptance criteria
 
