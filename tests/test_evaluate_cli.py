@@ -78,6 +78,12 @@ class EvaluateEndToEndTests(unittest.TestCase):
         self.assertGreaterEqual(ci["accuracy"][1], metrics["accuracy"])
         correct = sum(p["label"] == p["predicted"] for p in self.result["predictions"])
         self.assertEqual(correct, metrics["correct"])
+        # Logits are recorded and reproduce the probabilities at the recorded temperature.
+        from training.evaluate import softmax
+
+        first = self.result["predictions"][0]
+        probs = softmax([first["logits"]], self.result["temperature"]["value"])[0]
+        self.assertAlmostEqual(float(probs.max()), max(first["probabilities"].values()), places=5)
         self.assertIn("calibration_uncalibrated", metrics)  # T != 1 reports both
 
     def test_records_provenance_and_status(self) -> None:
