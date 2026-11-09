@@ -47,24 +47,21 @@ jobs:
               print(f'  Checkpoint SHA256: {info[\"checkpoint_sha256\"]}')
           " || echo 'No experiment_metadata.json found — skipping'
 
+      # Source archive of exactly the tagged commit (tracked files only), written outside
+      # the working tree. The previous step tarred the whole working directory into
+      # itself; the v1.1.0 release run failed at that step.
       - name: Create release archive
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          tar -czf astra-${VERSION}.tar.gz \
-            --exclude='.venv' \
-            --exclude='__pycache__' \
-            --exclude='*.pyc' \
-            --exclude='.DS_Store' \
-            --exclude='astra-platform/node_modules' \
-            --exclude='astra-platform/.next' \
-            "."
-          echo "Archive created: astra-${VERSION}.tar.gz"
-          ls -lh astra-${VERSION}.tar.gz
+          VERSION="${GITHUB_REF_NAME}"
+          ARCHIVE="${RUNNER_TEMP}/astra-${VERSION}.tar.gz"
+          git archive --format=tar.gz --prefix="astra-${VERSION}/" -o "${ARCHIVE}" "${GITHUB_SHA}"
+          echo "Archive created: ${ARCHIVE}"
+          ls -lh "${ARCHIVE}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: astra-*.tar.gz
+          files: ${{ runner.temp }}/astra-*.tar.gz
           generate_release_notes: true
           body: |
             ## ASTRA Release ${{ github.ref_name }}
