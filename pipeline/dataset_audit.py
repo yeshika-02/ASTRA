@@ -87,8 +87,12 @@ def _audit_arrays(samples: list[dict[str, Any]]) -> tuple[list[str], Counter]:
     return errors, stats
 
 
-def _audit_metadata(data_root: Path, samples: list[dict[str, Any]]) -> list[str]:
+def _audit_metadata(
+    data_root: Path, samples: list[dict[str, Any]], require_raw: bool = True
+) -> tuple[list[str], list[str]]:
+    """Return (errors, missing raw files). Missing raw files are errors only if require_raw."""
     errors: list[str] = []
+    missing_raw: list[str] = []
     for sample in samples:
         star_dir = sample["star_dir"]
         metadata = sample["metadata"]
@@ -112,12 +116,14 @@ def _audit_metadata(data_root: Path, samples: list[dict[str, Any]]) -> list[str]
             for filename, expected_hash in raw_hashes.items():
                 raw_path = data_root / filename
                 if not raw_path.exists():
-                    errors.append(f"{star_dir.name}: missing raw hash file {filename}")
+                    missing_raw.append(f"{star_dir.name}: missing raw hash file {filename}")
                 elif expected_hash and expected_hash != "unavailable" and sha256_file(raw_path) != expected_hash:
                     errors.append(f"{star_dir.name}: raw hash mismatch for {filename}")
         else:
             errors.append(f"{star_dir.name}: raw_file_hashes is not a non-empty dict")
-    return errors
+    if require_raw:
+        errors.extend(missing_raw)
+    return errors, missing_raw
 
 
 def _class_counts(samples: list[dict[str, Any]]) -> Counter:
@@ -223,12 +229,18 @@ def _write_report(path: Path, title: str, status: str, lines: list[str]) -> None
     path.write_text("\n".join(content), encoding="utf-8")
 
 
-def run_audit(data_root: Path = DEFAULT_PHASE6_ROOT, stage: int = 0) -> dict[str, Any]:
+def run_audit(data_root: Path = DEFAULT_PHASE6_ROOT, stage: int = 0, require_raw: bool = True) -> dict[str, Any]:
+    """Audit a Phase 6 data root.
+
+    require_raw=False is for layouts rebuilt from the repository (pipeline/prepare_from_repo.py),
+    which ship processed arrays but not raw light curves: missing raw files are then counted
+    and reported instead of failing the audit. Raw files that exist must still match.
+    """
     data_root = ensure_phase6_structure(data_root)
     audits_dir = data_root / "audits"
     samples, load_errors = _load_samples(data_root)
     array_errors, array_stats = _audit_arrays(samples)
-    metadata_errors = _audit_metadata(data_root, samples)
+    metadata_errors, missing_raw = _audit_metadata(data_root, samples, require_raw=require_raw)
     duplicate_errors, duplicate_stats = _duplicate_audit(samples)
     split_dir = data_root / "splits"
     split_required = stage >= 5000 or any((split_dir / f"{name}_ids.json").exists() for name in ("train", "val", "calibration", "test"))
@@ -304,6 +316,7 @@ def run_audit(data_root: Path = DEFAULT_PHASE6_ROOT, stage: int = 0) -> dict[str
             f"Load errors: {len(load_errors)}",
             f"Array errors: {len(array_errors)}",
             f"Metadata errors: {len(metadata_errors)}",
+            f"Missing raw files: {len(missing_raw)} (raw files required: {require_raw})",
             "",
             *(f"- {err}" for err in (load_errors + array_errors + metadata_errors)[:50]),
         ],
@@ -340,6 +353,8 @@ def run_audit(data_root: Path = DEFAULT_PHASE6_ROOT, stage: int = 0) -> dict[str
         "processed_sample_count": len(samples),
         "class_counts": {cls: counts.get(cls, 0) for cls in CLASS_NAMES},
         "error_count": len(total_errors),
+        "raw_files_required": require_raw,
+        "missing_raw_files": len(missing_raw),
         "reports": [
             "dataset_audit.md",
             "class_balance_report.md",
@@ -357,8 +372,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Audit ASTRA Phase 6 dataset")
     parser.add_argument("--data-root", type=Path, default=DEFAULT_PHASE6_ROOT)
     parser.add_argument("--stage", type=int, default=0)
+    parser.add_argument("--no-require-raw", action="store_true",
+                        help="Count missing raw light curves instead of failing (repository rebuilds)")
     args = parser.parse_args()
-    status = run_audit(data_root=args.data_root, stage=args.stage)
+    status = run_audit(data_root=args.data_root, stage=args.stage, require_raw=not args.no_require_raw)
     print(json.dumps(status, indent=2))
     if status["overall_status"] != "PASS":
         sys.exit(1)
