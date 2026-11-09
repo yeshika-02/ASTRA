@@ -108,5 +108,33 @@ class TrainCnnCliTests(unittest.TestCase):
             self.assertTrue(list(out.glob("best_star_cnn*.pt")))
 
 
+@unittest.skipIf(torch is None, "PyTorch not installed")
+class CrossValidateCliTests(unittest.TestCase):
+    def test_defaults_match_the_documented_protocol(self) -> None:
+        from training.cross_validate import build_arg_parser
+
+        args = build_arg_parser().parse_args([])
+        self.assertEqual((args.seeds, args.folds, args.epochs), ([42, 100, 2026], 5, 50))
+
+    def test_seeds_folds_and_epochs_are_honoured(self) -> None:
+        import csv as csv_module
+
+        from training.cross_validate import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            processed = _synthetic_processed(root)
+            out = root / "cv"
+            with redirect_stdout(io.StringIO()):
+                main(["--data-dir", str(processed), "--out-dir", str(out),
+                      "--seeds", "1", "--folds", "2", "--epochs", "1"])
+            rows = list(csv_module.DictReader((out / "fold_metrics.csv").open()))
+            self.assertEqual([(r["seed"], r["fold"]) for r in rows], [("1", "0"), ("1", "1")])
+            self.assertTrue((out / "aggregate_metrics.json").is_file())
+            report = (out / "statistical_report.md").read_text(encoding="utf-8")
+            self.assertIn("2 folds, 1 seeds, 2 runs total", report)
+            self.assertEqual(len(list(out.glob("confusion_matrix_seed1_fold*.png"))), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
