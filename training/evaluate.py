@@ -172,11 +172,10 @@ def load_split(data_dir: Path, split: str, use_folded: bool, splits_dir: Path | 
 
     dataset = ASTRADataset(data_dir=data_dir, split=split, use_folded=use_folded, augment=False,
                            splits_dir=splits_dir)
-    resolved = dataset._resolve_splits_dir(splits_dir)
-    if not (resolved / f"{split}_ids.json").is_file() or not (resolved / "split_metadata.json").is_file():
-        raise FileNotFoundError(f"Frozen split files not found in {resolved}. "
+    if not dataset.frozen_split:
+        raise FileNotFoundError(f"Frozen split files for '{split}' not found (data dir {data_dir}). "
                                 "Run python pipeline/prepare_from_repo.py, or pass --splits-dir.")
-    return dataset, resolved
+    return dataset, dataset.splits_dir
 
 
 def read_temperature(path: Path) -> float:
