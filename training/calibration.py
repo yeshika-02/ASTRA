@@ -149,7 +149,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--out-dir", type=str, default=None,
                         help="Report and plots (default: configured output dir)")
     parser.add_argument("--temperature-out", type=str, default=None,
-                        help="Where to write the fitted temperature (default: models dir / optimal_temperature.txt)")
+                        help="Where to write the fitted temperature (default: <out-dir>/optimal_temperature.txt)")
     return parser
 
 
@@ -160,7 +160,7 @@ def main(argv: list[str] | None = None) -> None:
     checkpoint_path = resolve_cli_path(args.checkpoint, CHECKPOINT_PATH)
     data_dir = resolve_cli_path(args.data_dir, PATHS.processed_dir)
     out_dir = resolve_cli_path(args.out_dir, ARTIFACT_DIR)
-    temperature_out = resolve_cli_path(args.temperature_out, PATHS.model("optimal_temperature.txt"))
+    temperature_out = resolve_cli_path(args.temperature_out, out_dir / "optimal_temperature.txt")
 
     print("=" * 70)
     print("  ASTRA Temperature Scaling Calibration")
