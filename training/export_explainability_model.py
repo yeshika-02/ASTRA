@@ -28,6 +28,8 @@ CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 ONNX_OUT_PATH = PATHS.model("best_star_transformer_shared_explain.onnx")
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 80)
     print("  ASTRA Phase 8A: Explainability Export & Validation Gate")
