@@ -1,13 +1,13 @@
 # Project Heartbeat & Task State
 
 > **Last Heartbeat:** 2026-11-09
-> **Project State:** PHASE 0 COMPLETE — awaiting owner review before Phase 1
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — 7-day sprint planned (see 7_DAY_SPRINT.md)
 
 ---
 
 ## Session 2026-11-09 (b) — Phase 0: integrity and security hotfix
 
-Branch: `phase0/integrity-security-hotfix`, pushed to GitHub. Commits authored as yeshika-02 (repo-local git config). CI: 5/5 jobs green (run 42519045208). Not merged, not deployed.
+PR #1 rebase-merged to `main` (`1beca47`); post-merge CI run 42520528644 green. Commits authored as yeshika-02. Production not updated: deployed from a separate Vercel account, out of scope until after the sprint.
 
 **Done (all RESOLVED):**
 - T1: fabricated predictions, probabilities, attention maps and OSINT fields removed. Explicit 503 `inference_unavailable` contract plus UI state and site-wide notice (ADR-0058).
