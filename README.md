@@ -312,35 +312,48 @@ flowchart TD
 
 ### Phase 3 — Training & Validation
 
+All commands read the frozen dataset prepared in Quick Start step 3. `--out-dir` defaults to `models/saved/` for training, so pass a separate directory to avoid overwriting committed artifacts.
+
 ```bash
-# Train the production HybridTransformer (shared variant)
-python training/train_transformer.py --variant shared --seed 42
+# Train the production HybridTransformer (shared variant); 50 epochs by default
+python training/train_transformer.py --variant shared --seed 42 --out-dir outputs/run_shared
 
-# Train CNN dual-branch baseline
-python training/train_cnn.py --variant dual_aug --seed 42
+# Train the CNN dual-branch baseline (raw + phase-folded input, augmentation)
+python training/train_cnn.py --use-folded --augment --seed 42 --tag dual_aug --out-dir outputs/run_cnn
 
-# Run 5-fold × 3-seed cross-validation
-python training/cross_validate.py --variant shared --seeds 42 100 2026 --folds 5
+# 5-fold x 3-seed cross-validation of the shared transformer (defaults shown)
+python training/cross_validate.py --seeds 42 100 2026 --folds 5 --epochs 50
 
-# Apply temperature calibration (NLL minimization)
-python training/calibration.py --model transformer_shared
+# Temperature calibration on the validation split (NLL minimisation)
+python training/calibration.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --temperature-out outputs/run_shared/optimal_temperature.txt
 
-# Quantify predictive uncertainty via MC Dropout (30 passes)
-python training/uncertainty.py --model transformer_shared --n_passes 30
+# MC Dropout uncertainty on the validation split
+python training/uncertainty.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --temperature-file outputs/run_shared/optimal_temperature.txt --n-passes 30
 ```
+
+Every script has `--help`. Reports and plots go to `outputs/` (`--out-dir` to change).
+
+> [!NOTE]
+> Cross-validation currently selects each fold's best epoch on that fold's own validation data and includes the test stars, so its score is optimistic. Fixing this is sprint task SP-21.
 
 ### Phase 4 — Evaluation & Export
 
 ```bash
-# Evaluate on frozen held-out test set
-python training/predict.py --model transformer_shared --split test
+# Classify one prepared star with MC Dropout (needs a checkpoint)
+python training/predict.py --input data/phase6/processed/TIC_100009973 \
+    --checkpoint outputs/run_shared/best_star_transformer_shared.pt
 
-# Export to ONNX and TorchScript
-python training/export_model.py --variant shared
+# Attention maps for validation stars
+python training/visualize_attention.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --output-dir outputs/attention
 
-# Generate attention visualizations
-python training/visualize_attention.py --model transformer_shared
+# Export ONNX / TorchScript (reads models/saved/best_star_transformer_shared.pt)
+python training/export_model.py
 ```
+
+A test-set evaluation script with bootstrap confidence intervals (`training/evaluate.py`) is planned as sprint task SP-15. The published checkpoint is not in the repository; see "Known limitations" above.
 
 ---
 
