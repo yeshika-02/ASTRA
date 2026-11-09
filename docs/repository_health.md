@@ -24,7 +24,7 @@
 
 ### Ground Truth Audit Results
 
-All 8 Phase 7C audit tasks completed with **0 mismatches**:
+The original author reports all 8 Phase 7C audit tasks as PASS with **0 mismatches** (recorded; see [metrics.md](metrics.md)):
 
 | Audit | Target | Result |
 |-------|--------|:------:|
@@ -187,7 +187,7 @@ and does not affect scientific integrity.
 This repository has undergone a zero-trust ground truth audit and meets the
 following publication standards:
 
-- ✅ **Research-grade**: All metrics verified with 0 mismatches
+- ⚠️ **Research-grade**: published metrics are recorded, but not reproducible until the weights are recovered ([model_recovery.md](model_recovery.md))
 - ✅ **Open-source-grade**: Full community health files present
 - ✅ **Recruiter-grade**: Professional README with verified results
 - ✅ **Reproducibility**: Complete integrity chain (data → splits → model → metrics)
