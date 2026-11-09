@@ -665,7 +665,7 @@ def main(argv: list[str] | None = None) -> None:
     train_split_path = paths.splits_dir / "train_ids.json"
     val_split_path = paths.splits_dir / "val_ids.json"
     test_split_path = paths.splits_dir / "test_ids.json"
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     split_hashes = {
         "train": get_file_sha256(train_split_path),
@@ -685,7 +685,7 @@ def main(argv: list[str] | None = None) -> None:
         "split_hash_root": split_hash,
         "split_hashes": split_hashes,
         "checkpoint_sha256": ckpt_sha256,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     }
     metadata_file = save_dir / f"experiment_metadata_{tag}.json"
     with open(metadata_file, "w") as f:
