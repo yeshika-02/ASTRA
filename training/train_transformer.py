@@ -14,7 +14,6 @@ import json
 import logging
 import math
 import random
-import subprocess
 import sys
 import time
 from collections import defaultdict
@@ -649,13 +648,19 @@ def main(argv: list[str] | None = None) -> None:
         except Exception:
             pass
 
-    git_commit = "unknown"
-    try:
-        res = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True)
-        if res.returncode == 0:
-            git_commit = res.stdout.strip()
-    except Exception:
-        pass
+    # Code, environment and data provenance; git runs in the repository root (astra.provenance).
+    from astra import provenance
+
+    record = provenance.collect(
+        seed=args.seed,
+        device=str(device),
+        data={
+            **provenance.data_fingerprint(paths.phase6_root / "scientific_dataset_freeze_v2.csv",
+                                          train_dataset.splits_dir or paths.splits_dir),
+            "frozen_split": train_dataset.frozen_split and val_dataset.frozen_split,
+        },
+    )
+    git_commit = record["git"]["commit"] or "unknown"
 
     ckpt_sha256 = get_file_sha256(checkpoint_file)
 
@@ -687,7 +692,8 @@ def main(argv: list[str] | None = None) -> None:
         "split_hash_root": split_hash,
         "split_hashes": split_hashes,
         "checkpoint_sha256": ckpt_sha256,
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "provenance": record,
     }
     metadata_file = save_dir / f"experiment_metadata_{tag}.json"
     with open(metadata_file, "w") as f:
