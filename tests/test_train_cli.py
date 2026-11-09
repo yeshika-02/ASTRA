@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -18,6 +19,8 @@ except ImportError:  # pragma: no cover - depends on environment
     torch = None
 
 from data.labels import NUM_CLASSES
+
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def _synthetic_processed(root: Path, per_class: int = 4) -> Path:
@@ -37,6 +40,26 @@ def _synthetic_processed(root: Path, per_class: int = 4) -> Path:
             (star / "metadata.json").write_text(json.dumps(meta))
             tic += 1
     return processed
+
+
+def _head_commit() -> str | None:
+    try:
+        result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+    except OSError:
+        return None
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _assert_provenance(test: unittest.TestCase, metadata: dict, seed: int) -> None:
+    """SP-16: the record names the code, environment, seed and data, and git_commit agrees."""
+    record = metadata["provenance"]
+    test.assertEqual(record["seed"], seed)
+    test.assertEqual(record["git"]["commit"], _head_commit())
+    test.assertEqual(metadata["git_commit"], record["git"]["commit"] or "unknown")
+    test.assertIsNotNone(record["environment"]["packages"]["torch"])
+    # The synthetic layout has no frozen split files, so the run used a random split: recorded, not hidden.
+    test.assertFalse(record["data"]["frozen_split"])
+    test.assertIn("split_file_sha256", record["data"])
 
 
 @unittest.skipIf(torch is None, "PyTorch not installed")
@@ -67,6 +90,7 @@ class TrainTransformerCliTests(unittest.TestCase):
             self.assertEqual(metadata["seed"], 7)
             self.assertEqual(metadata["variant"], "shared")
             self.assertTrue((out / "classification_report_transformer_cli.txt").is_file())
+            _assert_provenance(self, metadata, seed=7)
 
     def test_same_seed_gives_identical_initial_weights(self) -> None:
         from training.models.hybrid_transformer import HybridTransformer
@@ -106,6 +130,7 @@ class TrainCnnCliTests(unittest.TestCase):
             metadata = json.loads((out / "experiment_metadata_cli.json").read_text())
             self.assertEqual(metadata["seed"], 3)
             self.assertTrue(list(out.glob("best_star_cnn*.pt")))
+            _assert_provenance(self, metadata, seed=3)
 
 
 @unittest.skipIf(torch is None, "PyTorch not installed")
