@@ -40,6 +40,20 @@ class Check:
     path: Path | None
     expected_sha256: str | None
     actual_sha256: str | None
+    note: str | None = None
+
+
+def crlf_hint(path: Path, expected_sha256: str) -> str | None:
+    """Explain a mismatch caused by Windows line-ending conversion, if that is the cause.
+
+    Text artifacts are hash-locked as committed (LF). A Windows clone made before a file was
+    marked -text in .gitattributes keeps a CRLF working copy until it is checked out again.
+    """
+    data = path.read_bytes()
+    if b"\r\n" in data and hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest() == expected_sha256:
+        shown = path.relative_to(PROJECT_ROOT).as_posix() if path.is_relative_to(PROJECT_ROOT) else str(path)
+        return f"CRLF line endings in the working copy; refresh it: rm {shown} && git checkout -- {shown}"
+    return None
 
 
 def sha256_file(path: Path) -> str:
@@ -67,11 +81,15 @@ def check_file(path: Path, entry: dict) -> Check:
     if not path.is_file():
         return Check(entry["filename"], entry["kind"], MISSING, None, expected, None)
     actual = sha256_file(path)
+    note = None
     if expected is None:
         status = NO_HASH
+    elif actual == expected:
+        status = MATCH
     else:
-        status = MATCH if actual == expected else MISMATCH
-    return Check(entry["filename"], entry["kind"], status, path, expected, actual)
+        status = MISMATCH
+        note = crlf_hint(path, expected)
+    return Check(entry["filename"], entry["kind"], status, path, expected, actual, note)
 
 
 def verify(models_dir: Path, manifest: list[dict] | None = None, project_root: Path = PROJECT_ROOT) -> list[Check]:
@@ -120,6 +138,8 @@ def main(argv: list[str] | None = None) -> int:
         for check in checks:
             where = f"  ({_display(check.path)})" if check.path else ""
             print(f"  {check.status:<28} {check.filename}{where}")
+            if check.note:
+                print(f"  {'':<28} -> {check.note}")
 
     failed = [check for check in checks if check.status == MISMATCH]
     failed += [check for check in checks if check.filename in args.require and check.status != MATCH]
