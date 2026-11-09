@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from astra.config import PROJECT_ROOT, get_paths
+from astra.config import PROJECT_ROOT, get_paths, resolve_cli_path
 
 
 class ConfigDefaultsTests(unittest.TestCase):
@@ -57,6 +57,21 @@ class ConfigOverrideTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = get_paths(env={"ASTRA_MODELS_DIR": tmp})
             self.assertEqual(paths.model("best.pt"), Path(tmp) / "best.pt")
+
+
+class ResolveCliPathTests(unittest.TestCase):
+    def test_missing_argument_returns_default(self) -> None:
+        default = Path("somewhere")
+        self.assertIs(resolve_cli_path(None, default), default)
+        self.assertIs(resolve_cli_path("", default), default)
+
+    def test_relative_argument_resolves_against_repository_root(self) -> None:
+        self.assertEqual(resolve_cli_path("data/phase6/processed", Path("x")),
+                         PROJECT_ROOT.resolve() / "data" / "phase6" / "processed")
+
+    def test_absolute_argument_is_kept(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(resolve_cli_path(tmp, Path("x")), Path(tmp))
 
 
 if __name__ == "__main__":
