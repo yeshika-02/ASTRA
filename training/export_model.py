@@ -198,7 +198,7 @@ def main() -> None:
     ])
 
     report_path = ARTIFACT_DIR / "deployment_report.md"
-    report_path.write_text("\n".join(report_lines) + "\n")
+    report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     print(f"Deployment report saved successfully → {report_path}")
 
 

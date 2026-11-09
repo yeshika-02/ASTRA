@@ -134,7 +134,7 @@ def _write_catalog_source_breakdown(usable_path: Path, output_path: Path) -> Non
         lines.append(f"| {rank} | {src} | {cnt} |")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text("\n".join(lines) + "\n")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     log.info("Source breakdown → %s", output_path)
 
 
@@ -196,7 +196,7 @@ def _write_candidate_balance_report(
     ]
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text("\n".join(lines) + "\n")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     log.info("Candidate balance report → %s", output_path)
 
     return {
@@ -303,7 +303,7 @@ def _write_duplicate_resolution_report(candidate_path: Path, output_path: Path) 
         lines.append("*No review duplicate groups detected.*")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text("\n".join(lines) + "\n")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     log.info("Duplicate resolution report → %s", output_path)
 
     return {
@@ -533,7 +533,8 @@ def run_phase6a_expansion(
             f"**Generated**: {utc_now()}\n\n"
             "> [!NOTE]\n"
             "> Crosscheck was skipped for this run (--skip-crosscheck flag).\n"
-            "> Run `python pipeline/variability_crosscheck.py` for full contamination audit.\n"
+            "> Run `python pipeline/variability_crosscheck.py` for full contamination audit.\n",
+            encoding="utf-8",
         )
         log.info("Minimal contamination audit written.")
     else:
@@ -638,7 +639,7 @@ def run_phase6a_expansion(
 
     # Save full summary JSON
     summary_path = ARTIFACT_DIR / "phase6a_expansion_summary.json"
-    summary_path.write_text(json.dumps(final_summary, indent=2, default=str))
+    summary_path.write_text(json.dumps(final_summary, indent=2, default=str), encoding="utf-8")
     log.info("Full summary → %s", summary_path)
 
     return final_summary

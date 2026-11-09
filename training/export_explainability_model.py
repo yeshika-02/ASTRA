@@ -159,12 +159,12 @@ The `/api/explain` and `/api/mission-replay` runtimes can now safely rely on the
 """
 
     report_path = ARTIFACT_DIR / "phase8_explainability_audit.md"
-    report_path.write_text(report_content)
+    report_path.write_text(report_content, encoding="utf-8")
     print(f"Explainability audit report written to: {report_path}")
 
     # Also write to root directory for Phase 8 consistency
     root_report = PROJECT_ROOT / "phase8_explainability_audit.md"
-    root_report.write_text(report_content)
+    root_report.write_text(report_content, encoding="utf-8")
     print(f"Copy saved to: {root_report}")
 
 if __name__ == "__main__":
