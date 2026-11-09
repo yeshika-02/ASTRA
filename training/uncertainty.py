@@ -9,6 +9,7 @@ Outputs uncertainty_analysis.md, uncertainty_metrics.csv, and diagnostic plots.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import logging
@@ -27,7 +28,7 @@ import matplotlib.pyplot as plt
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from astra.config import get_paths
+from astra.config import get_paths, resolve_cli_path
 from data.labels import LABEL_TO_NAME
 from training.dataset import ASTRADataset
 from training.models.hybrid_transformer import HybridTransformer
@@ -43,17 +44,23 @@ logging.basicConfig(
 PATHS = get_paths()
 ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
 CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
-# Try to load calibrated temperature from file, fallback to default if not found
-optimal_temp_file = PATHS.model("optimal_temperature.txt")
-if optimal_temp_file.exists():
-    try:
-        CALIBRATION_TEMP = float(optimal_temp_file.read_text().strip())
-        logger.info("Loaded optimal calibration temperature from file: %f", CALIBRATION_TEMP)
-    except Exception as e:
-        logger.warning("Error loading temperature from file: %s. Using default.", e)
-        CALIBRATION_TEMP = 1.2944
-else:
-    CALIBRATION_TEMP = 1.2944
+DEFAULT_TEMPERATURE_FILE = PATHS.model("optimal_temperature.txt")
+# Used only when no temperature file exists; differs from the published 1.257665 (see SP-18).
+FALLBACK_TEMPERATURE = 1.2944
+
+
+def load_temperature(path: Path, fallback: float = FALLBACK_TEMPERATURE) -> float:
+    """Read a calibration temperature from a text file, or return ``fallback``."""
+    if path.exists():
+        try:
+            value = float(path.read_text(encoding="utf-8").strip())
+            logger.info("Loaded calibration temperature %f from %s", value, path)
+            return value
+        except ValueError as e:
+            logger.warning("Error loading temperature from %s: %s. Using %f.", path, e, fallback)
+            return fallback
+    logger.warning("No temperature file at %s. Using %f.", path, fallback)
+    return fallback
 
 
 def enable_dropout(model: nn.Module) -> None:
@@ -71,8 +78,34 @@ def compute_entropy(probs: np.ndarray) -> float:
     return float(-np.sum(probs * np.log(probs_clamped)))
 
 
-def main() -> None:
-    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="MC Dropout uncertainty analysis on the validation split.")
+    parser.add_argument("--checkpoint", type=str, default=None,
+                        help="Model checkpoint (default: models dir / best_star_transformer_shared.pt)")
+    parser.add_argument("--data-dir", type=str, default=None,
+                        help="Processed arrays (default: configured processed dir)")
+    parser.add_argument("--out-dir", type=str, default=None,
+                        help="Report, CSV and plots (default: configured output dir)")
+    parser.add_argument("--n-passes", type=int, default=30, help="MC Dropout passes (default: 30)")
+    parser.add_argument("--temperature", type=float, default=None,
+                        help="Calibration temperature (default: read from --temperature-file)")
+    parser.add_argument("--temperature-file", type=str, default=None,
+                        help="Temperature file (default: models dir / optimal_temperature.txt)")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_arg_parser().parse_args(argv)
+    checkpoint_path = resolve_cli_path(args.checkpoint, CHECKPOINT_PATH)
+    data_dir = resolve_cli_path(args.data_dir, PATHS.processed_dir)
+    out_dir = resolve_cli_path(args.out_dir, ARTIFACT_DIR)
+    temperature = (
+        args.temperature
+        if args.temperature is not None
+        else load_temperature(resolve_cli_path(args.temperature_file, DEFAULT_TEMPERATURE_FILE))
+    )
+    num_passes = args.n_passes
+    out_dir.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Uncertainty Quantification & MC Dropout")
     print("=" * 70)
@@ -84,11 +117,11 @@ def main() -> None:
     print(f"Device: {device}")
 
     # 1. Load model checkpoint
-    if not CHECKPOINT_PATH.exists():
-        print(f"❌ ERROR: Checkpoint not found at {CHECKPOINT_PATH}.")
+    if not checkpoint_path.exists():
+        print(f"❌ ERROR: Checkpoint not found at {checkpoint_path}.")
         sys.exit(1)
 
-    ckpt = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=True)
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model = HybridTransformer(variant=ckpt["variant"], num_classes=ckpt["num_classes"])
     model.load_state_dict(ckpt["model_state_dict"])
     model.to(device)
@@ -97,7 +130,7 @@ def main() -> None:
     enable_dropout(model)
 
     # 2. Load validation dataset
-    val_dataset = ASTRADataset(data_dir=PATHS.processed_dir, split="val", use_folded=True)
+    val_dataset = ASTRADataset(data_dir=data_dir, split="val", use_folded=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     # 3. Extract inputs
@@ -111,8 +144,7 @@ def main() -> None:
     flux_inputs = torch.cat(all_flux, dim=0)
     labels = torch.cat(all_labels, dim=0).numpy()
 
-    # 4. Perform 30 Stochastic MC Dropout Passes
-    num_passes = 30
+    # 4. Perform the stochastic MC Dropout passes
     print(f"Running {num_passes} Monte Carlo Dropout passes on validation set...")
 
     # We will record the output probabilities for each pass
@@ -122,7 +154,7 @@ def main() -> None:
         for i in range(num_passes):
             logits = model(flux_inputs)
             # Apply Temperature Scaling
-            calibrated_logits = logits / CALIBRATION_TEMP
+            calibrated_logits = logits / temperature
             probs = F.softmax(calibrated_logits, dim=-1)
             all_pass_probs.append(probs.cpu().numpy())
 
@@ -146,7 +178,7 @@ def main() -> None:
         ent = compute_entropy(mean_probs[i])
         entropies.append(ent)
 
-        # Variance of the predicted class probability across the 30 runs
+        # Variance of the predicted class probability across the MC passes
         pred_c = predicted_classes[i]
         var = np.var(pass_probs[:, i, pred_c])
         variances.append(var)
@@ -176,7 +208,7 @@ def main() -> None:
         })
 
     # Write to uncertainty_metrics.csv
-    csv_path = ARTIFACT_DIR / "uncertainty_metrics.csv"
+    csv_path = out_dir / "uncertainty_metrics.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=csv_rows[0].keys())
         writer.writeheader()
@@ -219,7 +251,7 @@ def main() -> None:
     ax.legend()
     ax.grid(True, alpha=0.2)
     plt.tight_layout()
-    plot1_path = ARTIFACT_DIR / "entropy_histograms.png"
+    plot1_path = out_dir / "entropy_histograms.png"
     plt.savefig(plot1_path, dpi=120)
     plt.close()
 
@@ -237,7 +269,7 @@ def main() -> None:
     for r in selective_results:
         ax.annotate(f"T={r['threshold']:.1f}", (r['coverage'] * 100, r['accuracy'] * 100), textcoords="offset points", xytext=(0,10), ha='center', fontsize=8)
     plt.tight_layout()
-    plot2_path = ARTIFACT_DIR / "uncertainty_vs_accuracy.png"
+    plot2_path = out_dir / "uncertainty_vs_accuracy.png"
     plt.savefig(plot2_path, dpi=120)
     plt.close()
 
@@ -255,7 +287,7 @@ def main() -> None:
     ax.set_title("Predictive Entropy by Period Source", fontsize=12, fontweight="bold")
     ax.grid(True, alpha=0.2)
     plt.tight_layout()
-    plot3_path = ARTIFACT_DIR / "subgroup_uncertainty_boxplots.png"
+    plot3_path = out_dir / "subgroup_uncertainty_boxplots.png"
     plt.savefig(plot3_path, dpi=120)
     plt.close()
 
@@ -271,7 +303,7 @@ def main() -> None:
     report_lines = [
         "# ASTRA — Predictive Uncertainty Analysis",
         "",
-        "This report examines the correlation between model predictive uncertainty (derived via 30 stochastic MC Dropout runs) and classification errors.",
+        f"This report examines the correlation between model predictive uncertainty (derived via {num_passes} stochastic MC Dropout runs, T = {temperature:.6f}) and classification errors.",
         "",
         "## 1. Key Uncertainty Statistics",
         "",
@@ -311,7 +343,7 @@ def main() -> None:
         "- Complete validation uncertainty table: [uncertainty_metrics.csv](uncertainty_metrics.csv)",
     ])
 
-    report_path = ARTIFACT_DIR / "uncertainty_analysis.md"
+    report_path = out_dir / "uncertainty_analysis.md"
     report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     print(f"Uncertainty analysis report saved successfully → {report_path}")
 

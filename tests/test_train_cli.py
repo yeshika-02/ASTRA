@@ -173,5 +173,40 @@ class CalibrationCliTests(unittest.TestCase):
                 main(["--checkpoint", str(Path(tmp) / "nope.pt")])
 
 
+@unittest.skipIf(torch is None, "PyTorch not installed")
+class UncertaintyCliTests(unittest.TestCase):
+    def test_load_temperature(self) -> None:
+        from training.uncertainty import FALLBACK_TEMPERATURE, load_temperature
+
+        with tempfile.TemporaryDirectory() as tmp:
+            good = Path(tmp) / "t.txt"
+            good.write_text("1.257665\n")
+            bad = Path(tmp) / "bad.txt"
+            bad.write_text("not a number")
+            self.assertAlmostEqual(load_temperature(good), 1.257665)
+            self.assertEqual(load_temperature(bad), FALLBACK_TEMPERATURE)
+            self.assertEqual(load_temperature(Path(tmp) / "missing.txt"), FALLBACK_TEMPERATURE)
+
+    def test_passes_temperature_and_paths_are_honoured(self) -> None:
+        import csv as csv_module
+
+        from training.uncertainty import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            processed = _synthetic_processed(root, per_class=6)
+            ckpt = root / "model.pt"
+            _random_checkpoint(ckpt)
+            out = root / "unc"
+            with redirect_stdout(io.StringIO()):
+                main(["--checkpoint", str(ckpt), "--data-dir", str(processed), "--out-dir", str(out),
+                      "--n-passes", "3", "--temperature", "1.5"])
+            report = (out / "uncertainty_analysis.md").read_text(encoding="utf-8")
+            self.assertIn("3 stochastic MC Dropout runs, T = 1.500000", report)
+            rows = list(csv_module.DictReader((out / "uncertainty_metrics.csv").open(encoding="utf-8")))
+            self.assertGreater(len(rows), 0)
+            self.assertTrue((out / "entropy_histograms.png").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()
