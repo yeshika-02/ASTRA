@@ -29,7 +29,7 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -618,7 +618,7 @@ def main() -> None:
         "split_hash_root": split_hash,
         "split_hashes": split_hashes,
         "checkpoint_sha256": ckpt_sha256,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     }
 
     metadata_file = save_dir / f"experiment_metadata_{tag}.json"
