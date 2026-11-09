@@ -1,9 +1,16 @@
 # Project Heartbeat & Task State
 
 > **Last Heartbeat:** 2026-11-10
-> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–3 complete, PRs #3–#9 in review (see 7_DAY_SPRINT.md)
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–4 complete, PRs #3–#10 in review (see 7_DAY_SPRINT.md)
 
 ---
+
+## Session 2026-11-10 (c) — Sprint Day 4
+
+- WS-08 [#10](https://github.com/yeshika-02/ASTRA/pull/10) (stacked on #9): `models/published_metrics.json`, `pipeline/build_platform_artifacts.py`, generated `docs/metrics.md`, regenerated artifacts (CNN row, NLL null), unsourced UI numbers removed, README/docs/release notes fixed, ADR-0063. 19 commits, 173 tests.
+- Key findings: README's CV/ECE/NLL/selective-prediction numbers were from an earlier 269-star experiment; 7A CNN row contradicts its matrix; NLL was a copy of ECE.
+- Day 7 simulation incl. #10: no conflicts; merged suite 214 passed; merged frontend clean; validator 100/100.
+- Next: Day 5 (WS-11 preprocessing tests, SP-23–SP-25).
 
 ## Session 2026-11-10 (b) — Review of PRs #2–#9
 
