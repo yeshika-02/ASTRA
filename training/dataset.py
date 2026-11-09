@@ -33,6 +33,7 @@ import torch
 from sklearn.model_selection import GroupShuffleSplit
 from torch.utils.data import Dataset
 
+from astra.config import get_paths
 from data.labels import CLASS_NAMES, LABEL_TO_NAME, NUM_CLASSES
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,7 @@ class ASTRADataset(Dataset):
         use_folded: bool = False,
         augment: bool = False,
         augment_prob: float = 0.5,
+        splits_dir: Path | str | None = None,
     ) -> None:
         super().__init__()
         self.data_dir = Path(data_dir)
@@ -160,11 +162,10 @@ class ASTRADataset(Dataset):
             logger.warning("No valid samples found — dataset is empty.")
             return
 
-        # Check for frozen splits
-        if self.data_dir.name == "processed" and self.data_dir.parent.name == "phase6":
-            split_dir = self.data_dir.parent / "splits"
-        else:
-            split_dir = PROJECT_ROOT / "splits"
+        # Frozen split files: an explicit splits_dir; else the configured splits
+        # directory when reading the configured processed directory (astra.config);
+        # else a "splits" directory next to the data (the Phase 6 layout).
+        split_dir = self._resolve_splits_dir(splits_dir)
         split_file = split_dir / f"{self.split}_ids.json"
         metadata_file = split_dir / "split_metadata.json"
 
@@ -238,6 +239,14 @@ class ASTRADataset(Dataset):
             f"ASTRADataset [{self.split}]: {len(self._samples)} samples "
             f"from {num_tic_groups} TIC groups"
         )
+
+    def _resolve_splits_dir(self, splits_dir: Path | str | None) -> Path:
+        if splits_dir is not None:
+            return Path(splits_dir)
+        paths = get_paths()
+        if self.data_dir.resolve() == paths.processed_dir.resolve():
+            return paths.splits_dir
+        return self.data_dir.parent / "splits"
 
     def __len__(self) -> int:
         return len(self._samples)
@@ -350,11 +359,13 @@ class ASTRADataset(Dataset):
 
 
 if __name__ == "__main__":
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     print("=" * 60)
     print("ASTRADataset — Statistics")
     print("=" * 60)
 
-    data_path = PROJECT_ROOT / "data" / "processed"
+    data_path = get_paths().processed_dir
     print(f"\nData directory: {data_path}")
     print(f"Exists: {data_path.exists()}")
 
