@@ -39,7 +39,7 @@ All hashes are collected in `models/published_weights.json`. `tests/test_publish
 
 The registry also lists four pilot checkpoints (`*_smoke.pt`). They back no reported result and aren't needed.
 
-The published test confusion matrices are kept as images (`models/saved/test_confusion_matrix_transformer_shared.png`, `..._cnn_dual.png`). Transcribed, they reproduce the published accuracy, per-class F1 and macro F1 exactly. `tests/test_evaluate.py` holds them as fixtures.
+The published test confusion matrices are kept as images (`models/saved/test_confusion_matrix_transformer_shared.png`, `..._cnn_dual.png`). Transcribed, they reproduce the published accuracy, per-class F1 and macro F1 exactly. The transcription is stored once, in `models/published_weights.json`, where `evaluate.py` compares a recovered checkpoint against it and `tests/test_evaluate.py` checks it.
 
 ## Recovery plan
 
@@ -58,13 +58,15 @@ Then verify and evaluate:
 # put the files in models/saved/ (or point ASTRA_MODELS_DIR at them)
 python training/verify_weights.py --require best_star_transformer_shared.pt
 python training/evaluate.py --checkpoint models/saved/best_star_transformer_shared.pt \
-    --temperature-file models/saved/optimal_temperature_transformer_shared.txt
+    --temperature-file models/saved/optimal_temperature_transformer_shared.txt --require-published
 ```
 
 Acceptance:
 - `verify_weights.py` reports `match`.
 - `evaluate.py` reproduces 111/142 correct (78.17%) and macro F1 0.7677 on the frozen test split.
 - The confusion matrix equals the published one.
+
+`--require-published` makes `evaluate.py` exit 1 unless all of these hold.
 
 A hash mismatch means the file isn't the published artifact, whatever its metrics.
 
