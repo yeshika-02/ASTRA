@@ -600,6 +600,14 @@
         "training/uncertainty.py fallback": "1.2944"
       },
       "resolution": "1.257665 is the published temperature; the other two are not used for published results."
+    },
+    {
+      "metric": "Variant test accuracies in docs/experiments.md",
+      "values": {
+        "docs/experiments.md (until 2026-11-10)": "cross 74.47%, separate 75.18%, only 73.05%, approximate parameter counts",
+        "published confusion matrices": "cross 80.99%, separate 84.51%, only 72.54%"
+      },
+      "resolution": "No report contains the old values; docs/experiments.md now shows the matrix values and the registry parameter counts."
     }
   ],
   "unsourced": [

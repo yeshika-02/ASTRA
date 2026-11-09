@@ -85,6 +85,7 @@ Results of an earlier experiment on a 269-star dataset (validation split of 54 s
 - **CNN dual-branch test metrics.** phase7_testset_results.md (7A): macro F1 0.7654, weighted F1 0.7738, accuracy CI [71.13%, 84.51%]; ground_truth_metrics.md (7C): macro F1 0.7635, weighted F1 0.7756, accuracy CI [71.83%, 84.51%]. Resolution: 7C: it matches the published CNN confusion matrix; 7A does not.
 - **Calibrated ECE of the shared transformer.** phase7_benchmark_report.md: 0.0478 (earlier 269-star experiment); ground_truth_calibration.md: 0.0442 (test split). Resolution: 0.0442; 0.0478 belongs to the superseded experiment.
 - **Calibration temperature of the shared transformer.** optimal_temperature_transformer_shared.txt: 1.257665 (hash-locked in model_registry.json); optimal_temperature.txt: 1.258631; training/uncertainty.py fallback: 1.2944. Resolution: 1.257665 is the published temperature; the other two are not used for published results.
+- **Variant test accuracies in docs/experiments.md.** docs/experiments.md (until 2026-11-10): cross 74.47%, separate 75.18%, only 73.05%, approximate parameter counts; published confusion matrices: cross 80.99%, separate 84.51%, only 72.54%. Resolution: No report contains the old values; docs/experiments.md now shows the matrix values and the registry parameter counts.
 
 ## Numbers without a source
 
