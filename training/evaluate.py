@@ -272,10 +272,13 @@ def evaluate(
         "temperature": {"value": temperature, "source": temperature_source},
         "metrics": metrics,
         "bootstrap": bootstrap_ci(labels, predictions, model_info["num_classes"], n_bootstrap, seed, confidence),
+        # Logits are kept so calibration metrics (NLL, ECE, Brier) can be recomputed at any temperature,
+        # e.g. by pipeline/build_platform_artifacts.py --evaluation.
         "predictions": [
             {"tic_id": tic, "label": CLASS_NAMES[int(y)], "predicted": CLASS_NAMES[int(p)],
-             "probabilities": {name: round(float(v), 6) for name, v in zip(CLASS_NAMES, row)}}
-            for tic, y, p, row in zip(tic_ids, labels, predictions, probs)
+             "probabilities": {name: round(float(v), 6) for name, v in zip(CLASS_NAMES, row)},
+             "logits": [round(float(v), 6) for v in logit_row]}
+            for tic, y, p, row, logit_row in zip(tic_ids, labels, predictions, probs, logits)
         ],
         "provenance": provenance.collect(
             seed=seed, device="cpu",
