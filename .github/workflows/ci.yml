@@ -117,6 +117,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: astra-platform/package-lock.json
       - run: npm ci
+      # ESLint is a gate: 0 errors and 0 warnings (React hook rules guard against
+      # regressions such as the CosmicBackground hook-order crash).
+      - run: npm run lint -- --max-warnings=0
       - run: npm run typecheck
       # API, security (injection), no-fabrication and health tests
       - run: npm test
