@@ -1,10 +1,10 @@
 'use client';
 
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Line, Html } from '@react-three/drei';
-import { useRef, useMemo, useState, useEffect, type ComponentRef } from 'react';
+import { useRef, useMemo, useState, type ComponentRef } from 'react';
 import * as THREE from 'three';
-import { useStars } from '@/lib/hooks';
+
 import { useAstraStore } from '@/lib/store';
 import { CLASS_COLORS } from '@/lib/utils';
 import type { Star } from '@/lib/types';

@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useStars } from '@/lib/hooks';
-import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
+import { ClassBadge } from '@/components/shared/Badges';
 import { Panel, EmptyState, DataRow } from '@/components/shared/UI';
-import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
+import { formatRA, formatDec, formatPeriod } from '@/lib/utils';
 import type { Star } from '@/lib/types';
 import { useQuery } from '@tanstack/react-query';
 

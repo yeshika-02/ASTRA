@@ -4,7 +4,7 @@ import { MetricCard, Panel, HashBadge, DataRow } from '@/components/shared/UI';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails } from '@/lib/hooks';
 import { DATASET_LINEAGE, AUDIT_EVENTS } from '@/lib/data/constants';
-import { CLASS_COLORS, CLASS_LABELS, formatPercent } from '@/lib/utils';
+import { CLASS_COLORS, CLASS_LABELS } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 export default function DatasetIntelligencePage() {
