@@ -442,7 +442,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--out-dir", type=str, default=None,
-        help="Checkpoints, history and diagnostics (default: configured models dir, models/saved)",
+        help="Checkpoints, history and diagnostics (default: outputs/runs; never models/saved, which holds the published records, unless given explicitly)",
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     parser.add_argument("--augment", action="store_true", help="Enable augmentations")
@@ -467,7 +467,7 @@ def main(argv: list[str] | None = None) -> None:
         print(f"\nERROR: {exc}")
         sys.exit(1)
 
-    save_dir = resolve_cli_path(args.out_dir, paths.models_dir)
+    save_dir = resolve_cli_path(args.out_dir, paths.output_dir / "runs")
     save_dir.mkdir(parents=True, exist_ok=True)
 
     variant = args.variant
