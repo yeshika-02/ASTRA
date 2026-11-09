@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { MetricCard, Panel } from '@/components/shared/UI';
 import { StatusBadge } from '@/components/shared/Badges';
@@ -65,48 +65,34 @@ const itemVariants = {
 function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
   const [count, setCount] = useState(0);
 
+  // Counts from 0 to `value` over 1.2 s. State updates happen only inside animation
+  // frames, never synchronously in the effect body.
   useEffect(() => {
-    let start = 0;
-    const end = value;
-    if (start === end) {
-      setCount(end);
-      return;
-    }
-
-    const duration = 1200; // 1.2s
-    const stepTime = Math.max(Math.floor(duration / end), 16);
-    const stepSize = Math.ceil(end / (duration / stepTime));
-
-    const timer = setInterval(() => {
-      start += stepSize;
-      if (start >= end) {
-        clearInterval(timer);
-        setCount(end);
-      } else {
-        setCount(start);
-      }
-    }, stepTime);
-
-    return () => clearInterval(timer);
+    const duration = 1200;
+    let frame = 0;
+    const startTime = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      setCount(Math.round(value * t));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
   }, [value]);
 
   return <span>{count.toLocaleString()}{suffix}</span>;
 }
 
+// The scroll container is the <main> element rendered by the app shell. Read it as an
+// external value: null during server rendering, the element on the client.
+const subscribeToNothing = () => () => {};
+const getMainElement = () => document.querySelector('main');
+const getServerMainElement = () => null;
+
 export default function Home() {
   const [health, setHealth] = useState<any>(null);
   const [activeSection, setActiveSection] = useState(0);
-  const [mainElement, setMainElement] = useState<HTMLElement | null>(null);
-  const mainRef = useRef<HTMLElement | null>(null);
-
-  // Look up scrollable main container at runtime
-  useEffect(() => {
-    const mainEl = document.querySelector('main');
-    if (mainEl instanceof HTMLElement) {
-      setMainElement(mainEl);
-      mainRef.current = mainEl;
-    }
-  }, []);
+  const mainElement = useSyncExternalStore(subscribeToNothing, getMainElement, getServerMainElement);
 
   // Bind scroll progress directly to the main container
   const { scrollYProgress } = useScroll({
