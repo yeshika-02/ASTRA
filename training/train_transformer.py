@@ -14,7 +14,6 @@ import json
 import logging
 import math
 import random
-import subprocess
 import sys
 import time
 from collections import defaultdict
@@ -28,6 +27,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+from astra.config import get_paths, resolve_cli_path
 from data.labels import CLASS_NAMES, NUM_CLASSES
 from pipeline.phase6_utils import assert_phase6_training_allowed
 from training.dataset import ASTRADataset
@@ -376,7 +376,7 @@ def save_diagnostics(
         zero_division=0,
     )
     report_path = save_dir / f"classification_report_transformer_{tag}.txt"
-    report_path.write_text(report)
+    report_path.write_text(report, encoding="utf-8")
     logger.info("Classification report saved → %s", report_path)
     print(f"\n  Classification Report ({tag}):")
     print(report)
@@ -425,7 +425,7 @@ def save_diagnostics(
 
 
 # ─── Main training runner ─────────────────────────────────────────────
-def main() -> None:
+def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Train Hybrid Transformer on ASTRA variable star dataset.")
     parser.add_argument(
         "--variant",
@@ -436,24 +436,38 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=50, help="Epochs")
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
-    parser.add_argument("--data-dir", type=str, default="data/processed")
+    parser.add_argument(
+        "--data-dir", type=str, default=None,
+        help="Processed arrays (default: configured processed dir, data/phase6/processed)",
+    )
+    parser.add_argument(
+        "--out-dir", type=str, default=None,
+        help="Checkpoints, history and diagnostics (default: outputs/runs; never models/saved, which holds the published records, unless given explicitly)",
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     parser.add_argument("--augment", action="store_true", help="Enable augmentations")
     parser.add_argument("--pilot", action="store_true", help="Run 5-epoch pilot experiment")
     parser.add_argument("--tag", type=str, default="")
-    args = parser.parse_args()
+    return parser
 
-    # Enforce strict determinism at seed 42
-    set_deterministic_seeds(42)
+
+def main(argv: list[str] | None = None) -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
+    args = build_arg_parser().parse_args(argv)
+    paths = get_paths()
+
+    set_deterministic_seeds(args.seed)
 
     # Paths
-    data_dir = PROJECT_ROOT / args.data_dir
+    data_dir = resolve_cli_path(args.data_dir, paths.processed_dir)
     try:
         assert_phase6_training_allowed(data_dir)
     except RuntimeError as exc:
         print(f"\nERROR: {exc}")
         sys.exit(1)
 
-    save_dir = PROJECT_ROOT / "models" / "saved"
+    save_dir = resolve_cli_path(args.out_dir, paths.output_dir / "runs")
     save_dir.mkdir(parents=True, exist_ok=True)
 
     variant = args.variant
@@ -601,7 +615,7 @@ def main() -> None:
 
     print(f"\n{'─' * 87}")
     print(f"  Training Complete — Best Val Acc: {best_val_acc:.4f} (Epoch {best_epoch})")
-    print(f"  Checkpoints saved to: models/saved/best_star_transformer_{tag}.pt")
+    print(f"  Checkpoints saved to: {save_dir / f'best_star_transformer_{tag}.pt'}")
 
     # ── Evaluate Subgroups ──
     print("\n  Running subgroup evaluation...")
@@ -625,8 +639,7 @@ def main() -> None:
         json.dump(history, f, indent=2)
 
     # ── Save Environment Metadata ──
-    split_hash = "unknown"
-    split_meta_path = PROJECT_ROOT / "data" / "phase6" / "splits" / "split_metadata.json"
+    split_meta_path = paths.splits_dir / "split_metadata.json"
     split_hash = "unknown"
     if split_meta_path.exists():
         try:
@@ -635,25 +648,31 @@ def main() -> None:
         except Exception:
             pass
 
-    git_commit = "unknown"
-    try:
-        res = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True)
-        if res.returncode == 0:
-            git_commit = res.stdout.strip()
-    except Exception:
-        pass
+    # Code, environment and data provenance; git runs in the repository root (astra.provenance).
+    from astra import provenance
+
+    record = provenance.collect(
+        seed=args.seed,
+        device=str(device),
+        data={
+            **provenance.data_fingerprint(paths.phase6_root / "scientific_dataset_freeze_v2.csv",
+                                          train_dataset.splits_dir if train_dataset.frozen_split else None),
+            "frozen_split": train_dataset.frozen_split and val_dataset.frozen_split,
+        },
+    )
+    git_commit = record["git"]["commit"] or "unknown"
 
     ckpt_sha256 = get_file_sha256(checkpoint_file)
 
     # Calculate dataset manifest hash
-    manifest_path = PROJECT_ROOT / "data" / "phase6" / "scientific_dataset_freeze_v2.csv"
+    manifest_path = paths.phase6_root / "scientific_dataset_freeze_v2.csv"
     manifest_sha256 = get_file_sha256(manifest_path)
 
     # Split files hashes
-    train_split_path = PROJECT_ROOT / "data" / "phase6" / "splits" / "train_ids.json"
-    val_split_path = PROJECT_ROOT / "data" / "phase6" / "splits" / "val_ids.json"
-    test_split_path = PROJECT_ROOT / "data" / "phase6" / "splits" / "test_ids.json"
-    from datetime import datetime
+    train_split_path = paths.splits_dir / "train_ids.json"
+    val_split_path = paths.splits_dir / "val_ids.json"
+    test_split_path = paths.splits_dir / "test_ids.json"
+    from datetime import datetime, timezone
 
     split_hashes = {
         "train": get_file_sha256(train_split_path),
@@ -663,7 +682,7 @@ def main() -> None:
 
     exp_metadata = {
         "variant": variant,
-        "seed": 42,
+        "seed": args.seed,
         "device": str(device),
         "python_version": sys.version,
         "torch_version": torch.__version__,
@@ -673,7 +692,8 @@ def main() -> None:
         "split_hash_root": split_hash,
         "split_hashes": split_hashes,
         "checkpoint_sha256": ckpt_sha256,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "provenance": record,
     }
     metadata_file = save_dir / f"experiment_metadata_{tag}.json"
     with open(metadata_file, "w") as f:

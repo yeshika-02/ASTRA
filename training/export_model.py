@@ -7,6 +7,7 @@ benchmarks CPU and MPS latencies, and writes deployment_report.md.
 
 from __future__ import annotations
 
+import argparse
 import logging
 import sys
 import time
@@ -18,6 +19,7 @@ import torch
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths, resolve_cli_path
 from training.models.hybrid_transformer import HybridTransformer
 
 # Setup logging
@@ -28,22 +30,42 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 
 
-def main() -> None:
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Export a HybridTransformer checkpoint to TorchScript and ONNX.")
+    parser.add_argument("--checkpoint", default=None,
+                        help=f"PyTorch checkpoint to export (default: {CHECKPOINT_PATH})")
+    parser.add_argument("--out-dir", default=None,
+                        help="Directory for the exported models and deployment_report.md "
+                             f"(default: models next to the checkpoint, report in {ARTIFACT_DIR})")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
+    args = build_arg_parser().parse_args(argv)
+    checkpoint_path = resolve_cli_path(args.checkpoint, CHECKPOINT_PATH)
+    out_dir = resolve_cli_path(args.out_dir, ARTIFACT_DIR) if args.out_dir else None
+    model_dir = out_dir or checkpoint_path.parent
+    report_dir = out_dir or ARTIFACT_DIR
+    model_dir.mkdir(parents=True, exist_ok=True)
+    report_dir.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Model Export & Deployment Benchmarking")
     print("=" * 70)
 
     # 1. Load PyTorch Checkpoint
-    if not CHECKPOINT_PATH.exists():
-        print(f"❌ ERROR: Checkpoint not found at {CHECKPOINT_PATH}.")
+    if not checkpoint_path.exists():
+        print(f"❌ ERROR: Checkpoint not found at {checkpoint_path}.")
         sys.exit(1)
 
     device = torch.device("cpu") # export is safest on CPU first
-    ckpt = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=True)
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model = HybridTransformer(variant=ckpt["variant"], num_classes=ckpt["num_classes"])
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
@@ -53,7 +75,7 @@ def main() -> None:
 
     # 2. Export to TorchScript (JIT Trace)
     print("Exporting model to TorchScript...")
-    ts_path = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.torchscript"
+    ts_path = model_dir / "best_star_transformer_shared.torchscript"
     with torch.no_grad():
         traced_model = torch.jit.trace(model, dummy_input)
     traced_model.save(ts_path)
@@ -61,7 +83,7 @@ def main() -> None:
 
     # 3. Export to ONNX
     print("Exporting model to ONNX...")
-    onnx_path = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.onnx"
+    onnx_path = model_dir / "best_star_transformer_shared.onnx"
     with torch.no_grad():
         torch.onnx.export(
             model,
@@ -154,8 +176,8 @@ def main() -> None:
         "## 1. Export Formats Status",
         "",
         "The model has been successfully compiled and verified in the following deployment formats:",
-        f"- **TorchScript JIT Traced Checkpoint**: [best_star_transformer_shared.torchscript](file://{ts_path})",
-        f"- **ONNX Serialized Model**: [best_star_transformer_shared.onnx](file://{onnx_path})",
+        f"- **TorchScript JIT Traced Checkpoint**: `{ts_path.name}`",
+        f"- **ONNX Serialized Model**: `{onnx_path.name}`",
         "",
         "| Export Format | Output Equivalence Check (Tolerance: 1.0e-5) | Status |",
         "| :--- | :---: | :---: |",
@@ -187,15 +209,15 @@ def main() -> None:
         "## 3. Deployment Inference Guide",
         "",
         "A command-line script is provided to run local inferences using the PyTorch or TorchScript models:",
-        "- Script Path: [predict.py](file:///Users/soumyadebtripathy/ASTRA%20—%20Automated%20Stellar%20Transient%20Recognition%20&%20Analysis/training/predict.py)",
+        "- Script Path: `training/predict.py`",
         "",
         "```bash",
-        "python training/predict.py --input data/processed/TIC_109718459/",
+        "python training/predict.py --input data/phase6/processed/TIC_109718459/",
         "```",
     ])
 
-    report_path = ARTIFACT_DIR / "deployment_report.md"
-    report_path.write_text("\n".join(report_lines) + "\n")
+    report_path = report_dir / "deployment_report.md"
+    report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     print(f"Deployment report saved successfully → {report_path}")
 
 

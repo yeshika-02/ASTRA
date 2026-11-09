@@ -1,0 +1,231 @@
+{
+  "description": "Published model artifacts of ASTRA v1.0.0 and their SHA256 hashes. Weights are not stored in git; place recovered files in the models dir (models/saved or ASTRA_MODELS_DIR) and run training/verify_weights.py. See docs/model_recovery.md.",
+  "sources": [
+    "astra-platform/data/artifacts/model_registry.json (generated 2026-06-13, records exists=true on the author's machine)",
+    "astra-platform/src/lib/data/constants.ts (CHECKPOINT_REGISTRY)",
+    "astra-platform/src/lib/server/inference.ts (EXPECTED_CHECKPOINT_SHA256)",
+    "models/saved/experiment_metadata_*.json (checkpoint_sha256)",
+    "docs/engineering-log/ground_truth_checkpoint_audit.md"
+  ],
+  "files": [
+    {
+      "filename": "best_star_cnn_dual_aug.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "CNN Dual Branch",
+      "parameters": 1043333,
+      "sha256": "65da1034868c5460b2c269e1a11936864fe6191fa81116d5fe2be934d8478af2",
+      "shipped_path": null,
+      "role": "CNN dual-branch baseline",
+      "published_test": {
+        "accuracy": 0.7817,
+        "accuracy_ci95": [
+          0.7183,
+          0.8451
+        ],
+        "macro_f1": 0.7635,
+        "macro_f1_ci95": [
+          0.6923,
+          0.8301
+        ],
+        "weighted_f1": 0.7756,
+        "source": "docs/engineering-log/ground_truth_metrics.md",
+        "confusion_matrix": [
+          [
+            31,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            29,
+            0,
+            1,
+            4
+          ],
+          [
+            0,
+            1,
+            20,
+            1,
+            1
+          ],
+          [
+            1,
+            7,
+            1,
+            10,
+            3
+          ],
+          [
+            1,
+            2,
+            1,
+            5,
+            21
+          ]
+        ],
+        "confusion_matrix_source": "models/saved/test_confusion_matrix_cnn_dual.png (transcribed; rows true, columns predicted: rr_lyrae, cepheid, eclipsing_binary, solar_like, stable)"
+      }
+    },
+    {
+      "filename": "best_star_transformer_shared.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "Transformer Shared",
+      "parameters": 1373701,
+      "sha256": "bf374ce492825916f2f97a4e29673a1eca35f76cc08f603b384d103fbe95d388",
+      "shipped_path": null,
+      "role": "production model (README, web platform, calibration, ONNX exports)",
+      "published_test": {
+        "accuracy": 0.7817,
+        "accuracy_ci95": [
+          0.7113,
+          0.8521
+        ],
+        "macro_f1": 0.7677,
+        "macro_f1_ci95": [
+          0.6944,
+          0.832
+        ],
+        "weighted_f1": 0.7784,
+        "source": "docs/engineering-log/ground_truth_metrics.md",
+        "confusion_matrix": [
+          [
+            31,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            30,
+            0,
+            1,
+            4
+          ],
+          [
+            1,
+            0,
+            20,
+            2,
+            0
+          ],
+          [
+            1,
+            5,
+            0,
+            11,
+            5
+          ],
+          [
+            1,
+            4,
+            0,
+            6,
+            19
+          ]
+        ],
+        "confusion_matrix_source": "models/saved/test_confusion_matrix_transformer_shared.png (transcribed; rows true, columns predicted: rr_lyrae, cepheid, eclipsing_binary, solar_like, stable)"
+      }
+    },
+    {
+      "filename": "best_star_transformer_cross.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "Transformer Cross",
+      "parameters": 1240965,
+      "sha256": "9d90b14be3b9f4437e0a289810034506734a969c47ccdeae440d420291925a23",
+      "shipped_path": null
+    },
+    {
+      "filename": "best_star_transformer_separate.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "Transformer Separate",
+      "parameters": 1687557,
+      "sha256": "0189295d56641331b8074f18d4395a1bbd204cfac61bf56861ee5a294d933851",
+      "shipped_path": null
+    },
+    {
+      "filename": "best_star_transformer_only.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "Transformer Only",
+      "parameters": 316933,
+      "sha256": "8f66b566c408e56df60f42068b2f5710e75f45722650e3befd770be4cd64df1c",
+      "shipped_path": null
+    },
+    {
+      "filename": "best_star_cnn_raw_aug.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "CNN Raw Augmented",
+      "parameters": 1140101,
+      "sha256": "e70220a7e479fd88a873604cb120a5125d79a2bd31f66ce1da07f04180f3e564",
+      "shipped_path": null
+    },
+    {
+      "filename": "best_star_transformer_shared_no_folded.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "Transformer Shared (no fold)",
+      "parameters": 1275141,
+      "sha256": "66ab7ac32634f0b8177a17146b25e80619cccd9e7ebabbf4b28be1ac2da4a96f",
+      "shipped_path": null
+    },
+    {
+      "filename": "best_star_transformer_shared_no_folded_matched.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "Transformer Shared (no fold matched)",
+      "parameters": 1324089,
+      "sha256": "ff39f8b53d89e796f2a1a7846a68f8c250a490d400cc2887bd363771480a8f98",
+      "shipped_path": null
+    },
+    {
+      "filename": "best_star_cnn.pt",
+      "kind": "pytorch_checkpoint",
+      "architecture": "CNN (legacy)",
+      "parameters": 1043333,
+      "sha256": "02eb0d39ee86d421bf7e9421f839ba142c442375b7ab045e42487bf932e93aea",
+      "shipped_path": null
+    },
+    {
+      "filename": "best_star_transformer_shared.onnx",
+      "kind": "onnx_graph",
+      "architecture": "Transformer Shared",
+      "sha256": "48e75b7790f7c7b4f1edb86d092c637c6024e41dd6ae2ad0f434540f88b12dfe",
+      "shipped_path": "astra-platform/data/best_star_transformer_shared.onnx",
+      "note": "graph only; its 46 weight tensors live in best_star_transformer_shared.onnx.data"
+    },
+    {
+      "filename": "best_star_transformer_shared.onnx.data",
+      "kind": "onnx_external_data",
+      "architecture": "Transformer Shared",
+      "sha256": "5a8fcc0df518dfca27d2144b05d5ebbdeef2ca9cfe31651a31943cf4c9233e06",
+      "min_bytes": 5505024,
+      "shipped_path": null
+    },
+    {
+      "filename": "best_star_transformer_shared_explain.onnx",
+      "kind": "onnx_graph",
+      "architecture": "Transformer Shared (explainability outputs)",
+      "sha256": "07a9d1946e2d61196b506e2e3694115b597777dc2ef2fb528a6d043f8eac3bce",
+      "shipped_path": "astra-platform/data/best_star_transformer_shared_explain.onnx",
+      "note": "hash of the shipped file; no published hash exists. Re-exportable from the shared checkpoint with training/export_explainability_model.py"
+    },
+    {
+      "filename": "best_star_transformer_shared_explain.onnx.data",
+      "kind": "onnx_external_data",
+      "architecture": "Transformer Shared (explainability outputs)",
+      "sha256": null,
+      "min_bytes": 5505024,
+      "shipped_path": null,
+      "note": "no hash was ever recorded"
+    },
+    {
+      "filename": "optimal_temperature_transformer_shared.txt",
+      "kind": "calibration_temperature",
+      "architecture": "Transformer Shared",
+      "sha256": "d6e61017cc88c21fc7cdbed1e549e87b523fab2287d97d0c00bdc9b36962d2ed",
+      "value": 1.257665,
+      "shipped_path": "models/saved/optimal_temperature_transformer_shared.txt"
+    }
+  ]
+}

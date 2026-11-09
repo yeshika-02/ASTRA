@@ -69,12 +69,12 @@ jobs:
           body: |
             ## ASTRA Release ${{ github.ref_name }}
 
-            ### Verified Metrics (Zero-Hallucination)
+            ### Published metrics (recorded by the original audit; sources in docs/metrics.md)
             - **Best Model**: HybridTransformer (shared variant)
             - **Test Accuracy**: 78.17% (95% CI: [71.13%, 85.21%])
             - **Macro F1**: 0.7677 (95% CI: [0.6944, 0.8320])
             - **Dataset**: 944 TESS stars, 5 classes
-            - **Ground Truth Audits**: 8/8 PASS, 0 mismatches
+            - The trained weights are not part of this release; see docs/model_recovery.md
 
             ### Installation
             ```bash

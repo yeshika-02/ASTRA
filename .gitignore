@@ -123,3 +123,9 @@ secrets.yaml
 # Next.js generated files
 astra-platform/next-env.d.ts
 astra-platform/tsconfig.tsbuildinfo
+
+# Script outputs (reports, plots, metrics) written via astra.config
+outputs/
+
+# Phase 6 working layout rebuilt by pipeline/prepare_from_repo.py (from shipped files)
+data/phase6/
