@@ -107,7 +107,7 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 | 2026-11-10 | Review | Coverage step (#3) measures `pipeline`, `training`, `data` but not `astra` (#7) | SP-34 (add `--cov=astra` after merge) |
 | 2026-11-10 | Review | #7–#9 alone score below 100/100 on the validator (ADR-0060 keeps the ADR index and ADR-0060 on this branch); the gate (>= 85, no broken links) still passes, and the simulated final `main` scores 100/100 | Day 7 note |
 | 2026-11-10 | Review | Day 7 simulation: all 8 PRs rebase onto `main` in the planned order without conflicts; merged Python suite 173 passed + 1 expected failure (after the CRLF refresh); merged `ci.yml`/`validate.yml` coherent | SP-33 input |
-| 2026-11-10 | Review | Process slip: 14 review-fix commits on #9 were authored as `day7-sim` (simulation script wrote the shared git config); identity restored | owner decision on rewriting those commits' author |
+| 2026-11-10 | Review | Process slip: 14 review-fix commits on #9 were authored as `day7-sim` (simulation script wrote the shared git config); identity restored | owner decided 2026-11-10: keep them as they are (no history rewrite) |
 
 ### Acceptance criteria
 
