@@ -309,6 +309,20 @@ function VolumetricHaze() {
 }
 
 // ── 4. Master Backdrop Component ────────────────────────────────────────
+function backgroundVideoFor(pathname: string): string {
+  if (pathname === '/') return '/blackhole.mp4';
+  if (pathname === '/search') return '/earth.mp4';
+  if (pathname === '/analysis') return '/solar-system.mp4';
+  if (pathname === '/dataset') return '/star-cluster.mp4';
+  if (pathname === '/model') return '/galaxy.mp4';
+  if (pathname === '/research') return '/nebula.mp4';
+  if (pathname === '/mission-replay') return '/pulsar.mp4';
+  if (pathname === '/osint') return '/satellite.mp4';
+  if (pathname === '/visualization') return '/space-dust.mp4';
+  if (pathname.startsWith('/target/')) return '/space-dust.mp4';
+  return '/space-backdrop.mp4';
+}
+
 export function CosmicBackground() {
   const pathname = usePathname();
   const { qualityState } = useAstraStore();
@@ -323,29 +337,16 @@ export function CosmicBackground() {
     }
   }, [pathname]);
 
+  // No hooks below this early return: switching quality to 'low' at runtime must not
+  // change the number of hooks rendered (React error #300 crashed the page before).
   if (qualityState === 'low') {
     return (
       <div className="fixed inset-0 z-0 bg-[#05070B] pointer-events-none" />
     );
   }
 
-  const isHomepage = pathname === '/';
-  const isTargetPage = pathname.startsWith('/target/');
   const opacity = 1.0; // Keep background container opaque to prevent double-dimming
-
-  const videoSrc = useMemo(() => {
-    if (pathname === '/') return '/blackhole.mp4';
-    if (pathname === '/search') return '/earth.mp4';
-    if (pathname === '/analysis') return '/solar-system.mp4';
-    if (pathname === '/dataset') return '/star-cluster.mp4';
-    if (pathname === '/model') return '/galaxy.mp4';
-    if (pathname === '/research') return '/nebula.mp4';
-    if (pathname === '/mission-replay') return '/pulsar.mp4';
-    if (pathname === '/osint') return '/satellite.mp4';
-    if (pathname === '/visualization') return '/space-dust.mp4';
-    if (pathname.startsWith('/target/')) return '/space-dust.mp4';
-    return '/space-backdrop.mp4';
-  }, [pathname]);
+  const videoSrc = backgroundVideoFor(pathname);
 
   return (
     <div 
