@@ -48,13 +48,15 @@ def load_raw_timeseries(tic_id: int, name: str | None = None) -> tuple[np.ndarra
     """Load and stitch raw time and flux arrays from cached FITS files."""
     from astropy.io import fits
     padded_tic = f"{tic_id:016d}"
+    # lightkurve's download cache (ASTRA_LIGHTKURVE_CACHE, default ~/.lightkurve/cache)
+    mast = (PATHS.lightkurve_cache / "mastDownload").as_posix()
     patterns = [
-        f"/Users/soumyadebtripathy/.lightkurve/cache/mastDownload/**/*{padded_tic}*.fits",
-        f"/Users/soumyadebtripathy/.lightkurve/cache/mastDownload/**/*{tic_id}*.fits"
+        f"{mast}/**/*{padded_tic}*.fits",
+        f"{mast}/**/*{tic_id}*.fits",
     ]
     if name:
-        patterns.append(f"/Users/soumyadebtripathy/.lightkurve/cache/mastDownload/**/*{name.replace(' ', '')}*.fits")
-        patterns.append(f"/Users/soumyadebtripathy/.lightkurve/cache/mastDownload/**/*{name}*.fits")
+        patterns.append(f"{mast}/**/*{name.replace(' ', '')}*.fits")
+        patterns.append(f"{mast}/**/*{name}*.fits")
 
     files = []
     for pat in patterns:
