@@ -13,7 +13,7 @@
       "model": "cnn_dual"
     },
     {
-      "accuracy": 0.9420000000000001,
+      "accuracy": 0.942,
       "confidence_threshold": 0.7,
       "coverage": 0.732,
       "model": "cnn_dual"
@@ -27,7 +27,7 @@
     {
       "accuracy": 1.0,
       "confidence_threshold": 0.9,
-      "coverage": 0.47200000000000003,
+      "coverage": 0.472,
       "model": "cnn_dual"
     },
     {
@@ -49,13 +49,13 @@
       "model": "shared"
     },
     {
-      "accuracy": 0.9329999999999999,
+      "accuracy": 0.933,
       "confidence_threshold": 0.8,
       "coverage": 0.634,
       "model": "shared"
     },
     {
-      "accuracy": 0.9840000000000001,
+      "accuracy": 0.984,
       "confidence_threshold": 0.9,
       "coverage": 0.43,
       "model": "shared"
@@ -79,5 +79,8 @@
     "cnn_dual": 0.9015,
     "shared": 0.8628
   },
-  "generated_at": "2026-06-13T02:15:04+00:00"
+  "generated_at": "2026-11-10",
+  "generator": "pipeline/build_platform_artifacts.py",
+  "note": "The audit does not state which split was used.",
+  "source": "docs/engineering-log/ground_truth_uncertainty.md"
 }
