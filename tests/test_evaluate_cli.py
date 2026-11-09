@@ -11,8 +11,9 @@ import io
 import json
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 try:
     import torch
@@ -116,6 +117,20 @@ class PublishedCheckTests(unittest.TestCase):
         self.assertFalse(comparison["reproduced"])
         self.assertFalse(comparison["accuracy"]["match"])
 
+    def test_confusion_matrix_must_match_exactly(self) -> None:
+        from training.evaluate import compare_with_published
+        from training.verify_weights import find_published
+
+        published = find_published("best_star_transformer_shared.pt")["published_test"]
+        cm = [row[:] for row in published["confusion_matrix"]]
+        metrics = {"accuracy": 111 / 142, "macro_f1": 0.76766, "weighted_f1": 0.77836, "confusion_matrix": cm}
+        self.assertTrue(compare_with_published(metrics, published)["reproduced"])
+        # Same accuracy, different errors: two misclassifications swapped between classes.
+        cm[3][4], cm[3][1] = cm[3][4] + 1, cm[3][1] - 1
+        comparison = compare_with_published(metrics, published)
+        self.assertFalse(comparison["confusion_matrix"]["match"])
+        self.assertFalse(comparison["reproduced"])
+
     def test_published_status_by_name_and_hash(self) -> None:
         from training.evaluate import published_status
 
@@ -160,6 +175,46 @@ class EvaluateCliTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()) as log:
             self.assertEqual(main(["--checkpoint", "does/not/exist.pt"]), 1)
         self.assertIn("Checkpoint not found", log.getvalue())
+
+    def test_invalid_numbers_are_rejected_by_the_parser(self) -> None:
+        from training.evaluate import build_arg_parser
+
+        parser = build_arg_parser()
+        for bad in (["--temperature", "0"], ["--bootstrap", "0"], ["--confidence", "1.5"], ["--batch-size", "-1"]):
+            with self.subTest(bad=bad), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                parser.parse_args(["--checkpoint", "x.pt", *bad])
+
+    def test_missing_frozen_test_split_is_a_clean_error(self) -> None:
+        from training.evaluate import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            checkpoint = _save_untrained(Path(tmp) / "m.pt", "transformer")
+            empty = Path(tmp) / "no_splits"
+            empty.mkdir()
+            with redirect_stdout(io.StringIO()) as log:
+                code = main(["--checkpoint", str(checkpoint), "--data-dir", str(SHIPPED_PROCESSED),
+                             "--splits-dir", str(empty), "--out-dir", tmp])
+        self.assertEqual(code, 1)
+        self.assertIn("ERROR:", log.getvalue())
+
+    def test_require_published_fails_when_a_verified_checkpoint_does_not_reproduce(self) -> None:
+        from pipeline.prepare_from_repo import build_splits
+        from training.evaluate import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.assertEqual(build_splits(root / "splits"), [])
+            checkpoint = _save_untrained(root / "m.pt", "transformer")
+            # Pretend the hash verified; the untrained model cannot reproduce the published numbers.
+            fake = {"filename": "m.pt", "expected_sha256": "x", "verified": True,
+                    "published_test": {"accuracy": 0.7817, "macro_f1": 0.7677, "weighted_f1": 0.7784}}
+            argv = ["--checkpoint", str(checkpoint), "--data-dir", str(SHIPPED_PROCESSED),
+                    "--splits-dir", str(root / "splits"), "--bootstrap", "10", "--out-dir", str(root / "r"),
+                    "--require-published"]
+            with patch("training.evaluate.published_status", return_value=fake), \
+                    redirect_stdout(io.StringIO()) as log:
+                self.assertEqual(main(argv), 1)
+        self.assertIn("NOT reproduced", log.getvalue())
 
 
 if __name__ == "__main__":
