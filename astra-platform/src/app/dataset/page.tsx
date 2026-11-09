@@ -212,13 +212,17 @@ export default function DatasetIntelligencePage() {
                     {node.description}
                   </p>
                 </div>
-                {node.count && (
-                  <div className="text-right mt-1">
+                <div className="text-right mt-1">
+                  {node.count !== null ? (
                     <span className="font-mono font-semibold text-[#6EA8FE] bg-[#1D3A6B]/20 border border-[#1D3A6B]/40 px-1.5 py-0.5 rounded text-[10px]">
                       {node.count} stars
                     </span>
-                  </div>
-                )}
+                  ) : (
+                    <span className="font-mono text-[#5A6878] text-[10px]" title="No file in the repository records this count">
+                      count not recorded
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
