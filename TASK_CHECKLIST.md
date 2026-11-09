@@ -22,6 +22,128 @@ Never stop after creating a PR when the task includes merging it. Never deploy m
 - Merge strategy: **rebase merge**. History is linear, with no merge commits, and this keeps logical commits intact.
 - Commits authored as `yeshika-02`.
 - CI must pass all 5 jobs: Lint, Python 3.11, Python 3.12, Dataset integrity, Web platform.
+- During the sprint: one branch and PR per workstream, merged together on Day 7 in dependency order (7_DAY_SPRINT.md §6).
+
+---
+
+## 7-day sprint (2026-11-09 → 2026-11-15) — see [7_DAY_SPRINT.md](7_DAY_SPRINT.md)
+
+Status values: **Pending** · **In Progress** · **Blocked** · **Completed**.
+
+**Tracker policy (dossier §3, A1):** this file is edited only on `sprint/tracking`. Each workstream PR also lists its tasks, tests and commits in its description.
+
+Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
+
+| ID | Task (old ID) | Pri | Status | Branch | PR | Commits | Tests |
+|---|---|---|---|---|---|---|---|
+| SP-00 | Sprint dossier, tracker, Phase 0 merge record | P0 | In Progress | `sprint/tracking` | — | 0457af5, b7a1b58 | validator run (no new broken links) |
+| SP-01 | Fix `rules-of-hooks` bug in `CosmicBackground.tsx` (T13) | P0 | Pending | `fix/eslint-react-hooks` | — | — | — |
+| SP-02 | Fix 7 `react-hooks/purity` + 3 `set-state-in-effect` errors (T13) | P0 | Pending | `fix/eslint-react-hooks` | — | — | — |
+| SP-03 | Replace 34 `any` with typed API responses (T13, U5) | P1 | Pending | `fix/eslint-react-hooks` | — | — | — |
+| SP-04 | Unused vars, JSX comment, font warning (T13) | P1 | Pending | `fix/eslint-react-hooks` | — | — | — |
+| SP-05 | Make ESLint a CI gate (roadmap 1.7) | P0 | Pending | `fix/eslint-react-hooks` | — | — | — |
+| SP-06 | GitHub Actions → v7; caching; coverage artifact | P0 | Pending | `ci/actions-v7` | — | — | — |
+| SP-07 | Fix 24 doc links → validator 100/100; PR-template casing; re-enable AgentOS workflows (T9) | P0 | Pending | `docs/agentos-validator-100` | — | — | — |
+| SP-08 | Python tests for `training/` helpers (roadmap 1.9, E2) | P1 | Pending | `test/python-coverage` | — | — | — |
+| SP-09 | Central config replacing 27 hardcoded paths (T7, R3) | P0 | Pending | `refactor/config-paths` | — | — | — |
+| SP-10 | `--seed` / `--data-dir` / `--out-dir` CLI flags (T7, R2) | P0 | Pending | `refactor/config-paths` | — | — | — |
+| SP-11 | README reproduction commands that run (T7, R2) | P0 | Pending | `docs/reproduction-and-env` | — | — | — |
+| SP-12 | Pinned Python lock incl. `onnxruntime` (R5) | P1 | Pending | `docs/reproduction-and-env` | — | — | — |
+| SP-13 | Fresh-clone verification script | P1 | Pending | `docs/reproduction-and-env` | — | — | — |
+| SP-14 | Weights investigation record + recovery/retraining plan, ADR-0061 (T4) | P0 | Pending | `feat/evaluation-reproducibility` | — | — | — |
+| SP-15 | `training/evaluate.py` with bootstrap CIs (roadmap 1.3) | P0 | Pending | `feat/evaluation-reproducibility` | — | — | — |
+| SP-16 | Experiment provenance: git SHA, env, seed, data hash (R5) | P1 | Pending | `feat/evaluation-reproducibility` | — | — | — |
+| SP-17 | CPU reproduction run → EXP-0002 (needs D1) | P2 | Blocked (D1) | `feat/evaluation-reproducibility` | — | — | — |
+| SP-18 | Metric inventory + authoritative table (T8, R4, S11) | P0 | Pending | `fix/metrics-single-source` | — | — | — |
+| SP-19 | Artifact generator, NLL fixed, tested on synthetic outputs (T8) | P1 | Pending | `fix/metrics-single-source` | — | — | — |
+| SP-20 | UI reads only generated artifacts; unsourced constants removed (T8, U3) | P1 | Pending | `fix/metrics-single-source` | — | — | — |
+| SP-21 | Honest CV: no test stars, `duplicate_group_id`, nested selection, ADR-0062 (T10, S7) | P0 | Pending | `fix/honest-cross-validation` | — | — | — |
+| SP-22 | `training/baselines.py` (T6, S2) | P1 | Pending | `feat/feature-baselines` | — | — | — |
+| SP-23 | Detrend/cadence characterisation tests (S4) | P1 | Pending | `test/preprocessing-validation` | — | — | — |
+| SP-24 | Period-search characterisation tests (S5) | P1 | Pending | `test/preprocessing-validation` | — | — | — |
+| SP-25 | Pipeline input validation and clear errors (E4) | P1 | Pending | `test/preprocessing-validation` | — | — | — |
+| SP-26 | Opt-in preprocessing v2, ADR-0064 (needs D2) | P2 | Blocked (D2) | `feat/preprocess-v2-optin` | — | — | — |
+| SP-27 | API param validation, shared DB handle, generic errors (P8) | P1 | Pending | `fix/api-reliability` | — | — | — |
+| SP-28 | Consistent loading / empty / error / unavailable states | P1 | Pending | `fix/api-reliability` | — | — | — |
+| SP-29 | Reduced motion, ARIA, keyboard navigation (U4) | P1 | Pending | `feat/accessibility-media` | — | — | — |
+| SP-30 | Media diet without history rewrite (U1, T12) | P1 | Pending | `feat/accessibility-media` | — | — | — |
+| SP-31 | Explainability methods + faithfulness test (S10) | P2 | Pending | `feat/explainability-methods` | — | — | — |
+| SP-32 | Day 7: review all PRs together | P0 | Pending | — | — | — | — |
+| SP-33 | Day 7: rebase merge in dependency order; verify `main` | P0 | Pending | — | — | — | — |
+| SP-34 | Day 7: full validation on `main` | P0 | Pending | — | — | — | — |
+| SP-35 | Day 7: CHANGELOG (incl. `v1.1.0` tag), status, roadmap; merge tracker last | P0 | Pending | `sprint/tracking` | — | — | — |
+
+### Acceptance criteria
+
+- **SP-00:**
+  - Dossier and tracker reflect the verified state.
+  - Phase 0 merge recorded.
+  - No new broken links.
+- **SP-01/02:**
+  - 0 `react-hooks` errors.
+  - Affected pages render the same (manual check).
+  - Typecheck, tests and build green.
+- **SP-03/04:**
+  - `npx eslint .` reports 0 errors.
+  - Each remaining warning is justified in the PR.
+- **SP-05:** the CI lint step is required and passes.
+- **SP-06:**
+  - No Node 20 deprecation annotations.
+  - 5 jobs green.
+- **SP-07:**
+  - Validator 100/100 on Windows and Linux.
+  - AgentOS workflows run on push/PR and pass.
+  - Report content unchanged (link targets only).
+- **SP-08:**
+  - `training/` coverage ≥ 40%.
+  - Tests deterministic and CPU-only.
+- **SP-09/10:**
+  - `grep -rn /Users/ pipeline training` is empty.
+  - Scripts run from a fresh clone with the documented flags.
+  - Config resolution tested.
+- **SP-11/12/13:**
+  - Every README command runs.
+  - The lock installs cleanly.
+  - The fresh-clone script passes locally and in CI.
+- **SP-14:** plan and ADR-0061 cover recovery, retraining, storage and verification-by-hash.
+- **SP-15:**
+  - Tested end-to-end with an untrained model on real arrays.
+  - Reports metrics with bootstrap CIs.
+- **SP-16:** experiment metadata contains the git SHA, environment, seed and dataset hash.
+- **SP-17:**
+  - Only if D1 = yes.
+  - EXP-0002 logged with CIs.
+  - Compared with the published 78.17%, never replacing it.
+  - Weights not committed.
+- **SP-18:** every number shown in README or UI has a documented source, or is flagged unverifiable.
+- **SP-19:**
+  - Generator unit-tested.
+  - NLL computed from probabilities, not copied.
+- **SP-20:** no UI metric without a source.
+- **SP-21:** synthetic-data tests prove no test-star leakage and no duplicate-group straddling, and that the reported score is the outer fold's.
+- **SP-22:**
+  - Reproduces the EXP-0001 numbers exactly.
+  - Documented beside the model with caveats.
+- **SP-23/24/25:**
+  - `preprocess.py` coverage ≥ 50%.
+  - A golden-hash test proves v1 outputs are unchanged.
+  - Bad inputs give clear errors.
+- **SP-26:**
+  - Only if D2 = yes.
+  - v1 stays the default (golden test).
+  - v2 validated on synthetic curves with known periods.
+- **SP-27/28:**
+  - New API tests pass.
+  - No internal error text reaches clients.
+  - Every data view has loading, empty, error and unavailable states.
+- **SP-29/30:**
+  - Lighthouse accessibility ≥ 90 on the main pages (local build).
+  - No autoplay audio.
+  - `/analysis` first load < 5 MB.
+- **SP-31:**
+  - Faithfulness test passes on an untrained model.
+  - Nothing is rendered without real model output.
+- **SP-32–35:** see [7_DAY_SPRINT.md](7_DAY_SPRINT.md) §5 (Day 7) and §11.
 
 ---
 
@@ -51,11 +173,6 @@ Never stop after creating a PR when the task includes merging it. Never deploy m
 - [x] Tests: 88 web + 21 Python; verified to fail on the original code
 - [x] Docs: PROJECT_AUDIT.md §11, PROJECT_STATUS.md, UPDATED_ROADMAP.md, PRIORITY_TASKS.md, context/state.md
 
-## Backlog — Phase 1 (not started; needs owner approval)
+## Backlog
 
-- [ ] T4 Model weights: recover the original `.pt` / `.onnx.data` or retrain (**owner decision needed**)
-- [ ] T7 One config for paths (remove 27 hardcoded `/Users/...` paths); README commands that run
-- [ ] T8 Artifact + SQLite generator; single source of truth for metrics
-- [ ] T9 Fix 24 broken doc links → AgentOS validator 100/100; re-enable AgentOS workflows; PR-template casing
-- [ ] T13 ESLint debt (46 errors, incl. a `rules-of-hooks` bug in `CosmicBackground.tsx`); then gate lint in CI
-- [ ] Bump GitHub Actions versions (checkout/setup-python/setup-node use deprecated Node 20)
+The former Phase 1 backlog (T4, T7, T8, T9, T13, Actions upgrade) is now scheduled in the sprint table above (SP-01…SP-35).
