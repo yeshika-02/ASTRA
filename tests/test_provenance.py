@@ -74,6 +74,11 @@ class EnvironmentAndDataTests(unittest.TestCase):
         self.assertEqual(data["split_file_sha256"]["test"],
                          "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945")
 
+    def test_no_split_files_used_records_no_split_hashes(self) -> None:
+        data = provenance.data_fingerprint(ROOT / "astra-platform/data/scientific_dataset_freeze_v2.csv", None)
+        self.assertEqual((data["split_hash"], data["split_file_sha256"]), (None, None))
+        self.assertIsNotNone(data["manifest_sha256"])
+
     def test_shipped_manifest_hash(self) -> None:
         data = provenance.data_fingerprint(ROOT / "astra-platform/data/scientific_dataset_freeze_v2.csv", ROOT / "nope")
         self.assertEqual(data["manifest_sha256"], "f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58")

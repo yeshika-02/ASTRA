@@ -58,9 +58,11 @@ def _assert_provenance(test: unittest.TestCase, metadata: dict, seed: int) -> No
     test.assertEqual(record["git"]["commit"], _head_commit())
     test.assertEqual(metadata["git_commit"], record["git"]["commit"] or "unknown")
     test.assertIsNotNone(record["environment"]["packages"]["torch"])
-    # The synthetic layout has no frozen split files, so the run used a random split: recorded, not hidden.
+    # The synthetic layout has no frozen split files, so the run used a random split: recorded, not hidden,
+    # and no split-file hashes are recorded (they would describe files the run never read).
     test.assertFalse(record["data"]["frozen_split"])
-    test.assertIn("split_file_sha256", record["data"])
+    test.assertIsNone(record["data"]["split_file_sha256"])
+    test.assertIsNone(record["data"]["split_hash"])
 
 
 @unittest.skipIf(torch is None, "PyTorch not installed")
