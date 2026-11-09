@@ -109,5 +109,35 @@ class RegistryAndLineageTests(unittest.TestCase):
         self.assertNotIn("PER_CLASS_ECE", CONSTANTS)
 
 
+class PageLiteralTests(unittest.TestCase):
+    """Metric values written directly into pages must equal their sourced values."""
+
+    def test_page_literals_match_the_record(self) -> None:
+        record = gen.load_record()
+        outputs = gen.build(record)
+        temperature = outputs["calibration.json"]["temperatures"]["shared"]
+        shared_cal = outputs["calibration.json"]["global"]["shared"]
+        best = {name: round(gen.best_validation(ROOT / record["models"][name]["training_history"])["accuracy"], 4)
+                for name in ("shared", "cnn_dual")}
+        expected = {
+            "src/app/mission-replay/page.tsx": [f"T={temperature:.4f}", f"from {shared_cal['ece_raw']:.4f} to {shared_cal['ece_calibrated']:.4f}"],
+            "src/app/target/[id]/page.tsx": [f"T={temperature}"],
+        }
+        for path, snippets in expected.items():
+            text = (ROOT / "astra-platform" / path).read_text(encoding="utf-8")
+            for snippet in snippets:
+                self.assertIn(snippet, text, f"{path}: expected {snippet!r}")
+        # Validation-accuracy literals in the model and home pages must be the training-history values.
+        for path in ("src/app/model/page.tsx", "src/app/page.tsx"):
+            source = (ROOT / "astra-platform" / path).read_text(encoding="utf-8")
+            literals = re.findall(r"(?<![\d.])0\.8\d{3}(?!\d|rem|em|px)", source)  # skip CSS sizes like 0.8125rem
+            self.assertEqual([v for v in literals if float(v) not in best.values()], [], path)
+        # PR #6 replaces one literal with a documented constant; it must equal the unrounded history value.
+        match = re.search(r"SHARED_BEST_VAL_ACCURACY = ([\d.]+)", CONSTANTS)
+        if match:
+            exact = gen.best_validation(ROOT / record["models"]["shared"]["training_history"])["accuracy"]
+            self.assertEqual(float(match.group(1)), exact)
+
+
 if __name__ == "__main__":
     unittest.main()
