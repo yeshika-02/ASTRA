@@ -37,14 +37,14 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 | ID | Task (old ID) | Pri | Status | Branch | PR | Commits | Tests |
 |---|---|---|---|---|---|---|---|
 | SP-00 | Sprint dossier, tracker, Phase 0 merge record | P0 | In Progress | `sprint/tracking` | (tracker PR) | 6 planning commits (0457af5…) | validator: no new broken links (24 pre-existing) |
-| SP-01 | Fix `rules-of-hooks` bug in `CosmicBackground.tsx` (T13) | P0 | Pending | `fix/eslint-react-hooks` | — | — | — |
-| SP-02 | Fix 7 `react-hooks/purity` + 3 `set-state-in-effect` errors (T13) | P0 | Pending | `fix/eslint-react-hooks` | — | — | — |
-| SP-03 | Replace 34 `any` with typed API responses (T13, U5) | P1 | Pending | `fix/eslint-react-hooks` | — | — | — |
-| SP-04 | Unused vars, JSX comment, font warning (T13) | P1 | Pending | `fix/eslint-react-hooks` | — | — | — |
-| SP-05 | Make ESLint a CI gate (roadmap 1.7) | P0 | Pending | `fix/eslint-react-hooks` | — | — | — |
-| SP-06 | GitHub Actions → v7; caching; coverage artifact | P0 | Pending | `ci/actions-v7` | — | — | — |
-| SP-07 | Fix 24 doc links → validator 100/100; PR-template casing; re-enable AgentOS workflows (T9) | P0 | Pending | `docs/agentos-validator-100` | — | — | — |
-| SP-08 | Python tests for `training/` helpers (roadmap 1.9, E2) | P1 | Pending | `test/python-coverage` | — | — | — |
+| SP-01 | Fix `rules-of-hooks` bug in `CosmicBackground.tsx` (T13) | P0 | Completed (in review) | `fix/eslint-react-hooks` | #6 | 1843001 | crash reproduced on prod build, fixed: GFX LOW/MED/HIGH + reload with saved low, no React #300 |
+| SP-02 | Fix 7 `react-hooks/purity` + 3 `set-state-in-effect` errors (T13) | P0 | Completed (in review) | `fix/eslint-react-hooks` | #6 | f092e45, 1fcd973 | 0 react-hooks errors; counters, palette checked in browser; scroll highlight not verifiable (hidden pane) |
+| SP-03 | Replace 34 `any` with typed API responses (T13, U5) | P1 | Completed (in review) | `fix/eslint-react-hooks` | #6 | c588b85, 506b85c, f704e04 | tsc clean; Vitest 88/88; found val_accuracy + parseFloat bugs |
+| SP-04 | Unused vars, JSX comment, font warning (T13) | P1 | Completed (in review) | `fix/eslint-react-hooks` | #6 | f704e04, fc47b7d, 98f105e | ESLint 0 errors / 0 warnings; font self-hosted, verified in browser |
+| SP-05 | Make ESLint a CI gate (roadmap 1.7) | P0 | Completed (in review) | `fix/eslint-react-hooks` | #6 | 308bf5b | CI web job with `--max-warnings=0` passes (PR #6) |
+| SP-06 | GitHub Actions → v7; caching; coverage artifact | P0 | Completed (in review) | `ci/actions-v7` | #3 | f3778c1, 7166f53, ebed6f0, 07311e7, 9a345aa | actionlint clean (was 1 error); no Node 20 annotations; `python-coverage` artifact uploaded; release archive dry run 5,351/5,351 files |
+| SP-07 | Fix 24 doc links → validator 100/100; PR-template casing; re-enable AgentOS workflows (T9) | P0 | Completed with exception (in review) | `docs/agentos-validator-100` | #4 | 5c9bdc6, 04015a5, 4fc95e4, 7ee7a95 | validator 100/100 on Windows and Linux (CI); suite 21/21; `lint.yml` stays manual, see SP-36 |
+| SP-08 | Python tests for `training/` helpers (roadmap 1.9, E2) | P1 | In Progress | `test/python-coverage` | #5 | a205ca4, 7ace8cd, 3a87533, 7267531, 40a6592 | 62 passed + 1 xfail; `training/` coverage 7% → 22.5% (target 40% needs SP-09 first) |
 | SP-09 | Central config replacing 27 hardcoded paths (T7, R3) | P0 | Pending | `refactor/config-paths` | — | — | — |
 | SP-10 | `--seed` / `--data-dir` / `--out-dir` CLI flags (T7, R2) | P0 | Pending | `refactor/config-paths` | — | — | — |
 | SP-11 | README reproduction commands that run (T7, R2) | P0 | Pending | `docs/reproduction-and-env` | — | — | — |
@@ -72,6 +72,19 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 | SP-33 | Day 7: rebase merge in dependency order; verify `main` | P0 | Pending | — | — | — | — |
 | SP-34 | Day 7: full validation on `main` | P0 | Pending | — | — | — | — |
 | SP-35 | Day 7: CHANGELOG (incl. `v1.1.0` tag), status, roadmap; merge tracker last | P0 | Pending | `sprint/tracking` | — | — | — |
+| SP-36 | AgentOS `lint.yml`: framework code fails its own lint (52 ruff errors with defaults, 3 yamllint) | P2 | Blocked (D6) | — | — | — | found in SP-07 |
+| SP-37 | Upload preprocessing: robust outlier clipping aligned with training (audit P7) | P2 | Pending (Phase 3) | — | — | — | pinned by an expectedFailure test in #5 |
+
+### Findings log (sprint)
+
+| Date | Source | Finding | Routed to |
+|---|---|---|---|
+| 2026-11-09 | SP-06 | `v1.1.0` release run failed at "Create release archive"; logs expired, cause unconfirmed; step replaced with `git archive` | #3 |
+| 2026-11-09 | SP-06 | `release.yml` body advertises "Verified Metrics (Zero-Hallucination)" and "8/8 audits PASS" | SP-18 |
+| 2026-11-09 | SP-07 | `docs/index.md` states "All scientific results have been independently verified" | SP-18 |
+| 2026-11-09 | SP-08 | Upload clipping uses non-robust mean/std (spike survives at abs(z) ~ 31) | SP-37 |
+| 2026-11-09 | SP-08 | `ASTRADataset` silently falls back to a random split without frozen files; test-split leakage check ignores `val` | SP-09, SP-21 |
+| 2026-11-09 | SP-03 | UI showed a hidden hardcoded val accuracy (field missing from `/api/model`) | fixed in #6; source in SP-20 |
 
 ### Acceptance criteria
 
@@ -144,6 +157,8 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
   - Faithfulness test passes on an untrained model.
   - Nothing is rendered without real model output.
 - **SP-32–35:** see [7_DAY_SPRINT.md](7_DAY_SPRINT.md) §5 (Day 7) and §11.
+- **SP-36:** owner decides (D6) whether to fix framework lint debt or keep `lint.yml` manual.
+- **SP-37:** upload path uses robust clipping consistent with training; the expectedFailure test then passes.
 
 ---
 
