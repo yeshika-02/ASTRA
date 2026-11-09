@@ -37,7 +37,7 @@ Status is based on what the code, data and runs show, not on README or engineeri
 
 ## 🟦 Current: 7-day sprint (2026-11-09 → 2026-11-15)
 
-- **Status:** Days 1–3 done. PRs #3–#9 open, waiting for the Day 7 joint review; nothing from the sprint is on `main` yet.
+- **Status:** Days 1–4 done. PRs #3–#10 open, waiting for the Day 7 joint review; nothing from the sprint is on `main` yet.
 - **Day 1 results (pending merge):**
   - ESLint 86 → 0 findings, and a page-crashing React hook bug fixed (#6).
   - AgentOS validator 100/100 (#4).
@@ -53,6 +53,9 @@ Status is based on what the code, data and runs show, not on README or engineeri
   - `training/evaluate.py`: test metrics with bootstrap CIs, a hash gate that keeps new models apart from the published one, checked against the published confusion matrices (#9).
   - Training, CV and evaluation records name the git commit, environment, seed and data hashes, checked in CI (#9).
   - Recomputing the published 78.17% still needs the original checkpoint (owner action D4).
+- **Day 4 results (pending merge):**
+  - Every published number now has one source with a status (`models/published_metrics.json`, `docs/metrics.md`); platform artifacts are generated, not hand-copied (#10).
+  - Corrected: README results that came from an earlier 269-star experiment, a CNN row contradicted by its own confusion matrix, NLL copied from ECE, unsourced variant accuracies and lineage counts (#10).
 - **Plan:** [7_DAY_SPRINT.md](7_DAY_SPRINT.md). **Tasks:** SP-00…SP-35 in [TASK_CHECKLIST.md](TASK_CHECKLIST.md).
 - **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk), D6 (AgentOS framework lint debt).
 
