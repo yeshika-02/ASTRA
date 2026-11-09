@@ -78,7 +78,7 @@ export default function ModelOperationsPage() {
   };
 
   // Convert per-class ECE from calibration.json
-  const perClassEceData = Object.entries(calibration.per_class).map(([cls, metrics]: [string, any]) => ({
+  const perClassEceData = Object.entries(calibration.per_class).map(([cls, metrics]) => ({
     class: cls,
     before: metrics.transformer_raw,
     after: metrics.transformer_calibrated,
@@ -182,7 +182,7 @@ export default function ModelOperationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1A2430]">
-              {checkpoints.map((ckpt: any, idx: number) => {
+              {checkpoints.map((ckpt, idx) => {
                 const isProduction = ckpt.filename === 'best_star_transformer_shared.pt';
                 const hasKeysMismatch = ckpt.missing_keys > 0 || ckpt.unexpected_keys > 0;
                 const benchData = getBenchmarkForCheckpoint(ckpt.filename);

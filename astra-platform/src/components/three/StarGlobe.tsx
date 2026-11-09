@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Line, Html } from '@react-three/drei';
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useMemo, useState, useEffect, type ComponentRef } from 'react';
 import * as THREE from 'three';
 import { useStars } from '@/lib/hooks';
 import { useAstraStore } from '@/lib/store';
@@ -74,7 +74,7 @@ function StarGlobeScene({ stars }: { stars: Star[] }) {
   const { selectedStar, setSelectedStar } = useAstraStore();
   const [hoveredStar, setHoveredStar] = useState<Star | null>(null);
   const groupRef = useRef<THREE.Group>(null);
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null);
   
   // Ref for pulsing selector ring
   const pulseRef = useRef<THREE.Mesh>(null);

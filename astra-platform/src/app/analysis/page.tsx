@@ -105,7 +105,7 @@ function LightCurveChart({
                   fontFamily: 'IBM Plex Mono, monospace',
                   color: '#D7DEE7',
                 }}
-                formatter={(v: any) => [typeof v === 'number' ? v.toFixed(5) : String(v), 'Flux']}
+                formatter={(v: unknown) => [typeof v === 'number' ? v.toFixed(5) : String(v), 'Flux']}
               />
               {type === 'raw' && (
                 <Brush dataKey="x" height={16} stroke="#1A2430" fill="#0C1118" travellerWidth={4} />

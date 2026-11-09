@@ -90,7 +90,7 @@ const getMainElement = () => document.querySelector('main');
 const getServerMainElement = () => null;
 
 export default function Home() {
-  const [health, setHealth] = useState<any>(null);
+  const [health, setHealth] = useState<{ status: string; summary?: string } | null>(null);
   const [activeSection, setActiveSection] = useState(0);
   const mainElement = useSyncExternalStore(subscribeToNothing, getMainElement, getServerMainElement);
 
@@ -256,7 +256,7 @@ export default function Home() {
                     />
                   )}
                   <span className={`text-[10px] leading-none tracking-[0.12em] ${isActive ? 'text-[#6EA8FE] font-bold' : 'text-[#5A6878] group-hover:text-[#8B97A7]'}`}>
-                    {node.tag} // {node.title}
+                    {node.tag} {'//'} {node.title}
                   </span>
                   <span className={`text-[9px] leading-none mt-1.5 ${isActive ? 'text-white/60' : 'text-transparent group-hover:text-white/20'}`}>
                     {node.desc}
