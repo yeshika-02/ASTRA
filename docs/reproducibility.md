@@ -92,7 +92,7 @@ python training/train_transformer.py --variant shared --seed 42 --out-dir output
 python training/train_cnn.py --use-folded --augment --seed 42 --tag dual_aug --out-dir outputs/run_cnn
 ```
 
-Pass `--out-dir`: the default is `models/saved/`, which holds the published training records.
+Without `--out-dir`, runs go to `outputs/runs/`. `models/saved/` holds the published training records and is never written to by default.
 
 Each run writes `experiment_metadata_<tag>.json`, which records:
 - the seed, data hashes and checkpoint SHA256;
