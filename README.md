@@ -139,7 +139,7 @@ ASTRA/
 │   ├── data/processed/TIC_*/             # 944 stars × 5 files, hash-locked by the manifest
 │   ├── data/scientific_dataset_freeze_v2.csv  # Cryptographically locked manifest
 │   ├── data/artifacts/                   # Audit, calibration, benchmark and registry JSON
-│   ├── data/*.onnx                       # ONNX exports of the shared transformer
+│   ├── data/*.onnx                       # ONNX graphs of the shared transformer (weight files not shipped)
 │   ├── src/                              # Next.js app source (TypeScript)
 │   └── tests/                            # Vitest API, security and no-fabrication tests
 │
@@ -543,19 +543,31 @@ The `astra-platform/` directory contains an interactive research web application
 
 ### Platform Features
 
-- **`/api/upload`** — Accepts raw TESS-format CSV, runs preprocessing (detrending → phase-folding → resampling), returns ONNX inference results with calibrated probabilities
-- **`/api/health`** — SystemState controller (`READY` / `DEGRADED` / `BLOCKED`) based on live dataset fingerprint verification
-- **Attention Visualization** — Live `250×250` self-attention map rendering on client canvas
-- **Mission Replay** — Animated walkthrough of a star's light-curve classification journey
-- **MC Dropout Display** — Real-time 10-pass uncertainty quantification per uploaded star
+- **`/api/upload`**: accepts JSON `{ "period": <days>, "flux": [...] }` (50 to 100,000 points), normalizes and resamples to 1,000 points, phase-folds at the given period, and runs the explainability ONNX model with temperature scaling (T = 1.257665). Returns class probabilities and the attention matrix.
+- **`/api/predict/[id]`**: 30-pass MC Dropout prediction for a catalog star from the PyTorch checkpoint, shown on the star detail page.
+- **`/api/health`**: reports `READY` (data verified and all inference runnable), `DEGRADED` (data verified, some or all inference unavailable) or `BLOCKED` (manifest or star database missing or not matching).
+- **Attention Visualization**: 250 × 250 self-attention map (125 raw + 125 folded CNN tokens), rendered on a client canvas.
+- **Mission Replay**: animated walkthrough of a star's light-curve classification.
+
+**Model weights are not in the repository.** The ONNX files in `astra-platform/data/` are graphs whose weights live in separate `.onnx.data` files, and the PyTorch checkpoint is not shipped. On a fresh clone the inference endpoints return `503` with `"status": "inference_unavailable"` and the reasons, and health reports `DEGRADED`. They never return placeholder predictions.
 
 ### Running Locally
 
+Requires Node.js 22.5 or later.
+
 ```bash
 cd astra-platform
-npm install
-npm run dev
-# Open http://localhost:3000
+npm ci              # install the exact versions in package-lock.json
+npm run dev         # open http://localhost:3000
+```
+
+Checks:
+
+```bash
+npm run typecheck
+npm run lint        # ESLint
+npm test            # Vitest: API, security, health and no-fabrication tests
+npm run build
 ```
 
 ---
