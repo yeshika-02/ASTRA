@@ -453,6 +453,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     args = build_arg_parser().parse_args(argv)
     paths = get_paths()
 

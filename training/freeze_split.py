@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,11 +17,14 @@ import numpy as np
 from sklearn.model_selection import GroupShuffleSplit
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
 SPLITS_DIR = PROJECT_ROOT / "splits"
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     # 1. Scan for valid TIC directories
     tic_dirs = sorted(DATA_DIR.glob("TIC_*"))
     valid_tic_ids: list[str] = []

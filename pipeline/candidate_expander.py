@@ -830,6 +830,8 @@ def run_expansion(
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     parser = argparse.ArgumentParser(description="ASTRA Phase 6A — Candidate Expander")
     parser.add_argument("--data-root", type=Path, default=DEFAULT_PHASE6_ROOT)
     parser.add_argument("--target-solar", type=int, default=500,

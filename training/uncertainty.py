@@ -95,6 +95,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     args = build_arg_parser().parse_args(argv)
     checkpoint_path = resolve_cli_path(args.checkpoint, CHECKPOINT_PATH)
     data_dir = resolve_cli_path(args.data_dir, PATHS.processed_dir)

@@ -168,6 +168,8 @@ def generate_summary(results: list[dict], save_dir: Path) -> Path:
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     parser = argparse.ArgumentParser(
         description="ASTRA controlled retraining experiment (raw vs dual-branch)."
     )

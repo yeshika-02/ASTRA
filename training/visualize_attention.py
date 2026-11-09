@@ -84,6 +84,8 @@ def plot_attention_1d(
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     parser = argparse.ArgumentParser(description="ASTRA Attention Weight Visualization")
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to trained .pt checkpoint")
     parser.add_argument("--output-dir", type=str, required=True, help="Artifact output directory")

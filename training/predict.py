@@ -96,6 +96,8 @@ def save_attention_map(attention_weights: torch.Tensor, output_path: Path) -> No
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     parser = argparse.ArgumentParser(description="ASTRA Production Inference CLI")
     parser.add_argument("--input", type=str, required=True, help="Path to stellar directory (e.g. data/processed/TIC_109718459/)")
     parser.add_argument("--checkpoint", type=str, default="models/saved/best_star_transformer_shared.pt", help="Path to best PyTorch model checkpoint")
