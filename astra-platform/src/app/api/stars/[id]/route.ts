@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseSync } from 'node:sqlite';
 import { pathToFileURL } from 'node:url';
 import * as path from 'path';
+import { errorMessage } from '@/lib/server/errors';
+import type { StarRow } from '@/lib/types/artifacts';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +19,7 @@ export async function GET(
     const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
     
     const stmt = db.prepare('SELECT * FROM stars WHERE tic_id = ?');
-    const r = stmt.get(ticId) as any;
+    const r = stmt.get(ticId) as StarRow | undefined;
     
     if (!r) {
       return NextResponse.json({ error: 'Star not found' }, { status: 404 });
@@ -31,10 +33,10 @@ export async function GET(
     };
     
     return NextResponse.json(star);
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json({ 
       error: 'Failed to query database', 
-      details: error.message || String(error)
+      details: errorMessage(error)
     }, { status: 500 });
   }
 }
