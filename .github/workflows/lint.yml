@@ -1,7 +1,9 @@
 name: AgentOS Lint
 
-# Manual-only until ASTRA's docs link check passes and the AgentOS validator reaches 100/100
-# (ADR-0059, task T9). Then restore: push to [main, develop] and pull_request to [main].
+# Still manual-only (ADR-0059). The validator now passes, but this workflow lints the AgentOS
+# framework's own code, which has 52 ruff errors even with ruff defaults, plus 3 yamllint
+# findings in framework YAML. Fixing framework internals is out of scope; tracked as a
+# follow-up. ASTRA's own code is linted by ci.yml.
 on:
   workflow_dispatch:
 
