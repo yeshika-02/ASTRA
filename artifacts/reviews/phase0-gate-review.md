@@ -49,6 +49,13 @@ On a local `next start` production server:
 
 Run 42519045208 on the pushed branch: Lint, Python tests 3.11 and 3.12 (21 passed each, model smoke tests included), Dataset integrity and Web platform (88 tests, build) all passed.
 
+## Merge record
+
+- [PR #1](https://github.com/yeshika-02/ASTRA/pull/1) rebase-merged 2026-11-08T20:31:10Z UTC; `main` = `1beca47`. The tree is identical to the reviewed head `31bb98f`.
+- Pre-merge review found and fixed 44 CRLF files (`31bb98f`).
+- Post-merge CI on `main`: run 42520528644, 5/5 jobs passed.
+- Production: not updated. It is deployed from a separate Vercel account, outside this repository's control.
+
 ## Exit decision
 
 **PASS (with one documented lint exception).** Phase 0 is complete. Phase 1 starts only after owner review.

@@ -1,6 +1,6 @@
 # ASTRA — Project Status
 
-**As of:** 2026-11-09 (updated after Phase 0) · **Baseline commit:** `7821d3f` · **Phase 0 branch:** `phase0/integrity-security-hotfix` · **Source:** [PROJECT_AUDIT.md](PROJECT_AUDIT.md) (finding IDs in brackets)
+**As of:** 2026-11-09 (Phase 0 merged) · **`main`:** `1beca47` · **Phase 0:** [PR #1](https://github.com/yeshika-02/ASTRA/pull/1), merged by rebase · **Source:** [PROJECT_AUDIT.md](PROJECT_AUDIT.md) (finding IDs in brackets)
 
 Status is based on what the code, data and runs show, not on README or engineering-log claims.
 
@@ -29,13 +29,13 @@ Status is based on what the code, data and runs show, not on README or engineeri
 | Web platform: inference | 🟨 | Phase 0: fabricated output removed; honest 503 + "unavailable" UI [P1 ✅]. Still no real inference: no weights [R1], no runtime [P3, P4] |
 | Security | 🟨 | Command injection fixed (no shell, strict validation) [P2 ✅]; no rate limiting or dependency audit yet |
 | Tests | 🟨 | 21 Python + 88 web tests pass (API, security, health, no-fabrication, model smoke); `training/` coverage still low [E2] |
-| CI | ✅ | All 5 jobs green on GitHub (run 42519045208, first green run in the repo's history) [E1 ✅] |
-| Deployment | 🟨 | Vercel live still runs the old code until this branch is merged and deployed; Docker image broken [P4] |
+| CI | ✅ | All 5 jobs green on `main` after the merge (run 42520528644) [E1 ✅] |
+| Deployment | ⚠️ | Phase 0 is on `main`, but the live Vercel site (separate account) still serves the pre-Phase-0 code, including the fabricated predictions and the injection path. Deployment is out of scope until after the sprint. Docker image broken [P4] |
 | Documentation | 🟨 | Extensive, but contains false claims and broken links [E3] |
 
 ---
 
-## ✅ Phase 0 — completed 2026-11-09 (awaiting owner review; not merged or deployed)
+## ✅ Phase 0 — completed and merged to `main` 2026-11-09 (not deployed to production)
 
 | Task | Result | Evidence |
 |---|---|---|
