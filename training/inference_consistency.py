@@ -19,12 +19,14 @@ import torch.nn.functional as F
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from training.dataset import ASTRADataset
 from training.models.hybrid_transformer import HybridTransformer
 
 # Paths
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 
 
 def get_device() -> torch.device:
@@ -42,6 +44,7 @@ def compute_entropy(probs: torch.Tensor) -> torch.Tensor:
 
 
 def main() -> None:
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Inference Consistency Audit")
     print("=" * 70)
@@ -54,7 +57,7 @@ def main() -> None:
     print(f"Using Device: {device}")
 
     # 1. Load dataset (no augmentations, evaluation mode)
-    val_dataset = ASTRADataset(data_dir=PROJECT_ROOT / "data" / "processed", split="val", use_folded=True)
+    val_dataset = ASTRADataset(data_dir=PATHS.processed_dir, split="val", use_folded=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     # 2. Load frozen model checkpoint
@@ -187,7 +190,7 @@ def main() -> None:
     ]
 
     report_path = ARTIFACT_DIR / "inference_consistency_report.md"
-    report_path.write_text("\n".join(report_lines) + "\n")
+    report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     print(f"Consistency report written successfully → {report_path}")
 
     # Raise assertion if not consistent

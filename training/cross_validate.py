@@ -8,6 +8,7 @@ Outputs statistical_report.md, fold_metrics.csv, and aggregate_metrics.json.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import logging
@@ -24,6 +25,7 @@ from torch.utils.data import DataLoader
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths, resolve_cli_path
 from data.labels import CLASS_NAMES, NUM_CLASSES
 from training.dataset import ASTRADataset
 from training.models.hybrid_transformer import HybridTransformer
@@ -38,8 +40,9 @@ logging.basicConfig(
 )
 
 # Output Paths
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3")
-DATA_DIR = PROJECT_ROOT / "data" / "phase6" / "processed"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+DATA_DIR = PATHS.processed_dir
 
 
 def set_deterministic_seeds(seed: int) -> None:
@@ -57,8 +60,10 @@ def set_deterministic_seeds(seed: int) -> None:
 
 class CrossValDataset(ASTRADataset):
     """Custom dataset wrapper for cross-validation subsets."""
-    def __init__(self, samples: list[dict], use_folded: bool = True, augment: bool = False) -> None:
-        self.data_dir = DATA_DIR
+    def __init__(
+        self, samples: list[dict], use_folded: bool = True, augment: bool = False, data_dir: Path = DATA_DIR
+    ) -> None:
+        self.data_dir = data_dir
         self.split = "custom"
         self.use_folded = use_folded
         self.augment = augment
@@ -67,9 +72,9 @@ class CrossValDataset(ASTRADataset):
         self._label_list = [s["label"] for s in samples]
 
 
-def scan_all_samples() -> list[dict]:
+def scan_all_samples(data_dir: Path = DATA_DIR) -> list[dict]:
     """Scan all processed TIC directories to build list of valid samples."""
-    tic_dirs = sorted(DATA_DIR.glob("TIC_*"))
+    tic_dirs = sorted(Path(data_dir).glob("TIC_*"))
     required_files = ("flux_1000.npy", "flux_200.npy", "folded_flux_1000.npy", "folded_flux_200.npy", "metadata.json")
 
     samples = []
@@ -184,8 +189,12 @@ def evaluate_subgroups(val_results: dict, val_samples: list[dict]) -> dict:
     }
 
 
-def save_confusion_matrix(labels: list[int], preds: list[int], seed: int, fold: int) -> None:
+def save_confusion_matrix(
+    labels: list[int], preds: list[int], seed: int, fold: int, out_dir: Path | None = None
+) -> None:
     """Generate and save confusion matrix plot for this fold."""
+    out_dir = ARTIFACT_DIR if out_dir is None else out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -210,14 +219,36 @@ def save_confusion_matrix(labels: list[int], preds: list[int], seed: int, fold: 
     ax.set_title(f"Confusion Matrix (Seed {seed}, Fold {fold})", fontsize=12, fontweight="bold")
     plt.tight_layout()
 
-    save_path = ARTIFACT_DIR / f"confusion_matrix_seed{seed}_fold{fold}.png"
+    save_path = out_dir / f"confusion_matrix_seed{seed}_fold{fold}.png"
     fig.savefig(save_path, dpi=120)
     plt.close(fig)
 
 
-def main() -> None:
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Repeated group-aware stratified k-fold cross-validation of the shared transformer."
+    )
+    parser.add_argument("--seeds", type=int, nargs="+", default=[42, 100, 2026],
+                        help="Repeat seeds (default: 42 100 2026)")
+    parser.add_argument("--folds", type=int, default=5, help="Number of folds (default: 5)")
+    parser.add_argument("--epochs", type=int, default=50, help="Epochs per fold (default: 50)")
+    parser.add_argument("--data-dir", type=str, default=None,
+                        help="Processed arrays (default: configured processed dir)")
+    parser.add_argument("--out-dir", type=str, default=None,
+                        help="Reports and plots (default: configured output dir)")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_arg_parser().parse_args(argv)
+    data_dir = resolve_cli_path(args.data_dir, DATA_DIR)
+    out_dir = resolve_cli_path(args.out_dir, ARTIFACT_DIR)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    seeds = list(args.seeds)
+    n_folds = args.folds
+    n_epochs = args.epochs
     print("=" * 70)
-    print("  ASTRA 5-Fold, 3-Seed Cross-Validation")
+    print(f"  ASTRA {n_folds}-Fold, {len(seeds)}-Seed Cross-Validation")
     print("=" * 70)
 
     # 1. Device Selection
@@ -228,7 +259,7 @@ def main() -> None:
     print(f"Device: {device}")
 
     # 2. Scan samples
-    samples = scan_all_samples()
+    samples = scan_all_samples(data_dir)
     n_samples = len(samples)
     print(f"Found {n_samples} total valid stars in the dataset.")
 
@@ -238,16 +269,15 @@ def main() -> None:
     labels_arr = np.array([s["label"] for s in samples])
     groups_arr = np.array([s["tic_id"] for s in samples])
 
-    seeds = [42, 100, 2026]
     all_fold_records = []
 
     csv_rows = []
 
     for seed in seeds:
-        print(f"\n[Seed {seed}] Running 5-Fold Cross-Validation...")
+        print(f"\n[Seed {seed}] Running {n_folds}-Fold Cross-Validation...")
         set_deterministic_seeds(seed)
 
-        sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=seed)
+        sgkf = StratifiedGroupKFold(n_splits=n_folds, shuffle=True, random_state=seed)
 
         for fold, (train_idx, val_idx) in enumerate(sgkf.split(samples, labels_arr, groups=groups_arr)):
             t0 = time.time()
@@ -255,8 +285,8 @@ def main() -> None:
             val_samples = [samples[i] for i in val_idx]
 
             # Setup datasets
-            train_dataset = CrossValDataset(train_samples, use_folded=True, augment=True)
-            val_dataset = CrossValDataset(val_samples, use_folded=True, augment=False)
+            train_dataset = CrossValDataset(train_samples, use_folded=True, augment=True, data_dir=data_dir)
+            val_dataset = CrossValDataset(val_samples, use_folded=True, augment=False, data_dir=data_dir)
 
             train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
             val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
@@ -268,13 +298,13 @@ def main() -> None:
             class_weights = train_dataset.class_weights.to(device)
             criterion = RegularizedFocalLoss(alpha=class_weights, gamma=2.0, label_smoothing=0.1)
             optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-3)
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epochs)
 
             # Training loop
             best_val_acc = 0.0
             best_val_results = None
 
-            for epoch in range(1, 51):
+            for epoch in range(1, n_epochs + 1):
                 train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
                 val_res = validate(model, val_loader, criterion, device)
                 scheduler.step()
@@ -295,7 +325,7 @@ def main() -> None:
             subgroups = evaluate_subgroups(best_val_results, val_samples)
 
             # Save confusion matrix
-            save_confusion_matrix(y_true, y_pred, seed, fold)
+            save_confusion_matrix(y_true, y_pred, seed, fold, out_dir=out_dir)
 
             elapsed = time.time() - t0
             print(f"  Fold {fold} finished in {elapsed:.1f}s | Val Acc: {best_val_acc:.4f} | Subgroups: Cat {subgroups['catalog_accuracy']:.4f}, BLS {subgroups['bls_accuracy']:.4f}")
@@ -321,14 +351,14 @@ def main() -> None:
             csv_rows.append(record)
 
     # Write to fold_metrics.csv
-    csv_path = ARTIFACT_DIR / "fold_metrics.csv"
-    with open(csv_path, "w", newline="") as f:
+    csv_path = out_dir / "fold_metrics.csv"
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=csv_rows[0].keys())
         writer.writeheader()
         writer.writerows(csv_rows)
     print(f"\nFold metrics saved successfully → {csv_path}")
 
-    # Calculate statistics across all 15 runs
+    # Calculate statistics across all runs (folds x seeds)
     accuracies = [r["accuracy"] for r in all_fold_records]
     macro_f1s = [r["macro_f1"] for r in all_fold_records]
     cat_accs = [r["catalog_accuracy"] for r in all_fold_records]
@@ -357,7 +387,7 @@ def main() -> None:
     }
 
     # Write to aggregate_metrics.json
-    agg_path = ARTIFACT_DIR / "aggregate_metrics.json"
+    agg_path = out_dir / "aggregate_metrics.json"
     with open(agg_path, "w") as f:
         json.dump(agg_metrics, f, indent=2)
     print(f"Aggregate metrics saved successfully → {agg_path}")
@@ -366,7 +396,7 @@ def main() -> None:
     report_lines = [
         "# ASTRA — Statistical Validation Report",
         "",
-        "This report evaluates the statistical generalization of the ASTRA Hybrid Shared Transformer model under repeated Group-aware Stratified K-Fold cross-validation (5 folds, 3 seeds, 15 runs total).",
+        f"This report evaluates the statistical generalization of the ASTRA Hybrid Shared Transformer model under repeated Group-aware Stratified K-Fold cross-validation ({n_folds} folds, {len(seeds)} seeds, {n_folds * len(seeds)} runs total).",
         "",
         "## 1. Overall Validation Summary",
         "",
@@ -404,12 +434,12 @@ def main() -> None:
         "",
         "## 5. Reference Files",
         "",
-        "- Detailed fold-level metrics: [fold_metrics.csv](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/fold_metrics.csv)",
-        "- Aggregate JSON metrics: [aggregate_metrics.json](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/aggregate_metrics.json)",
+        "- Detailed fold-level metrics: [fold_metrics.csv](fold_metrics.csv)",
+        "- Aggregate JSON metrics: [aggregate_metrics.json](aggregate_metrics.json)",
     ])
 
-    report_path = ARTIFACT_DIR / "statistical_report.md"
-    report_path.write_text("\n".join(report_lines) + "\n")
+    report_path = out_dir / "statistical_report.md"
+    report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     print(f"Statistical report saved successfully → {report_path}")
 
 
