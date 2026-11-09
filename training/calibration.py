@@ -9,6 +9,7 @@ and saves diagnostic plots and calibration_report.md.
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -22,7 +23,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from astra.config import get_paths
+from astra.config import get_paths, resolve_cli_path
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -139,23 +140,42 @@ def plot_confidence_histograms(confidences_before: np.ndarray, confidences_after
     plt.close()
 
 
-def main() -> None:
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Fit a temperature-scaling parameter on the validation split.")
+    parser.add_argument("--checkpoint", type=str, default=None,
+                        help="Model checkpoint (default: models dir / best_star_transformer_shared.pt)")
+    parser.add_argument("--data-dir", type=str, default=None,
+                        help="Processed arrays (default: configured processed dir)")
+    parser.add_argument("--out-dir", type=str, default=None,
+                        help="Report and plots (default: configured output dir)")
+    parser.add_argument("--temperature-out", type=str, default=None,
+                        help="Where to write the fitted temperature (default: models dir / optimal_temperature.txt)")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_arg_parser().parse_args(argv)
+    checkpoint_path = resolve_cli_path(args.checkpoint, CHECKPOINT_PATH)
+    data_dir = resolve_cli_path(args.data_dir, PATHS.processed_dir)
+    out_dir = resolve_cli_path(args.out_dir, ARTIFACT_DIR)
+    temperature_out = resolve_cli_path(args.temperature_out, PATHS.model("optimal_temperature.txt"))
+
     print("=" * 70)
     print("  ASTRA Temperature Scaling Calibration")
     print("=" * 70)
 
-    if not CHECKPOINT_PATH.exists():
-        print(f"❌ ERROR: Checkpoint not found at {CHECKPOINT_PATH}. Run training first.")
+    if not checkpoint_path.exists():
+        print(f"❌ ERROR: Checkpoint not found at {checkpoint_path}. Run training first.")
         sys.exit(1)
 
     device = torch.device("cpu")  # cpu is fine for calibration
 
     # ── 1. Load Validation Data ──
-    val_dataset = ASTRADataset(data_dir=PATHS.processed_dir, split="val", use_folded=True)
+    val_dataset = ASTRADataset(data_dir=data_dir, split="val", use_folded=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     # ── 2. Load Checkpoint ──
-    ckpt = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=True)
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model = HybridTransformer(variant=ckpt["variant"], num_classes=ckpt["num_classes"])
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
@@ -198,7 +218,8 @@ def main() -> None:
 
     optimal_T = torch.exp(log_temperature).item()
     print(f"\nOptimal Temperature T: {optimal_T:.4f}")
-    with open(PATHS.model("optimal_temperature.txt"), "w") as f:
+    temperature_out.parent.mkdir(parents=True, exist_ok=True)
+    with open(temperature_out, "w") as f:
         f.write(f"{optimal_T:.6f}\n")
 
     # ── 6. Compute Metrics AFTER Calibration ──
@@ -212,16 +233,16 @@ def main() -> None:
     print(f"  Brier Score:                       {brier_after:.4f}")
 
     # ── 7. Generate Diagrams and Plots ──
-    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    plot_reliability_diagram(bins_before, ece_before, "Reliability Diagram (Before Scaling)", ARTIFACT_DIR / "reliability_before.png")
-    plot_reliability_diagram(bins_after, ece_after, "Reliability Diagram (After Scaling)", ARTIFACT_DIR / "reliability_after.png")
+    plot_reliability_diagram(bins_before, ece_before, "Reliability Diagram (Before Scaling)", out_dir / "reliability_before.png")
+    plot_reliability_diagram(bins_after, ece_after, "Reliability Diagram (After Scaling)", out_dir / "reliability_after.png")
 
     confidences_before = probs_before.max(dim=1).values.numpy()
     confidences_after = probs_after.max(dim=1).values.numpy()
-    plot_confidence_histograms(confidences_before, confidences_after, ARTIFACT_DIR / "confidence_histograms.png")
+    plot_confidence_histograms(confidences_before, confidences_after, out_dir / "confidence_histograms.png")
 
-    print(f"\nReliability diagram plots saved to {ARTIFACT_DIR}")
+    print(f"\nReliability diagram plots saved to {out_dir}")
 
     # ── 8. Generate calibration_report.md ──
     report_lines = [
@@ -278,7 +299,7 @@ def main() -> None:
         "- **Confidence Histograms**: [confidence_histograms.png](confidence_histograms.png)",
     ])
 
-    report_path = ARTIFACT_DIR / "calibration_report.md"
+    report_path = out_dir / "calibration_report.md"
     report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     print(f"Calibration report written successfully → {report_path}")
 
