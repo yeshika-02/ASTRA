@@ -15,6 +15,8 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - GitHub Actions upgraded to v7; Python coverage report in CI; release workflow fixed (`softprops/action-gh-release` v3, `git archive`) ([#3](https://github.com/yeshika-02/ASTRA/pull/3)).
 - 24 broken documentation links fixed; AgentOS validator 100/100; `validate` workflow re-enabled ([#4](https://github.com/yeshika-02/ASTRA/pull/4)).
 - 41 Python tests for losses, calibration metrics, dataset splits, explainability parity and inference helpers ([#5](https://github.com/yeshika-02/ASTRA/pull/5)).
+- Central path configuration (`astra.config`, `ASTRA_*` environment overrides) replacing 27 machine-specific paths; `--seed`/`--data-dir`/`--out-dir` and other real CLI flags on training, cross-validation, calibration and uncertainty scripts; fixed report-writer crashes, UTF-8 reports, undeclared dependencies and a cleanup script that deleted by default ([#7](https://github.com/yeshika-02/ASTRA/pull/7)).
+- `pipeline/prepare_from_repo.py` verifies the shipped dataset and rebuilds `data/phase6` from a clone; CI fresh-clone reproduction job; `requirements-lock.txt`; `onnx`/`onnxscript` declared; `export_model.py` and `visualize_attention.py` fixed; README commands now match the code ([#8](https://github.com/yeshika-02/ASTRA/pull/8)).
 
 ### Security
 - **Command injection in `POST /api/upload` fixed.** Request fields were interpolated into a shell command; inference now spawns Python with an argument array (`shell: false`), sends flux over stdin, and validates every input. `upload_inference.py` no longer reads a server file when `--flux` is a path.
