@@ -36,14 +36,14 @@ is an end-to-end machine learning pipeline for classifying stellar variability f
 
 All scientific results have been independently verified:
 
-- [`ground_truth_final_verdict.md`](../ground_truth_final_verdict.md) — Master audit verdict
-- [`ground_truth_metrics.md`](../ground_truth_metrics.md) — Recomputed metrics with bootstrap CIs
-- [`ground_truth_checkpoint_audit.md`](../ground_truth_checkpoint_audit.md) — Checkpoint integrity
-- [`ground_truth_dataset_audit.md`](../ground_truth_dataset_audit.md) — Dataset integrity
-- [`ground_truth_split_audit.md`](../ground_truth_split_audit.md) — Split leakage check
-- [`ground_truth_calibration.md`](../ground_truth_calibration.md) — Calibration verification
-- [`ground_truth_uncertainty.md`](../ground_truth_uncertainty.md) — MC Dropout AUROC
-- [`ground_truth_reproducibility.md`](../ground_truth_reproducibility.md) — Hash verification
+- [`ground_truth_final_verdict.md`](engineering-log/ground_truth_final_verdict.md) — Master audit verdict
+- [`ground_truth_metrics.md`](engineering-log/ground_truth_metrics.md) — Recomputed metrics with bootstrap CIs
+- [`ground_truth_checkpoint_audit.md`](engineering-log/ground_truth_checkpoint_audit.md) — Checkpoint integrity
+- [`ground_truth_dataset_audit.md`](engineering-log/ground_truth_dataset_audit.md) — Dataset integrity
+- [`ground_truth_split_audit.md`](engineering-log/ground_truth_split_audit.md) — Split leakage check
+- [`ground_truth_calibration.md`](engineering-log/ground_truth_calibration.md) — Calibration verification
+- [`ground_truth_uncertainty.md`](engineering-log/ground_truth_uncertainty.md) — MC Dropout AUROC
+- [`ground_truth_reproducibility.md`](engineering-log/ground_truth_reproducibility.md) — Hash verification
 
 ---
 
