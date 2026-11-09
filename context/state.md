@@ -1,9 +1,16 @@
 # Project Heartbeat & Task State
 
 > **Last Heartbeat:** 2026-11-09
-> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Day 1 complete, PRs #3–#6 in review (see 7_DAY_SPRINT.md)
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–2 complete, PRs #3–#8 in review (see 7_DAY_SPRINT.md)
 
 ---
+
+## Session 2026-11-09 (e) — Sprint Day 2
+
+- WS-05 [#7](https://github.com/yeshika-02/ASTRA/pull/7): `astra.config` + `resolve_cli_path`, 27 machine paths → 0, real CLIs (train, CV, calibration, uncertainty), 5 fresh-clone crashes fixed, ADR-0065. 17 commits, 60 tests, `training/` coverage 56%. CI green.
+- WS-06 [#8](https://github.com/yeshika-02/ASTRA/pull/8) (stacked on #7): `prepare_from_repo.py`, CI fresh-clone job, `requirements-lock.txt`, `onnx`/`onnxscript` declared, export/attention CLIs fixed, README rewritten to match the code. 23 commits, 92 tests in a clean locked venv.
+- Findings: three calibration temperatures (SP-18), split-script ratio mismatch (SP-21), weights absent incl. ONNX `.onnx.data` (SP-14).
+- Nothing merged (ADR-0060). Next: Day 3 (WS-07 weights plan ADR-0061, `evaluate.py`, provenance).
 
 ## Session 2026-11-09 (d) — Sprint Day 1
 
