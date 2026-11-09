@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -199,6 +200,41 @@ class CalibrationCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
             with self.assertRaises(SystemExit):
                 main(["--checkpoint", str(Path(tmp) / "nope.pt")])
+
+    def test_default_temperature_goes_next_to_the_report_not_into_models_saved(self) -> None:
+        # models/saved/optimal_temperature.txt is a committed record; a default run must not replace it.
+        from training.calibration import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            processed = _synthetic_processed(root, per_class=6)
+            ckpt = root / "model.pt"
+            _random_checkpoint(ckpt)
+            out = root / "reports"
+            with redirect_stdout(io.StringIO()):
+                main(["--checkpoint", str(ckpt), "--data-dir", str(processed), "--out-dir", str(out)])
+            self.assertTrue((out / "optimal_temperature.txt").is_file())
+
+
+@unittest.skipIf(torch is None, "PyTorch not installed")
+class DefaultOutputLocationTests(unittest.TestCase):
+    def test_training_without_out_dir_never_writes_into_the_models_dir(self) -> None:
+        # The models dir (models/saved) holds the published training records (ADR-0061).
+        import training.dataset as dataset_module
+        from training.train_transformer import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            processed = _synthetic_processed(root)
+            models, outputs = root / "models_saved", root / "outputs"
+            env = {"ASTRA_MODELS_DIR": str(models), "ASTRA_OUTPUT_DIR": str(outputs)}
+            argv = ["--data-dir", str(processed), "--epochs", "1", "--batch-size", "8", "--tag", "default"]
+            with patch.dict(os.environ, env), patch.object(dataset_module, "TEST_SET_ACCESSED", False), \
+                    redirect_stdout(io.StringIO()):
+                main(argv)
+            self.assertFalse(models.exists() and any(models.iterdir()))
+            self.assertTrue((outputs / "runs" / "best_star_transformer_default.pt").is_file())
+            self.assertTrue((outputs / "runs" / "experiment_metadata_default.json").is_file())
 
 
 @unittest.skipIf(torch is None, "PyTorch not installed")
