@@ -302,13 +302,13 @@ def main() -> None:
         "## 3. Diagnostic Plots Reference",
         "",
         "The following diagnostic plots are stored in the artifact workspace:",
-        "- **Predictive Entropy Histograms**: [entropy_histograms.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/entropy_histograms.png)",
-        "- **Selective Prediction Curve**: [uncertainty_vs_accuracy.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/uncertainty_vs_accuracy.png)",
-        "- **Subgroup Predictive Entropy**: [subgroup_uncertainty_boxplots.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/subgroup_uncertainty_boxplots.png)",
+        "- **Predictive Entropy Histograms**: [entropy_histograms.png](entropy_histograms.png)",
+        "- **Selective Prediction Curve**: [uncertainty_vs_accuracy.png](uncertainty_vs_accuracy.png)",
+        "- **Subgroup Predictive Entropy**: [subgroup_uncertainty_boxplots.png](subgroup_uncertainty_boxplots.png)",
         "",
         "## 4. Reference Datasets",
         "",
-        "- Complete validation uncertainty table: [uncertainty_metrics.csv](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/uncertainty_metrics.csv)",
+        "- Complete validation uncertainty table: [uncertainty_metrics.csv](uncertainty_metrics.csv)",
     ])
 
     report_path = ARTIFACT_DIR / "uncertainty_analysis.md"

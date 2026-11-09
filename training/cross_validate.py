@@ -408,8 +408,8 @@ def main() -> None:
         "",
         "## 5. Reference Files",
         "",
-        "- Detailed fold-level metrics: [fold_metrics.csv](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/fold_metrics.csv)",
-        "- Aggregate JSON metrics: [aggregate_metrics.json](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/aggregate_metrics.json)",
+        "- Detailed fold-level metrics: [fold_metrics.csv](fold_metrics.csv)",
+        "- Aggregate JSON metrics: [aggregate_metrics.json](aggregate_metrics.json)",
     ])
 
     report_path = ARTIFACT_DIR / "statistical_report.md"

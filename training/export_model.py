@@ -190,7 +190,7 @@ def main() -> None:
         "## 3. Deployment Inference Guide",
         "",
         "A command-line script is provided to run local inferences using the PyTorch or TorchScript models:",
-        "- Script Path: [predict.py](file:///Users/soumyadebtripathy/ASTRA%20—%20Automated%20Stellar%20Transient%20Recognition%20&%20Analysis/training/predict.py)",
+        "- Script Path: `training/predict.py`",
         "",
         "```bash",
         "python training/predict.py --input data/processed/TIC_109718459/",

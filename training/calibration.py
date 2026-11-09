@@ -274,8 +274,8 @@ def main() -> None:
         "## 4. Visual Diagnostics Reference",
         "",
         "The following diagnostic plots are stored in the artifact workspace:",
-        "- **Reliability Diagrams (Before/After)**: [reliability_before.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/reliability_before.png) and [reliability_after.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/reliability_after.png)",
-        "- **Confidence Histograms**: [confidence_histograms.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/confidence_histograms.png)",
+        "- **Reliability Diagrams (Before/After)**: [reliability_before.png](reliability_before.png) and [reliability_after.png](reliability_after.png)",
+        "- **Confidence Histograms**: [confidence_histograms.png](confidence_histograms.png)",
     ])
 
     report_path = ARTIFACT_DIR / "calibration_report.md"
