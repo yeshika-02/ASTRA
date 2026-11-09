@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseSync } from 'node:sqlite';
 import { pathToFileURL } from 'node:url';
 import * as path from 'path';
+import { errorMessage } from '@/lib/server/errors';
+import type { StarRow } from '@/lib/types/artifacts';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
     const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
     
     let sql = 'SELECT * FROM stars WHERE 1=1';
-    const params: any[] = [];
+    const params: (string | number)[] = [];
     
     if (query) {
       sql += ' AND (CAST(tic_id AS TEXT) LIKE ? OR LOWER(astra_class) LIKE ? OR LOWER(primary_source) LIKE ?)';
@@ -55,7 +57,7 @@ export async function GET(request: NextRequest) {
     params.push(limit, (page - 1) * limit);
     
     const stmt = db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as unknown as StarRow[];
     
     const stars = rows.map((r) => ({
       ...r,
@@ -71,10 +73,10 @@ export async function GET(request: NextRequest) {
       limit,
       pages: Math.ceil(total / limit),
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json({ 
       error: 'Failed to query database', 
-      details: error.message || String(error)
+      details: errorMessage(error)
     }, { status: 500 });
   }
 }
