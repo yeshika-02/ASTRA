@@ -12,22 +12,37 @@
         "solar_like": 0.5238,
         "stable": 0.6552
       },
+      "sources": {
+        "ci": "docs/engineering-log/ground_truth_metrics.md",
+        "point_metrics": "models/saved/test_confusion_matrix_transformer_shared.png (identical: test_confusion_matrix_shared.png)",
+        "subgroups": "docs/engineering-log/phase7_testset_results.md (accuracy, macro F1); docs/engineering-log/phase7_subgroup_analysis.md (ECE)"
+      },
+      "status": {
+        "ci": "recorded",
+        "point_metrics": "computed from the published confusion matrix",
+        "subgroups": "recorded"
+      },
       "subgroups": {
         "bls_accuracy": 0.5769,
         "bls_macro_f1": 0.317,
         "catalog_accuracy": 0.9,
         "catalog_macro_f1": 0.5602
       },
-      "test_accuracy": 0.7817000000000001,
-      "weighted_f1": 0.7784
+      "test_accuracy": 0.7817,
+      "weighted_f1": 0.7784,
+      "weighted_f1_ci": "[0.7076, 0.8485]"
     },
     "calibration": {
       "brier_calibrated": 0.3025,
       "brier_raw": 0.3146,
       "ece_calibrated": 0.0442,
       "ece_raw": 0.081,
-      "nll_calibrated": 0.0442,
-      "nll_raw": 0.081
+      "nll_calibrated": null,
+      "nll_raw": null,
+      "note": "The audit reports NLL equal to ECE (a copy error), so no valid NLL is recorded.",
+      "source": "docs/engineering-log/ground_truth_calibration.md",
+      "split": "test",
+      "status": "recorded"
     },
     "checkpoint": {
       "actual_sha256": "bf374ce492825916f2f97a4e29673a1eca35f76cc08f603b384d103fbe95d388",
