@@ -1,9 +1,17 @@
 # Project Heartbeat & Task State
 
 > **Last Heartbeat:** 2026-11-09
-> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — 7-day sprint planned, Day 1 pending (see 7_DAY_SPRINT.md)
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Day 1 complete, PRs #3–#6 in review (see 7_DAY_SPRINT.md)
 
 ---
+
+## Session 2026-11-09 (d) — Sprint Day 1
+
+- WS-02 [#3](https://github.com/yeshika-02/ASTRA/pull/3): Actions v7, pip cache, coverage artifact, release workflow (gh-release v3, `git archive`). 5 commits.
+- WS-03 [#4](https://github.com/yeshika-02/ASTRA/pull/4): 24 doc links fixed → validator 100/100 (Windows + Linux CI), PR-template casing, `validate.yml` re-enabled; `lint.yml` manual (SP-36 / D6). 4 commits.
+- WS-04 [#5](https://github.com/yeshika-02/ASTRA/pull/5): 41 Python tests; `training/` coverage 7% → 22.5%; upload clipping issue pinned as xfail (SP-37). 5 commits.
+- WS-01 [#6](https://github.com/yeshika-02/ASTRA/pull/6) (stacked on #3): React #300 crash fixed (reproduced, then verified fixed in a production build); ESLint 86 → 0; lint CI gate. 9 commits.
+- All four PRs green. Nothing merged (per ADR-0060). Next: Day 2 (WS-05 config/paths, WS-06 reproduction docs).
 
 ## Session 2026-11-09 (c) — Sprint planning
 

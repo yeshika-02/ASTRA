@@ -229,6 +229,7 @@ Phase 0's 7 commits are already on `main` and **aren't counted** toward the spri
 | **D3** | Delete the merged `phase0/integrity-security-hotfix` branch (local and remote)? | Keep |
 | **D4** | Ask the original author (Soumyadeb Tripathy) for the checkpoints `best_star_transformer_shared.pt` (SHA256 `bf374ce4…d388`) and `*.onnx.data`. Owner action. | Plan assumes they may not arrive |
 | **D5** | Acknowledge R1: production stays on vulnerable code until deployed. Consider deploying `main` before the sprint ends. | Deployment after the sprint, per the brief |
+| **D6** | AgentOS `lint.yml` lints the framework's own code (52 ruff errors with defaults, 3 yamllint). Fix the framework code, or keep the workflow manual? (SP-36) | Keep manual |
 
 ---
 
@@ -265,4 +266,5 @@ Phase 0's 7 commits are already on `main` and **aren't counted** toward the spri
 
 | Session | Date | Work | Commits | Branches / PRs | CI | Notes |
 |---|---|---|---|---|---|---|
-| Planning | 2026-11-09 | Verified starting state; cross-checked the brief against the roadmap; wrote this dossier, the sprint checklist, ADR-0060, roadmap/status links and the CHANGELOG entry; recorded the Phase 0 merge | 6 (docs) | `sprint/tracking` (tracker PR) | docs-only | Day 1 not started; waiting for the owner to confirm the dossier and D1–D5 |
+| Planning | 2026-11-09 | Verified starting state; cross-checked the brief against the roadmap; wrote this dossier, the sprint checklist, ADR-0060, roadmap/status links and the CHANGELOG entry; recorded the Phase 0 merge | 6 (docs) | `sprint/tracking` (tracker PR) | docs-only | Owner approved the dossier; D1–D3 defaults apply |
+| Day 1 | 2026-11-09 | WS-02 Actions v7, coverage artifact, release workflow fix · WS-03 validator 100/100 (Windows + Linux), validate workflow re-enabled · WS-04 41 Python tests (training coverage 7% → 22.5%) · WS-01 React #300 crash fixed, ESLint 86 → 0, lint CI gate | 23 in PRs + 2 tracker | #3, #4, #5, #6 (+ #2) | all 4 PRs green (5 jobs each; #4 also AgentOS Health Check) | SP-08 coverage target carried to SP-09; new SP-36 (D6) and SP-37 |
