@@ -441,7 +441,7 @@ def main() -> None:
         "",
         "## 1. Robustness Curves Overview",
         "",
-        "All robustness curves are visualized in the diagnostic plot: [robustness_curves.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54/robustness_curves.png)",
+        "All robustness curves are visualized in the diagnostic plot: [robustness_curves.png](robustness_curves.png)",
         "",
         "## 2. Quantitative Sensitivity Metrics",
         "",
@@ -488,7 +488,7 @@ def main() -> None:
         "",
         "## 3. Reference Datasets",
         "",
-        "- Detailed metrics: [corruption_tables.csv](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54/corruption_tables.csv)",
+        "- Detailed metrics: [corruption_tables.csv](corruption_tables.csv)",
     ])
 
     report_path = ARTIFACT_DIR / "stress_test_report.md"
