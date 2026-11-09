@@ -28,7 +28,45 @@
           0.8301
         ],
         "weighted_f1": 0.7756,
-        "source": "docs/engineering-log/ground_truth_metrics.md"
+        "source": "docs/engineering-log/ground_truth_metrics.md",
+        "confusion_matrix": [
+          [
+            31,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            29,
+            0,
+            1,
+            4
+          ],
+          [
+            0,
+            1,
+            20,
+            1,
+            1
+          ],
+          [
+            1,
+            7,
+            1,
+            10,
+            3
+          ],
+          [
+            1,
+            2,
+            1,
+            5,
+            21
+          ]
+        ],
+        "confusion_matrix_source": "models/saved/test_confusion_matrix_cnn_dual.png (transcribed; rows true, columns predicted: rr_lyrae, cepheid, eclipsing_binary, solar_like, stable)"
       }
     },
     {
@@ -51,7 +89,45 @@
           0.832
         ],
         "weighted_f1": 0.7784,
-        "source": "docs/engineering-log/ground_truth_metrics.md"
+        "source": "docs/engineering-log/ground_truth_metrics.md",
+        "confusion_matrix": [
+          [
+            31,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            30,
+            0,
+            1,
+            4
+          ],
+          [
+            1,
+            0,
+            20,
+            2,
+            0
+          ],
+          [
+            1,
+            5,
+            0,
+            11,
+            5
+          ],
+          [
+            1,
+            4,
+            0,
+            6,
+            19
+          ]
+        ],
+        "confusion_matrix_source": "models/saved/test_confusion_matrix_transformer_shared.png (transcribed; rows true, columns predicted: rr_lyrae, cepheid, eclipsing_binary, solar_like, stable)"
       }
     },
     {
