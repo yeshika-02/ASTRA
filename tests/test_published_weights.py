@@ -20,6 +20,7 @@ from training.verify_weights import (
     MISMATCH,
     MISSING,
     NO_HASH,
+    crlf_hint,
     find_published,
     load_manifest,
     main,
@@ -68,8 +69,10 @@ class ManifestConsistencyTests(unittest.TestCase):
     def test_shipped_artifacts_match_the_manifest(self) -> None:
         for entry in load_manifest():
             if entry.get("shipped_path") and entry.get("sha256"):
-                data = (ROOT / entry["shipped_path"]).read_bytes()
-                self.assertEqual(hashlib.sha256(data).hexdigest(), entry["sha256"], entry["filename"])
+                path = ROOT / entry["shipped_path"]
+                actual = hashlib.sha256(path.read_bytes()).hexdigest()
+                hint = crlf_hint(path, entry["sha256"]) if actual != entry["sha256"] else None
+                self.assertEqual(actual, entry["sha256"], hint or entry["filename"])
 
     def test_weights_are_not_in_the_repository(self) -> None:
         # Recorded as a fact (SP-14); update this test when weights are published.
@@ -109,6 +112,16 @@ class VerifyTests(unittest.TestCase):
                      "shipped_path": "shipped/graph.onnx"}]
         (check,) = verify(self.dir / "empty", manifest, project_root=self.dir)
         self.assertEqual((check.status, check.path), (MATCH, shipped / "graph.onnx"))
+
+    def test_crlf_working_copy_gets_a_refresh_hint(self) -> None:
+        text = b"1.257665\n"
+        manifest = [{"filename": "t.txt", "kind": "calibration_temperature",
+                     "sha256": hashlib.sha256(text).hexdigest()}]
+        (self.dir / "t.txt").write_bytes(text.replace(b"\n", b"\r\n"))
+        (check,) = verify(self.dir, manifest, project_root=self.dir)
+        self.assertEqual(check.status, MISMATCH)
+        self.assertIn("git checkout", check.note)
+        self.assertIsNone(crlf_hint(self.dir / "bad.pt", "0" * 64))  # a real mismatch gets no hint
 
     def test_find_published(self) -> None:
         self.assertEqual(find_published("best_star_transformer_shared.pt")["parameters"], 1373701)
