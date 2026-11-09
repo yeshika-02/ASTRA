@@ -5,6 +5,13 @@
 
 ---
 
+## Session 2026-11-10 (b) — Review of PRs #2–#9
+
+- All open PRs reviewed; Day 7 rebase merge simulated: no conflicts, merged suite green, validator 100/100 on the final state.
+- Fixed in #9: training/calibration defaults no longer overwrite `models/saved/`; random-split provenance; strict `--require-published` with confusion-matrix check; `evaluate.py` input errors; CRLF refresh hint.
+- Routed: release notes before any tag (SP-18/SP-35), `--cov=astra` after merge (SP-34).
+- Slip: 14 #9 commits authored as `day7-sim` (simulation wrote shared git config). Identity restored; rewrite of those authors awaits the owner.
+
 ## Session 2026-11-10 — Sprint Day 3
 
 - WS-07 [#9](https://github.com/yeshika-02/ASTRA/pull/9) (stacked on #8): weights investigation (`docs/model_recovery.md`), `models/published_weights.json`, `verify_weights.py`, ADR-0061; `evaluate.py` with bootstrap CIs and hash gate; `astra.provenance`; CI provenance and evaluation checks; reproducibility guide rewritten. 22 commits, 132 tests in a clean locked venv.
