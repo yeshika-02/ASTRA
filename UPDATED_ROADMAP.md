@@ -13,6 +13,22 @@ Effort scale: **S** ≤ 1 day · **M** 2–5 days · **L** 1–3 weeks · **XL**
 
 ---
 
+## 7-day sprint (2026-11-09 → 2026-11-15)
+
+The next phases run as a 7-day sprint. Its plan, cross-checked against this roadmap, is in [7_DAY_SPRINT.md](7_DAY_SPRINT.md); task status is in [TASK_CHECKLIST.md](TASK_CHECKLIST.md).
+
+| Sprint day | Roadmap items covered | Not covered this sprint |
+|---|---|---|
+| Day 1 — repository quality | 1.7 (Actions, lint gate), 1.8 (validator 100/100), 1.9 (tests), 1.10 (ESLint) | — |
+| Day 2 — reliability | 1.2 (config/paths), 1.3 (CLIs, docs), 1.5 (Python lock) | Package namespacing (noted) |
+| Day 3 — ML reproducibility | 1.1 (weights: plan + tooling; retrain only if D1), 1.3 (`evaluate.py`) | Publishing weights (owner decision) |
+| Day 4 — scientific validation | 1.4 (metrics single source), 2.1 (baselines), 2.6 (honest CV) | Full re-evaluation needs weights |
+| Day 5 — data pipeline | 2.2 / 2.3 / 2.4 as characterisation tests + opt-in v2 (if D2) | Re-preprocessing the dataset; retraining (2.7) |
+| Day 6 — platform | 5.2 (accessibility), 5.3 (API hardening), 5.1 (media, no history rewrite), 2.8 (methods only) | 5.6 Docker/Render (deployment freeze) |
+| Day 7 — consolidation | Joint PR review, rebase merge, full validation | — |
+
+Deferred beyond the sprint: Phase 3 (inference service), Phase 4 (dataset expansion), all deployment work.
+
 ## Phase overview
 
 ```
