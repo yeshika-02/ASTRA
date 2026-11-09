@@ -1,5 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Star, StarsResponse, LightCurveData, AstraClass } from '../types';
+import type {
+  ActiveModel,
+  BenchmarkArtifact,
+  CalibrationArtifact,
+  CheckpointEntry,
+  DatasetResponse,
+  ResearchResponse,
+  SearchResult,
+} from '../types/artifacts';
 
 export interface PredictResult {
   tic_id: number;
@@ -86,7 +95,7 @@ export function useLightCurve(id: string | number | null) {
 export function useSearch(query: string) {
   return useQuery({
     queryKey: ['search', query],
-    queryFn: () => fetchJson<any>(`/api/search?q=${encodeURIComponent(query)}`),
+    queryFn: () => fetchJson<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(query)}`),
     enabled: query.length >= 2,
     staleTime: 30_000,
   });
@@ -96,7 +105,7 @@ export function useSearch(query: string) {
 export function useModelDetails() {
   return useQuery({
     queryKey: ['model-details'],
-    queryFn: () => fetchJson<any>('/api/model'),
+    queryFn: () => fetchJson<ActiveModel>('/api/model'),
   });
 }
 
@@ -104,7 +113,7 @@ export function useModelDetails() {
 export function useCheckpoints() {
   return useQuery({
     queryKey: ['checkpoints'],
-    queryFn: () => fetchJson<any>('/api/checkpoints'),
+    queryFn: () => fetchJson<CheckpointEntry[]>('/api/checkpoints'),
   });
 }
 
@@ -112,7 +121,7 @@ export function useCheckpoints() {
 export function useDatasetDetails() {
   return useQuery({
     queryKey: ['dataset-details'],
-    queryFn: () => fetchJson<any>('/api/dataset'),
+    queryFn: () => fetchJson<DatasetResponse>('/api/dataset'),
   });
 }
 
@@ -120,7 +129,7 @@ export function useDatasetDetails() {
 export function useResearchFindings() {
   return useQuery({
     queryKey: ['research-findings'],
-    queryFn: () => fetchJson<any>('/api/research'),
+    queryFn: () => fetchJson<ResearchResponse>('/api/research'),
   });
 }
 
@@ -128,7 +137,7 @@ export function useResearchFindings() {
 export function useBenchmarkMetrics() {
   return useQuery({
     queryKey: ['benchmark-metrics'],
-    queryFn: () => fetchJson<any>('/api/benchmark'),
+    queryFn: () => fetchJson<BenchmarkArtifact>('/api/benchmark'),
   });
 }
 
@@ -136,7 +145,7 @@ export function useBenchmarkMetrics() {
 export function useCalibrationDetails() {
   return useQuery({
     queryKey: ['calibration-details'],
-    queryFn: () => fetchJson<any>('/api/calibration'),
+    queryFn: () => fetchJson<CalibrationArtifact>('/api/calibration'),
   });
 }
 
