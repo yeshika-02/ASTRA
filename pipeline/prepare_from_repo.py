@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -29,9 +31,19 @@ from pipeline.phase6_utils import sha256_file  # noqa: E402
 
 SHIPPED_PROCESSED = PROJECT_ROOT / "astra-platform" / "data" / "processed"
 SHIPPED_MANIFEST = PROJECT_ROOT / "astra-platform" / "data" / "scientific_dataset_freeze_v2.csv"
+SHIPPED_SPLIT_IDS = PROJECT_ROOT / "docs" / "engineering-log"
+SHIPPED_AUDIT = PROJECT_ROOT / "astra-platform" / "data" / "artifacts" / "dataset_audit.json"
 
 # Published in README.md and models/saved/experiment_metadata.json.
 EXPECTED_MANIFEST_SHA256 = "f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58"
+
+EXPECTED_SPLIT_FILE_SHA256 = {
+    "train": "5a9bf6c6ad40757a52d0f4a044626e82a4876839b175f5070fb28834c815eed0",
+    "val": "c733ab95c4a22ebc29ca123b2e923c8b8069933ccdff2e9f03a3fdc882f761b3",
+    "test": "2b62970d610f66f12711b6d9594305b33961a04d17c48807bd6123562350f4c0",
+}
+EXPECTED_SPLIT_HASH = "ebcdc44c3dba849579675369b1559c77e50b6fead06abd40d3fc187425a7d4e4"
+SPLITS = ("train", "val", "test")
 
 # Manifest column -> file name inside each TIC_* directory.
 HASHED_FILES = {
@@ -72,6 +84,57 @@ def verify_processed(manifest: Path, processed_dir: Path) -> list[str]:
             elif sha256_file(path) != row[column]:
                 errors.append(f"{star.name}/{filename}: hash mismatch")
     return errors
+
+
+def compute_split_hash(split_ids: dict[str, list[str]]) -> str:
+    """Same algorithm as pipeline/freeze_phase6_splits.py (train, val, calibration, test)."""
+    hasher = hashlib.sha256()
+    for split in ("train", "val", "calibration", "test"):
+        hasher.update(json.dumps(split_ids.get(split, [])).encode("utf-8"))
+    return hasher.hexdigest()
+
+
+def build_splits(
+    target: Path,
+    ids_dir: Path = SHIPPED_SPLIT_IDS,
+    audit_json: Path = SHIPPED_AUDIT,
+    expected_file_sha256: dict[str, str] | None = None,
+    expected_split_hash: str = EXPECTED_SPLIT_HASH,
+) -> list[str]:
+    """Write <target>/{train,val,test,calibration}_ids.json and split_metadata.json.
+
+    The id files are byte-for-byte copies of the shipped phase6_*_ids.json files, so their
+    published hashes still hold. Nothing is written unless every check passes.
+    """
+    expected_file_sha256 = expected_file_sha256 or EXPECTED_SPLIT_FILE_SHA256
+    errors: list[str] = []
+    sources = {split: ids_dir / f"phase6_{split}_ids.json" for split in SPLITS}
+    for split, path in sources.items():
+        if not path.is_file():
+            errors.append(f"{path.name}: missing")
+        elif sha256_file(path) != expected_file_sha256[split]:
+            errors.append(f"{path.name}: hash mismatch")
+    if errors:
+        return errors
+
+    split_ids = {split: json.loads(path.read_text(encoding="utf-8")) for split, path in sources.items()}
+    split_ids["calibration"] = []  # the frozen split has no calibration set (calibration_size 0)
+    metadata = json.loads(audit_json.read_text(encoding="utf-8"))["split_metadata"]
+    recomputed = compute_split_hash(split_ids)
+    if recomputed != metadata.get("split_hash") or recomputed != expected_split_hash:
+        return [f"split hash mismatch: recomputed {recomputed}, metadata {metadata.get('split_hash')}"]
+    for split in SPLITS:
+        if metadata.get(f"{split}_size") != len(split_ids[split]):
+            errors.append(f"{split}: size {len(split_ids[split])} != metadata {metadata.get(f'{split}_size')}")
+    if errors:
+        return errors
+
+    target.mkdir(parents=True, exist_ok=True)
+    for split, path in sources.items():
+        (target / f"{split}_ids.json").write_bytes(path.read_bytes())
+    (target / "calibration_ids.json").write_bytes(b"[]")
+    (target / "split_metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+    return []
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
