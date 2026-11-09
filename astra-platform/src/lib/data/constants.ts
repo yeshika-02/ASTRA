@@ -16,6 +16,11 @@ export const CLASS_COLORS: Record<AstraClass, string> = {
   stable: '#6B7280',
 };
 
+// Best validation accuracy of the shared transformer (epoch 36 of 50, 141 validation stars),
+// from models/saved/training_history_transformer_shared.json. Not present in the platform
+// artifacts (model_registry.json), so it is a documented constant here until SP-20.
+export const SHARED_BEST_VAL_ACCURACY = 0.858156;
+
 export const SYSTEM_METRICS: SystemMetrics = {
   dataset: {
     total_stars: 944,
