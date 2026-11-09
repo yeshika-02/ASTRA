@@ -100,12 +100,15 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: requirements.txt
-      - name: Install dependencies
+          cache-dependency-path: requirements-lock.txt
+      # Pinned environment: the test job above covers the latest versions allowed by
+      # requirements.txt; this job checks that the locked versions reproduce.
+      - name: Install locked dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -r requirements.txt
+          pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-lock.txt
+          pip check
       # Verifies all 944 stars x 5 files against the hash-locked manifest, rebuilds the
       # frozen splits (split hash ebcdc44c...) and runs the dataset audit.
       - name: Rebuild data/phase6 from the shipped files
