@@ -28,6 +28,7 @@ CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 ONNX_OUT_PATH = PATHS.model("best_star_transformer_shared_explain.onnx")
 
 def main() -> None:
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 80)
     print("  ASTRA Phase 8A: Explainability Export & Validation Gate")
     print("=" * 80)

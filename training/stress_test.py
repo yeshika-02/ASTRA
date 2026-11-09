@@ -285,6 +285,7 @@ def evaluate_model(
 
 
 def main() -> None:
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Astrophysical Stress Testing")
     print("=" * 70)

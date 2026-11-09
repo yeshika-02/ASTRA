@@ -35,6 +35,7 @@ CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 
 
 def main() -> None:
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Model Export & Deployment Benchmarking")
     print("=" * 70)
