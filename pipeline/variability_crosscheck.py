@@ -42,6 +42,7 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from data.labels import CLASS_NAMES
 from pipeline.phase6_utils import (
     DEFAULT_PHASE6_ROOT,
@@ -57,7 +58,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("variability_crosscheck")
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
+ARTIFACT_DIR = get_paths().output_dir  # reports
 
 # VSX types that clearly indicate contamination for solar_like/stable
 DEFINITE_VARIABLE_TYPES = {
@@ -355,6 +356,7 @@ def _generate_contamination_report(
     radius_arcsec: float,
 ) -> dict[str, Any]:
     """Write contamination_audit.md and contamination_detail.csv."""
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Statistics
     by_class: dict[str, dict[str, int]] = {}

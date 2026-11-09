@@ -40,6 +40,7 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from pipeline.phase6_utils import (
     DEFAULT_PHASE6_ROOT,
     read_csv_rows,
@@ -53,7 +54,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("stable_screen")
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
+ARTIFACT_DIR = get_paths().output_dir  # reports
 
 
 @dataclass
@@ -573,6 +574,7 @@ def run_stable_screen(
     thresholds: StabilityThresholds | None = None,
 ) -> dict[str, Any]:
     """Main entry point for stable screening."""
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     if thresholds is None:
         thresholds = StabilityThresholds()
 

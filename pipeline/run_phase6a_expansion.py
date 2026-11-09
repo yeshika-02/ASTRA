@@ -41,6 +41,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from data.labels import CLASS_NAMES
 from pipeline.phase6_utils import (
     DEFAULT_PHASE6_ROOT,
@@ -57,7 +58,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("run_phase6a_expansion")
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
+ARTIFACT_DIR = get_paths().output_dir  # reports
 
 # Gate A conditions
 GATE_A_MIN_USABLE_TOTAL = 1000
@@ -400,6 +401,7 @@ def run_phase6a_expansion(
     Master orchestration for Phase 6A.
     Returns final gate evaluation summary.
     """
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     start_time = time.time()
     catalog_dir = data_root / "catalogs"
 

@@ -188,6 +188,7 @@ def evaluate_subgroups(val_results: dict, val_samples: list[dict]) -> dict:
 
 def save_confusion_matrix(labels: list[int], preds: list[int], seed: int, fold: int) -> None:
     """Generate and save confusion matrix plot for this fold."""
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -218,6 +219,7 @@ def save_confusion_matrix(labels: list[int], preds: list[int], seed: int, fold: 
 
 
 def main() -> None:
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA 5-Fold, 3-Seed Cross-Validation")
     print("=" * 70)

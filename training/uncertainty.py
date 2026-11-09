@@ -72,6 +72,7 @@ def compute_entropy(probs: np.ndarray) -> float:
 
 
 def main() -> None:
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Uncertainty Quantification & MC Dropout")
     print("=" * 70)
