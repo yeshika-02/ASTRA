@@ -36,7 +36,7 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 
 | ID | Task (old ID) | Pri | Status | Branch | PR | Commits | Tests |
 |---|---|---|---|---|---|---|---|
-| SP-00 | Sprint dossier, tracker, Phase 0 merge record | P0 | In Progress | `sprint/tracking` | — | 0457af5, b7a1b58 | validator run (no new broken links) |
+| SP-00 | Sprint dossier, tracker, Phase 0 merge record | P0 | In Progress | `sprint/tracking` | (tracker PR) | 6 planning commits (0457af5…) | validator: no new broken links (24 pre-existing) |
 | SP-01 | Fix `rules-of-hooks` bug in `CosmicBackground.tsx` (T13) | P0 | Pending | `fix/eslint-react-hooks` | — | — | — |
 | SP-02 | Fix 7 `react-hooks/purity` + 3 `set-state-in-effect` errors (T13) | P0 | Pending | `fix/eslint-react-hooks` | — | — | — |
 | SP-03 | Replace 34 `any` with typed API responses (T13, U5) | P1 | Pending | `fix/eslint-react-hooks` | — | — | — |

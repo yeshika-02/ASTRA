@@ -265,4 +265,4 @@ Phase 0's 7 commits are already on `main` and **aren't counted** toward the spri
 
 | Session | Date | Work | Commits | Branches / PRs | CI | Notes |
 |---|---|---|---|---|---|---|
-| Planning | 2026-11-09 | Verified starting state; cross-checked the brief against the roadmap; wrote this dossier; recorded the Phase 0 merge | see `sprint/tracking` | `sprint/tracking` | — | Day 1 not started; waiting for the owner to confirm the dossier |
+| Planning | 2026-11-09 | Verified starting state; cross-checked the brief against the roadmap; wrote this dossier, the sprint checklist, ADR-0060, roadmap/status links and the CHANGELOG entry; recorded the Phase 0 merge | 6 (docs) | `sprint/tracking` (tracker PR) | docs-only | Day 1 not started; waiting for the owner to confirm the dossier and D1–D5 |
