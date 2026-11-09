@@ -537,7 +537,7 @@ python training/evaluate.py --checkpoint models/saved/best_star_transformer_shar
     --temperature-file models/saved/optimal_temperature_transformer_shared.txt --require-published
 ```
 
-The report says `REPRODUCED` only if the hash matches and accuracy, macro F1 and weighted F1 equal the published values.
+The report says `REPRODUCED` only if the hash matches, accuracy, macro F1 and weighted F1 equal the published values, and the confusion matrix equals the published one; `--require-published` exits 1 otherwise.
 
 ### Cryptographic Artifact Registry
 
