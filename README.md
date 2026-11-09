@@ -90,73 +90,66 @@
 ## 📁 Repository Structure
 
 ```
-ASTRA — Automated Stellar Transient Recognition & Analysis/
+ASTRA/
 │
-├── 📄 README.md                          # This file
-├── 📄 CITATION.cff                       # Machine-readable citation metadata
-├── 📄 LICENSE                            # MIT License
-├── 📄 requirements.txt                   # Python dependencies
+├── 📄 README.md, CITATION.cff, LICENSE
+├── 📄 requirements.txt, pyproject.toml   # Python dependencies (CPU torch installed separately)
 ├── 📄 lineage.json                       # Dataset provenance & version tracking
-├── 📂 docs/engineering-log/              # Phase-by-phase audit trail (incl. dataset_fingerprint.md,
-│                                         #   ground_truth_final_verdict.md, phase6/7/8 audits)
+│
+├── 📂 astra/                             # Shared helpers: configurable paths (config.py), UTF-8 console (console.py)
 │
 ├── 📂 pipeline/                          # Data acquisition & preprocessing
+│   ├── prepare_from_repo.py              # Verify the shipped data and rebuild data/phase6/ (start here)
 │   ├── build_catalog.py                  # VSX/AAVSO catalog construction via VizieR
 │   ├── candidate_expander.py             # Star candidate expansion with cross-matching
-│   ├── dataset_builder.py               # TESS MAST light-curve downloader (lightkurve)
+│   ├── dataset_builder.py                # TESS MAST light-curve downloader (lightkurve)
 │   ├── preprocess.py                     # Normalize, detrend, phase-fold (1000 pts)
-│   ├── dataset_audit.py                 # Dataset integrity and label verification
-│   └── freeze_phase6_splits.py          # Train/val/test split freezing with hash locks
+│   ├── dataset_audit.py                  # Dataset integrity and label verification
+│   ├── freeze_phase6_splits.py           # Original split freezing (see the note under Reproducing Results)
+│   └── cleanup_data.py                   # Dry-run-by-default cleanup of failed downloads
 │
 ├── 📂 training/                          # Model definitions & training scripts
 │   ├── models/
 │   │   ├── hybrid_transformer.py         # HybridTransformer (4 variants)
 │   │   ├── star_cnn.py                   # Dual-branch CNN baseline
 │   │   └── explainable_wrapper.py        # Attention-return wrapper for ONNX export
-│   ├── train_transformer.py             # Main transformer training loop (MPS)
-│   ├── train_cnn.py                     # CNN training loop
-│   ├── cross_validate.py                # 5-fold × 3-seed stratified group CV
-│   ├── calibration.py                   # Temperature scaling (NLL minimization)
-│   ├── uncertainty.py                   # MC Dropout uncertainty (30 passes)
+│   ├── train_transformer.py              # Transformer training (--variant, --seed, --data-dir, --out-dir)
+│   ├── train_cnn.py                      # CNN training
+│   ├── cross_validate.py                 # 5-fold × 3-seed stratified group CV
+│   ├── calibration.py                    # Temperature scaling (NLL minimization)
+│   ├── uncertainty.py                    # MC Dropout uncertainty (30 passes)
 │   ├── dataset.py                        # ASTRADataset (raw + folded dual-channel)
 │   ├── focal_loss.py                     # Class-weighted Focal Loss
-│   ├── export_model.py                  # ONNX + TorchScript export pipeline
+│   ├── export_model.py                   # ONNX + TorchScript export
 │   ├── predict.py                        # Single-star inference
-│   └── visualize_attention.py           # Attention map visualization
+│   └── visualize_attention.py            # Attention map visualization
 │
-├── 📂 data/                              # Dataset artifacts
-│   ├── catalog_full.json                # Full 944-star catalog with TIC IDs
-│   ├── dataset_summary.json             # Class distribution summary
-│   ├── labels.py                         # CLASS_NAMES, NUM_CLASSES, LABEL_TO_NAME
-│   └── phase6/                          # Frozen Phase 6 dataset
-│       └── scientific_dataset_freeze_v2.csv  # Cryptographically locked manifest
+├── 📂 data/                              # Catalog and label definitions
+│   ├── catalog_full.json                 # Full 944-star catalog with TIC IDs
+│   ├── dataset_summary.json              # Class distribution summary
+│   └── labels.py                         # CLASS_NAMES, NUM_CLASSES, LABEL_TO_NAME
 │
-├── 📂 models/                            # Trained model artifacts
-│   └── saved/
-│       ├── best_star_transformer_shared.pt          # Best model checkpoint (PyTorch)
-│       ├── best_star_transformer_shared.onnx        # ONNX export (inference)
-│       ├── best_star_transformer_shared.torchscript # TorchScript export (deployment)
-│       ├── best_star_transformer_shared_explain.onnx # ONNX with attention maps
-│       ├── best_star_cnn_dual_aug.pt                # CNN dual-branch checkpoint
-│       ├── optimal_temperature_transformer_shared.txt # Calibration temperature T
-│       ├── experiment_metadata.json                 # Reproducibility hashes
-│       └── confusion_matrix_transformer_shared.png  # Validation confusion matrix
+├── 📂 models/saved/                      # Published training records (no weight files)
+│   ├── experiment_metadata_*.json        # Per-run hashes, seeds and hyperparameters
+│   ├── classification_report_*.txt       # Validation reports per run
+│   ├── confusion_matrix_*.png, training_curves_*.png, training_history_*.json
+│   └── optimal_temperature*.txt          # Calibration temperatures
 │
-├── 📂 splits/                            # Frozen data splits (hash-locked)
-│   ├── split_metadata.json
-│   ├── train_ids.json                   # 661 training star IDs
-│   ├── val_ids.json                     # 141 validation star IDs
-│   └── test_ids.json                    # 142 held-out test star IDs
+├── 📂 astra-platform/                    # Web platform (Next.js) and the shipped dataset
+│   ├── data/processed/TIC_*/             # 944 stars × 5 files, hash-locked by the manifest
+│   ├── data/scientific_dataset_freeze_v2.csv  # Cryptographically locked manifest
+│   ├── data/artifacts/                   # Audit, calibration, benchmark and registry JSON
+│   ├── data/*.onnx                       # ONNX exports of the shared transformer
+│   ├── src/                              # Next.js app source (TypeScript)
+│   └── tests/                            # Vitest API, security and no-fabrication tests
 │
-├── 📂 astra-platform/                   # Interactive web platform (Next.js)
-│   ├── src/                             # Next.js app source (TypeScript)
-│   ├── package.json                     # Dependencies (Three.js, ONNX Runtime)
-│   └── next.config.ts                   # Next.js configuration
-│
-├── 📂 docs/                             # Extended documentation
-├── 📂 tests/                            # Unit & integration tests
-└── 📂 logs/                             # Training and pipeline logs
+├── 📂 docs/engineering-log/              # Phase-by-phase audit trail and the frozen split ID files
+├── 📂 tests/                             # Python unit and integration tests (pytest)
+├── 📂 artifacts/decisions/               # Architecture decision records (ADRs)
+└── 📂 agents/, standards/, checklists/, context/ ...   # AgentOS development process files
 ```
+
+Created at run time and not tracked: `data/phase6/` (by `prepare_from_repo.py`) and `outputs/` (script reports and checkpoints).
 
 ---
 
