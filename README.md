@@ -45,10 +45,10 @@
 
 > [!CAUTION]
 > **Known limitations (audit of 2026-11-09 — see [`PROJECT_AUDIT.md`](PROJECT_AUDIT.md) and [`PROJECT_STATUS.md`](PROJECT_STATUS.md))**
-> - **Model weights are not published in this repository.** The metrics above are internally consistent with the committed confusion matrix, but can't yet be reproduced from a clean clone.
+> - **Model weights are not published in this repository.** The metrics above are internally consistent with the committed confusion matrices, but can't yet be reproduced from a clean clone. Their SHA256 hashes are recorded in [`models/published_weights.json`](models/published_weights.json); the investigation and recovery plan are in [`docs/model_recovery.md`](docs/model_recovery.md).
 > - **The web platform does not run the model on its current deployment.** Prediction, explanation and upload endpoints return `503 inference_unavailable`, and the UI says so. Earlier versions showed synthetic outputs derived from catalog labels; those have been removed.
 > - **The class labels are confounded with pipeline metadata** (period source, source catalog, cadence), so the catalog-vs-BLS subgroup gap and the headline accuracy need re-evaluation. A 3-feature metadata baseline scores 86.6% on the same test split. This is being addressed in the roadmap ([`UPDATED_ROADMAP.md`](UPDATED_ROADMAP.md)).
-> - Some commands and paths in the sections below don't match the current scripts. Corrections are tracked as task T7.
+> - The commands in the sections below are checked against the scripts' command-line interfaces by `tests/test_readme_commands.py`.
 
 ---
 
@@ -357,9 +357,13 @@ python training/visualize_attention.py --checkpoint outputs/run_shared/best_star
 # Export ONNX / TorchScript, check both against PyTorch, benchmark CPU latency
 python training/export_model.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
     --out-dir outputs/export
+
+# Evaluate a checkpoint on the frozen test split: metrics, 95% bootstrap CIs, calibration, per-star predictions
+python training/evaluate.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --temperature-file outputs/run_shared/optimal_temperature.txt --out-dir outputs/evaluation
 ```
 
-A test-set evaluation script with bootstrap confidence intervals (`training/evaluate.py`) is planned as sprint task SP-15. The published checkpoint is not in the repository; see "Known limitations" above.
+`evaluate.py` checks the checkpoint's SHA256 against [`models/published_weights.json`](models/published_weights.json). A checkpoint you trained yourself is reported as a new model, so its numbers never stand in for the published ones. Only the verified published checkpoint is compared with the published results. The published checkpoint is not in the repository; see "Known limitations" above.
 
 ---
 
@@ -493,7 +497,8 @@ What can be reproduced from a clone today:
 |---|---|
 | Dataset, manifest and frozen splits | ✅ verified by `pipeline/prepare_from_repo.py` |
 | Training and cross-validation runs | ✅ runnable (CI trains one epoch from a fresh clone and checks the recorded data hashes) |
-| The published test metrics (78.17%) | ❌ not yet: the checkpoint (`best_star_transformer_shared.pt`, SHA256 `bf374ce4…`) is not in the repository, and a test-set evaluation script is planned (SP-15) |
+| Evaluating any checkpoint on the frozen test split, with bootstrap CIs | ✅ `training/evaluate.py` (tested on the real arrays; its metric code reproduces the published numbers from the published confusion matrices) |
+| The published test metrics (78.17%) | ❌ not yet: the checkpoint (`best_star_transformer_shared.pt`, SHA256 `bf374ce4…`) is not in the repository ([recovery plan](docs/model_recovery.md)) |
 
 ### Verify Split Integrity
 
@@ -523,6 +528,16 @@ python training/cross_validate.py --seeds 42 100 2026 --folds 5 --epochs 50
 ```
 
 Note that `pipeline/freeze_phase6_splits.py` cannot regenerate the committed split: it uses 70/10/10/10 ratios, while the frozen split is 70/15/15/0. Use the shipped split files.
+
+### When the published checkpoint is recovered
+
+```bash
+python training/verify_weights.py --require best_star_transformer_shared.pt
+python training/evaluate.py --checkpoint models/saved/best_star_transformer_shared.pt \
+    --temperature-file models/saved/optimal_temperature_transformer_shared.txt --require-published
+```
+
+The report says `REPRODUCED` only if the hash matches and accuracy, macro F1 and weighted F1 equal the published values.
 
 ### Cryptographic Artifact Registry
 
