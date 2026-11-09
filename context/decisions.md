@@ -72,6 +72,7 @@
 | [ADR-0057](../artifacts/decisions/ADR-0057-astra-audit-baseline-and-phase0.md) | ASTRA audit baseline: integrity-first roadmap (Phase 0 before features) | Accepted | 2026-11-09 | High |
 | [ADR-0058](../artifacts/decisions/ADR-0058-inference-contract-no-fabrication-no-shell.md) | Inference contract: real model output or explicit 503, no shell execution | Accepted | 2026-11-09 | Critical |
 | [ADR-0059](../artifacts/decisions/ADR-0059-agentos-github-files-in-astra.md) | AgentOS GitHub files: adapted CODEOWNERS, manual-only AgentOS workflows | Accepted | 2026-11-09 | Medium |
+| [ADR-0060](../artifacts/decisions/ADR-0060-sprint-workflow-and-merge-policy.md) | Sprint workflow: per-workstream PRs, single tracker PR, stacked branches, rebase merge on Day 7 | Accepted | 2026-11-09 | High |
 
 ---
 
