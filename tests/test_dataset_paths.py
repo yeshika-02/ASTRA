@@ -78,6 +78,23 @@ class SplitsDirResolutionTests(unittest.TestCase):
             ds = self.Dataset(processed, split="train")
         self.assertEqual(len(ds), len(ids))
 
+    def test_records_which_frozen_split_was_used(self) -> None:
+        processed = self.root / "anywhere" / "processed"
+        ids = _make_stars(processed)
+        _write_frozen(self.root / "my_splits", ids)
+        ds = self.Dataset(processed, split="train", splits_dir=self.root / "my_splits")
+        self.assertTrue(ds.frozen_split)
+        self.assertEqual(ds.splits_dir, self.root / "my_splits")
+
+    def test_random_fallback_is_recorded_and_logged_as_a_warning(self) -> None:
+        processed = self.root / "no_splits" / "processed"
+        _make_stars(processed)
+        with self.assertLogs("training.dataset", level="WARNING") as logs:
+            ds = self.Dataset(processed, split="train")
+        self.assertFalse(ds.frozen_split)
+        self.assertIsNone(ds.splits_dir)
+        self.assertIn("not comparable", "\n".join(logs.output))
+
     def test_test_split_without_frozen_files_still_refuses(self) -> None:
         processed = self.root / "elsewhere" / "processed"
         _make_stars(processed)
