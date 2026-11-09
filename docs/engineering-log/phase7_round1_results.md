@@ -29,5 +29,5 @@ This report documents the exact raw performance metrics achieved by the retraine
   - `cnn_dual`: `models/saved/best_star_cnn_dual_aug.pt`
   - `transformer_shared`: `models/saved/best_star_transformer_shared.pt`
 - Confusion Matrices:
-  - `cnn_dual`: [test_confusion_matrix_cnn_dual.png](file:////Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/test_confusion_matrix_cnn_dual.png)
-  - `transformer_shared`: [test_confusion_matrix_transformer_shared.png](file:////Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/test_confusion_matrix_transformer_shared.png)
+  - `cnn_dual`: [test_confusion_matrix_cnn_dual.png](../../models/saved/test_confusion_matrix_cnn_dual.png)
+  - `transformer_shared`: [test_confusion_matrix_transformer_shared.png](../../models/saved/test_confusion_matrix_transformer_shared.png)
