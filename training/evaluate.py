@@ -211,11 +211,14 @@ def published_status(checkpoint: Path, sha256: str) -> dict | None:
 
 
 def compare_with_published(metrics: dict, published_test: dict) -> dict:
+    """Headline metrics within rounding, and the confusion matrix exactly, when published."""
     comparison = {}
     for name in BOOTSTRAP_METRICS:
         if name in published_test:
             comparison[name] = {"published": published_test[name], "evaluated": round(metrics[name], 4),
                                 "match": abs(metrics[name] - published_test[name]) <= PUBLISHED_TOLERANCE}
+    if "confusion_matrix" in published_test and "confusion_matrix" in metrics:
+        comparison["confusion_matrix"] = {"match": metrics["confusion_matrix"] == published_test["confusion_matrix"]}
     comparison["reproduced"] = all(item["match"] for item in comparison.values())
     return comparison
 
@@ -334,9 +337,13 @@ def render_markdown(result: dict) -> str:
     if comparison:
         lines += ["", "| Published metric | Published | Evaluated | Match |", "|---|---:|---:|:---:|"]
         for name, item in comparison.items():
-            if name != "reproduced":
-                match = "yes" if item["match"] else "NO"
-                lines.append(f"| {name} | {item['published']:.4f} | {item['evaluated']:.4f} | {match} |")
+            if name in ("reproduced", "confusion_matrix"):
+                continue
+            match = "yes" if item["match"] else "NO"
+            lines.append(f"| {name} | {item['published']:.4f} | {item['evaluated']:.4f} | {match} |")
+        if "confusion_matrix" in comparison:
+            match = "yes" if comparison["confusion_matrix"]["match"] else "NO"
+            lines.append(f"| confusion matrix | published figure | above | {match} |")
     return "\n".join(lines) + "\n"
 
 
@@ -359,7 +366,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--out-dir", default=None, help="Report directory (default: outputs/evaluation)")
     parser.add_argument("--require-published", action="store_true",
-                        help="Exit 1 unless the checkpoint is a verified published artifact")
+                        help="Exit 1 unless the checkpoint is a verified published artifact and, on the "
+                             "test split, reproduces the published metrics and confusion matrix")
     return parser
 
 
@@ -403,9 +411,16 @@ def main(argv: list[str] | None = None) -> int:
     print(report)
     print(f"Reports: {out_dir / stem}.json and .md")
 
-    if args.require_published and not (result["published"] or {}).get("verified"):
-        print("FAILED: --require-published, but this is not a verified published checkpoint.")
-        return 1
+    if args.require_published:
+        published = result["published"] or {}
+        if not published.get("verified"):
+            print("FAILED: --require-published, but this is not a verified published checkpoint.")
+            return 1
+        comparison = published.get("comparison")
+        if comparison is not None and not comparison["reproduced"]:
+            print("FAILED: --require-published: verified checkpoint, but the published test results "
+                  "were NOT reproduced.")
+            return 1
     return 0
 
 
