@@ -13,6 +13,7 @@ Every step is verified against the published SHA256 values before anything is us
 
 Usage:
     python pipeline/prepare_from_repo.py --verify-only   # check the shipped files
+    python pipeline/prepare_from_repo.py                 # build data/phase6 (verified)
 """
 
 from __future__ import annotations
@@ -21,12 +22,16 @@ import argparse
 import csv
 import hashlib
 import json
+import shutil
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths, resolve_cli_path  # noqa: E402
+from pipeline.dataset_audit import run_audit  # noqa: E402
 from pipeline.phase6_utils import sha256_file  # noqa: E402
 
 SHIPPED_PROCESSED = PROJECT_ROOT / "astra-platform" / "data" / "processed"
@@ -137,24 +142,86 @@ def build_splits(
     return []
 
 
+@dataclass
+class Sources:
+    """Where the shipped dataset lives and the hashes it must match."""
+
+    processed: Path = SHIPPED_PROCESSED
+    manifest: Path = SHIPPED_MANIFEST
+    split_ids: Path = SHIPPED_SPLIT_IDS
+    audit: Path = SHIPPED_AUDIT
+    manifest_sha256: str = EXPECTED_MANIFEST_SHA256
+    split_file_sha256: dict[str, str] = field(default_factory=lambda: dict(EXPECTED_SPLIT_FILE_SHA256))
+    split_hash: str = EXPECTED_SPLIT_HASH
+
+
+def verify_sources(sources: Sources) -> list[str]:
+    errors = verify_manifest_file(sources.manifest, sources.manifest_sha256)
+    return errors or verify_processed(sources.manifest, sources.processed)
+
+
+def prepare(target: Path, sources: Sources | None = None, force: bool = False) -> list[str]:
+    """Build <target>/{processed, splits, audits} and the manifest copy. Returns errors."""
+    sources = sources or Sources()
+    errors = verify_sources(sources)
+    if errors:
+        return errors
+    processed = target / "processed"
+    if processed.exists() and any(processed.iterdir()):
+        if not force:
+            return [f"{processed} already exists (use --force to replace it)"]
+        shutil.rmtree(processed)
+    target.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(sources.processed, processed)
+    shutil.copy2(sources.manifest, target / sources.manifest.name)
+
+    errors = verify_processed(target / sources.manifest.name, processed)
+    errors += build_splits(target / "splits", sources.split_ids, sources.audit,
+                           sources.split_file_sha256, sources.split_hash)
+    if errors:
+        return errors
+
+    # Raw light curves are not shipped; the processed files were verified against the manifest.
+    status = run_audit(target, stage=0, require_raw=False)
+    if status["overall_status"] != "PASS":
+        return [f"dataset audit failed with {status['error_count']} error(s); see {target / 'audits'}"]
+    return []
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--verify-only", action="store_true", help="Only verify the shipped files")
+    parser.add_argument("--target", type=str, default=None,
+                        help="Phase 6 root to build (default: configured phase6 root, data/phase6)")
+    parser.add_argument("--force", action="store_true", help="Replace an existing processed/ directory")
     return parser
 
 
+def _report(errors: list[str]) -> int:
+    for error in errors[:20]:
+        print(f"FAIL {error}")
+    print(f"{len(errors)} problem(s) found.")
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
-    build_arg_parser().parse_args(argv)
-    errors = verify_manifest_file(SHIPPED_MANIFEST)
-    if not errors:
-        errors = verify_processed(SHIPPED_MANIFEST, SHIPPED_PROCESSED)
+    args = build_arg_parser().parse_args(argv)
+    sources = Sources()
+    n = len(read_manifest(sources.manifest)) if sources.manifest.is_file() else 0
+    if args.verify_only:
+        errors = verify_sources(sources)
+        if errors:
+            return _report(errors)
+        print(f"OK   manifest {EXPECTED_MANIFEST_SHA256[:12]}... and {n} stars x {len(HASHED_FILES)} files verified")
+        return 0
+
+    target = resolve_cli_path(args.target, get_paths().phase6_root)
+    errors = prepare(target, sources, force=args.force)
     if errors:
-        for error in errors[:20]:
-            print(f"FAIL {error}")
-        print(f"{len(errors)} problem(s) found.")
-        return 1
-    n = len(read_manifest(SHIPPED_MANIFEST))
-    print(f"OK   manifest {EXPECTED_MANIFEST_SHA256[:12]}... and {n} stars x {len(HASHED_FILES)} files verified")
+        return _report(errors)
+    print(f"OK   {n} verified stars in {target / 'processed'}")
+    print(f"OK   frozen splits rebuilt in {target / 'splits'} (split hash {EXPECTED_SPLIT_HASH[:12]}...)")
+    print(f"OK   dataset audit PASS (raw light curves not shipped) in {target / 'audits'}")
     return 0
 
 

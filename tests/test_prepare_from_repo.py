@@ -135,6 +135,78 @@ class BuildSplitsTests(unittest.TestCase):
         self.assertNotEqual(a, b)
 
 
+def _audit_ready_sources(root: Path) -> prep.Sources:
+    """Shipped-style sources whose stars carry full Phase 6 metadata (so the audit can pass)."""
+    from data.labels import CLASS_NAMES
+    from tests.test_phase6_pipeline import _write_sample
+
+    shipped = root / "shipped"
+    tics = {"train": [], "val": [], "test": []}
+    tic = 3000
+    for class_index, cls in enumerate(CLASS_NAMES):
+        for split in tics:
+            # distinct sky positions (the audit rejects coordinate duplicates)
+            _write_sample(shipped, tic, cls, f"group_{tic}", 10.0 + class_index, -20.0 - (tic - 3000))
+            tics[split].append(f"TIC_{tic}")
+            tic += 1
+    processed = shipped / "processed"
+    rows = []
+    for star in sorted(processed.iterdir()):
+        row = {"tic_id": star.name.removeprefix("TIC_"), "astra_class": "x"}
+        row.update({col: _sha(star / name) for col, name in prep.HASHED_FILES.items()})
+        rows.append(row)
+    manifest = shipped / "manifest.csv"
+    with manifest.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+    ids_dir = shipped / "ids"
+    ids_dir.mkdir()
+    file_hashes = {}
+    for split, members in tics.items():
+        path = ids_dir / f"phase6_{split}_ids.json"
+        path.write_text(json.dumps(sorted(members), indent=2))
+        file_hashes[split] = _sha(path)
+    split_hash = prep.compute_split_hash({s: sorted(m) for s, m in tics.items()})
+    audit = shipped / "audit.json"
+    audit.write_text(json.dumps({"split_metadata": {
+        "split_hash": split_hash, **{f"{s}_size": len(m) for s, m in tics.items()}}}))
+    return prep.Sources(processed=processed, manifest=manifest, split_ids=ids_dir, audit=audit,
+                        manifest_sha256=_sha(manifest), split_file_sha256=file_hashes, split_hash=split_hash)
+
+
+class PrepareLayoutTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.sources = _audit_ready_sources(self.root)
+        self.target = self.root / "phase6"
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_builds_a_verified_layout_with_a_passing_audit(self) -> None:
+        self.assertEqual(prep.prepare(self.target, self.sources), [])
+        self.assertEqual(len(list((self.target / "processed").iterdir())), 15)
+        self.assertTrue((self.target / "manifest.csv").is_file())
+        status = json.loads((self.target / "audits" / "audit_status.json").read_text(encoding="utf-8"))
+        self.assertEqual(status["overall_status"], "PASS")
+        self.assertFalse(status["raw_files_required"])
+        self.assertEqual(status["missing_raw_files"], 15)  # raw files are not copied
+
+    def test_tampered_source_builds_nothing(self) -> None:
+        star = next(self.sources.processed.iterdir())
+        (star / "metadata.json").write_text("{}")
+        errors = prep.prepare(self.target, self.sources)
+        self.assertEqual(errors, [f"{star.name}/metadata.json: hash mismatch"])
+        self.assertFalse(self.target.exists())
+
+    def test_existing_layout_requires_force(self) -> None:
+        self.assertEqual(prep.prepare(self.target, self.sources), [])
+        self.assertTrue(prep.prepare(self.target, self.sources)[0].endswith("(use --force to replace it)"))
+        self.assertEqual(prep.prepare(self.target, self.sources, force=True), [])
+
+
 class ShippedRepositoryTests(unittest.TestCase):
     def test_the_repository_manifest_matches_its_published_hash(self) -> None:
         self.assertEqual(prep.verify_manifest_file(prep.SHIPPED_MANIFEST), [])
