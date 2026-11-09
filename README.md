@@ -164,40 +164,43 @@ ASTRA — Automated Stellar Transient Recognition & Analysis/
 
 ### Prerequisites
 
-- **Python 3.12** (tested with `3.12.12`)
-- **PyTorch 2.12.0** with MPS backend (Apple Silicon) or CUDA
-- **macOS** with Apple M-series chip (recommended), or Linux with CUDA GPU
+- **Python 3.11 or 3.12** (CI runs both)
+- **PyTorch ≥ 2.0**: CPU is enough for everything below; Apple MPS or CUDA is used automatically when available
+- Linux, macOS or Windows (all commands below are verified on Windows and on CI's Ubuntu)
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Rexy-5097/ASTRA.git
-cd "ASTRA — Automated Stellar Transient Recognition & Analysis"
+git clone https://github.com/yeshika-02/ASTRA.git
+cd ASTRA
 ```
 
 ### 2. Install Dependencies
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install torch --index-url https://download.pytorch.org/whl/cpu   # or the CUDA/MPS wheel you need
 pip install -r requirements.txt
 ```
 
-> [!TIP]
-> For Apple Silicon, PyTorch MPS acceleration is enabled automatically. Ensure `torch>=2.0` is installed with the correct wheel for your architecture.
+### 3. Verify and Prepare the Frozen Dataset
 
-### 3. Verify Dataset Integrity
+The repository ships the frozen 944-star dataset (processed arrays, hash-locked manifest and frozen split ids) but not in the `data/phase6/` layout the scripts use. One command verifies every shipped file and builds that layout:
 
 ```bash
-python -c "
-import hashlib, pathlib
-data = pathlib.Path('data/phase6/scientific_dataset_freeze_v2.csv').read_bytes()
-h = hashlib.sha256(data).hexdigest()
-expected = 'f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58'
-print('✅ PASS' if h == expected else '❌ FAIL — dataset mismatch')
-print(f'  SHA256: {h}')
-"
+python pipeline/prepare_from_repo.py --verify-only   # check only: manifest + 944 stars x 5 files
+python pipeline/prepare_from_repo.py                 # build data/phase6/{processed,splits,audits}
 ```
+
+It checks:
+- the manifest SHA256 (`f99b4b06…`);
+- every array and metadata file against the manifest;
+- the three split files against their published hashes, and the recomputed split hash (`ebcdc44c…`).
+
+It then runs the dataset audit. Raw light curves are not shipped, so the audit records that raw files were not checked. `data/phase6/` is git-ignored.
+
+Paths can be changed with environment variables (`ASTRA_PHASE6_ROOT`, `ASTRA_PROCESSED_DIR`, `ASTRA_SPLITS_DIR`, `ASTRA_MODELS_DIR`, `ASTRA_OUTPUT_DIR`); see `astra/config.py`. Script reports go to `outputs/` (git-ignored).
 
 ---
 
