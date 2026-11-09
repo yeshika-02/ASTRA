@@ -14,8 +14,11 @@ from typing import Any, Iterable
 
 import numpy as np
 
+from astra.config import get_paths
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_PHASE6_ROOT = PROJECT_ROOT / "data" / "phase6"
+# data/phase6 unless ASTRA_PHASE6_ROOT is set (see astra/config.py).
+DEFAULT_PHASE6_ROOT = get_paths().phase6_root
 
 PHASE6_DIRS = (
     "raw",
@@ -149,7 +152,7 @@ def read_csv_rows(path: Path) -> list[dict[str, str]]:
 def write_csv_rows(path: Path, rows: Iterable[dict[str, Any]], fieldnames: Iterable[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     field_list = list(fieldnames)
-    with open(path, "w", newline="") as fp:
+    with open(path, "w", newline="", encoding="utf-8") as fp:
         writer = csv.DictWriter(fp, fieldnames=field_list)
         writer.writeheader()
         for row in rows:
@@ -160,7 +163,7 @@ def append_csv_row(path: Path, row: dict[str, Any], fieldnames: Iterable[str]) -
     path.parent.mkdir(parents=True, exist_ok=True)
     field_list = list(fieldnames)
     exists = path.exists()
-    with open(path, "a", newline="") as fp:
+    with open(path, "a", newline="", encoding="utf-8") as fp:
         writer = csv.DictWriter(fp, fieldnames=field_list)
         if not exists:
             writer.writeheader()

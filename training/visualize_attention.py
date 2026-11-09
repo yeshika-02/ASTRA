@@ -27,6 +27,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from astra.config import get_paths, resolve_cli_path
 from data.labels import LABEL_TO_NAME, NUM_CLASSES
 from training.dataset import ASTRADataset
 from training.models.hybrid_transformer import HybridTransformer
@@ -84,10 +85,14 @@ def plot_attention_1d(
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     parser = argparse.ArgumentParser(description="ASTRA Attention Weight Visualization")
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to trained .pt checkpoint")
     parser.add_argument("--output-dir", type=str, required=True, help="Artifact output directory")
-    parser.add_argument("--data-dir", type=str, default="data/processed")
+    parser.add_argument("--data-dir", type=str, default=None,
+                        help="Processed star directories (default: the configured processed dir, "
+                             "data/phase6/processed or ASTRA_PROCESSED_DIR)")
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
@@ -106,7 +111,8 @@ def main() -> None:
     model.eval()
 
     # ── Load Dataset ──
-    dataset = ASTRADataset(data_dir=args.data_dir, split="val", use_folded=use_folded, augment=False)
+    data_dir = resolve_cli_path(args.data_dir, get_paths().processed_dir)
+    dataset = ASTRADataset(data_dir=data_dir, split="val", use_folded=use_folded, augment=False)
     rep_stars = get_representative_stars(dataset)
 
     print(f"Generating attention plots for variant: '{variant}'...")

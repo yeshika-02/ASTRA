@@ -162,12 +162,14 @@ def generate_summary(results: list[dict], save_dir: Path) -> Path:
             f"- `confusion_matrix_{b['tag']}.png`",
         ])
 
-    summary_path.write_text("\n".join(lines) + "\n")
+    summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"\n📊 Experiment summary saved → {summary_path}")
     return summary_path
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     parser = argparse.ArgumentParser(
         description="ASTRA controlled retraining experiment (raw vs dual-branch)."
     )

@@ -40,6 +40,7 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from pipeline.phase6_utils import (
     DEFAULT_PHASE6_ROOT,
     read_csv_rows,
@@ -53,7 +54,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("stable_screen")
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
+ARTIFACT_DIR = get_paths().output_dir  # reports
 
 
 @dataclass
@@ -553,7 +554,7 @@ def generate_screening_report(
         lines.append(f"| {r.tic_id} | {r.n_points} | {rms_s} | {amp_s} | {fap_s} | {bls_s} | {out_s} | {status} | {reason} |")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text("\n".join(lines) + "\n")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     log.info("Stable screening report saved → %s", output_path)
 
     return {
@@ -573,6 +574,7 @@ def run_stable_screen(
     thresholds: StabilityThresholds | None = None,
 ) -> dict[str, Any]:
     """Main entry point for stable screening."""
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     if thresholds is None:
         thresholds = StabilityThresholds()
 
@@ -606,6 +608,8 @@ def run_stable_screen(
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     parser = argparse.ArgumentParser(description="ASTRA Phase 6A — Stable Star Stability Screener")
     parser.add_argument("--data-root", type=Path, default=DEFAULT_PHASE6_ROOT)
     parser.add_argument("--rms-threshold", type=float, default=0.010)

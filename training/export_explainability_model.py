@@ -18,14 +18,19 @@ import torch
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from training.models.explainable_wrapper import ExplainableHybridTransformerWrapper
 from training.models.hybrid_transformer import HybridTransformer
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
-ONNX_OUT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared_explain.onnx"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
+ONNX_OUT_PATH = PATHS.model("best_star_transformer_shared_explain.onnx")
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 80)
     print("  ASTRA Phase 8A: Explainability Export & Validation Gate")
     print("=" * 80)
@@ -156,12 +161,12 @@ The `/api/explain` and `/api/mission-replay` runtimes can now safely rely on the
 """
 
     report_path = ARTIFACT_DIR / "phase8_explainability_audit.md"
-    report_path.write_text(report_content)
+    report_path.write_text(report_content, encoding="utf-8")
     print(f"Explainability audit report written to: {report_path}")
 
     # Also write to root directory for Phase 8 consistency
     root_report = PROJECT_ROOT / "phase8_explainability_audit.md"
-    root_report.write_text(report_content)
+    root_report.write_text(report_content, encoding="utf-8")
     print(f"Copy saved to: {root_report}")
 
 if __name__ == "__main__":
