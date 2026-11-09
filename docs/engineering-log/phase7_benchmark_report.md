@@ -52,8 +52,8 @@ Evaluation on the catalog-period subgroup (N=32 per validation split on average)
 
 ## 5. Reference Files
 
-- Detailed fold-level metrics: [fold_metrics.csv](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/fold_metrics.csv)
-- Aggregate JSON metrics: [aggregate_metrics.json](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/aggregate_metrics.json)
+- Detailed fold-level metrics: fold_metrics.csv *(machine-local artifact, not in repository)*
+- Aggregate JSON metrics: aggregate_metrics.json *(machine-local artifact, not in repository)*
 ```
 
 ## 4. Calibration & Uncertainty Summary
@@ -110,8 +110,8 @@ Because of the sparse validation counts (54 samples), we use adaptive (equal-fre
 ## 4. Visual Diagnostics Reference
 
 The following diagnostic plots are stored in the artifact workspace:
-- **Reliability Diagrams (Before/After)**: [reliability_before.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/reliability_before.png) and [reliability_after.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/reliability_after.png)
-- **Confidence Histograms**: [confidence_histograms.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/confidence_histograms.png)
+- **Reliability Diagrams (Before/After)**: reliability_before.png *(machine-local artifact, not in repository)* and reliability_after.png *(machine-local artifact, not in repository)*
+- **Confidence Histograms**: confidence_histograms.png *(machine-local artifact, not in repository)*
 ```
 
 ### Uncertainty Quantification (MC Dropout)
@@ -149,19 +149,19 @@ By setting a threshold on prediction confidence, we can opt to reject low-confid
 ## 3. Diagnostic Plots Reference
 
 The following diagnostic plots are stored in the artifact workspace:
-- **Predictive Entropy Histograms**: [entropy_histograms.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/entropy_histograms.png)
-- **Selective Prediction Curve**: [uncertainty_vs_accuracy.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/uncertainty_vs_accuracy.png)
-- **Subgroup Predictive Entropy**: [subgroup_uncertainty_boxplots.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/subgroup_uncertainty_boxplots.png)
+- **Predictive Entropy Histograms**: entropy_histograms.png *(machine-local artifact, not in repository)*
+- **Selective Prediction Curve**: uncertainty_vs_accuracy.png *(machine-local artifact, not in repository)*
+- **Subgroup Predictive Entropy**: subgroup_uncertainty_boxplots.png *(machine-local artifact, not in repository)*
 
 ## 4. Reference Datasets
 
-- Complete validation uncertainty table: [uncertainty_metrics.csv](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/uncertainty_metrics.csv)
+- Complete validation uncertainty table: uncertainty_metrics.csv *(machine-local artifact, not in repository)*
 ```
 
 ## 5. Physical Files and Reference Logs
 
-- Dataset Fingerprint: [dataset_fingerprint.md](file:///Users/soumyadebtripathy/ASTRA — Automated Stellar Transient Recognition & Analysis/dataset_fingerprint.md)
-- Test Results Report: [phase7_testset_results.md](file:///Users/soumyadebtripathy/ASTRA — Automated Stellar Transient Recognition & Analysis/phase7_testset_results.md)
-- Model Comparison Report: [phase7_model_comparison.md](file:///Users/soumyadebtripathy/ASTRA — Automated Stellar Transient Recognition & Analysis/phase7_model_comparison.md)
-- Validation Calibration Report: [calibration_report.md](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/calibration_report.md)
-- Validation Uncertainty Report: [uncertainty_analysis.md](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/uncertainty_analysis.md)
+- Dataset Fingerprint: [dataset_fingerprint.md](dataset_fingerprint.md)
+- Test Results Report: [phase7_testset_results.md](phase7_testset_results.md)
+- Model Comparison Report: [phase7_model_comparison.md](phase7_model_comparison.md)
+- Validation Calibration Report: calibration_report.md *(machine-local artifact, not in repository)*
+- Validation Uncertainty Report: uncertainty_analysis.md *(machine-local artifact, not in repository)*
