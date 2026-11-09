@@ -35,6 +35,12 @@ Status is based on what the code, data and runs show, not on README or engineeri
 
 ---
 
+## 🟦 Current: 7-day sprint (2026-11-09 → 2026-11-15)
+
+- **Status:** planned; Day 1 not started.
+- **Plan:** [7_DAY_SPRINT.md](7_DAY_SPRINT.md). **Tasks:** SP-00…SP-35 in [TASK_CHECKLIST.md](TASK_CHECKLIST.md).
+- **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk).
+
 ## ✅ Phase 0 — completed and merged to `main` 2026-11-09 (not deployed to production)
 
 | Task | Result | Evidence |
