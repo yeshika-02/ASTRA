@@ -5,6 +5,7 @@ import { StatusBadge } from '@/components/shared/Badges';
 import { useModelDetails, useCheckpoints, useCalibrationDetails, useBenchmarkMetrics } from '@/lib/hooks';
 import { CLASS_COLORS, CLASS_LABELS, formatParams, formatPercent, formatHash } from '@/lib/utils';
 import { BarChart, Bar, Cell, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { SHARED_BEST_VAL_ACCURACY } from '@/lib/data/constants';
 
 export default function ModelOperationsPage() {
   const { data: modelDetails, isLoading: modelLoading } = useModelDetails();
@@ -49,7 +50,7 @@ export default function ModelOperationsPage() {
   };
 
   const performance = {
-    val_accuracy: modelDetails.val_accuracy || 0.8582,
+    val_accuracy: SHARED_BEST_VAL_ACCURACY,
     test_accuracy: modelDetails.benchmark.test_accuracy,
     macro_f1: modelDetails.benchmark.macro_f1,
     weighted_f1: modelDetails.benchmark.weighted_f1,

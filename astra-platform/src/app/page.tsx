@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { MetricCard, Panel } from '@/components/shared/UI';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails, useModelDetails } from '@/lib/hooks';
-import { AUDIT_EVENTS, CLASS_LABELS, CLASS_COLORS } from '@/lib/data/constants';
+import { AUDIT_EVENTS, CLASS_LABELS, CLASS_COLORS, SHARED_BEST_VAL_ACCURACY } from '@/lib/data/constants';
 import { formatParams, formatPercent } from '@/lib/utils';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, useScroll, useSpring } from 'framer-motion';
@@ -190,7 +190,7 @@ export default function Home() {
   };
 
   const performanceMetrics = {
-    val_accuracy: modelDetails.val_accuracy || 0.8582,
+    val_accuracy: SHARED_BEST_VAL_ACCURACY,
     test_accuracy: modelDetails.benchmark.test_accuracy,
     macro_f1: modelDetails.benchmark.macro_f1,
     weighted_f1: modelDetails.benchmark.weighted_f1,
