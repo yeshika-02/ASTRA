@@ -253,6 +253,8 @@ flowchart TD
 
 ### Phase 1 — Data Acquisition
 
+Phases 1 and 2 record how the frozen dataset was built. They query VizieR and MAST over the network, and Phase 2 needs the raw light curves, which are not shipped. To work with the frozen dataset, use Quick Start step 3 instead.
+
 ```bash
 # Build the VSX/AAVSO catalog via VizieR
 python pipeline/build_catalog.py
@@ -276,6 +278,7 @@ python pipeline/preprocess.py
 python pipeline/dataset_audit.py
 
 # Freeze train/val/test splits with SHA256 hash locks
+# (do not rerun to regenerate the published split; see "Reproducing Results")
 python pipeline/freeze_phase6_splits.py
 ```
 
@@ -351,8 +354,9 @@ python training/predict.py --input data/phase6/processed/TIC_100009973 \
 python training/visualize_attention.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
     --output-dir outputs/attention
 
-# Export ONNX / TorchScript (reads models/saved/best_star_transformer_shared.pt)
-python training/export_model.py
+# Export ONNX / TorchScript, check both against PyTorch, benchmark CPU latency
+python training/export_model.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --out-dir outputs/export
 ```
 
 A test-set evaluation script with bootstrap confidence intervals (`training/evaluate.py`) is planned as sprint task SP-15. The published checkpoint is not in the repository; see "Known limitations" above.
