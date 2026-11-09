@@ -136,5 +136,42 @@ class CrossValidateCliTests(unittest.TestCase):
             self.assertEqual(len(list(out.glob("confusion_matrix_seed1_fold*.png"))), 2)
 
 
+def _random_checkpoint(path: Path) -> None:
+    """A checkpoint in the training script's format, with untrained weights."""
+    from training.models.hybrid_transformer import HybridTransformer
+
+    torch.manual_seed(0)
+    model = HybridTransformer(variant="shared", num_classes=NUM_CLASSES)
+    torch.save({"variant": "shared", "num_classes": NUM_CLASSES, "model_state_dict": model.state_dict()}, path)
+
+
+@unittest.skipIf(torch is None, "PyTorch not installed")
+class CalibrationCliTests(unittest.TestCase):
+    def test_all_paths_are_configurable(self) -> None:
+        from training.calibration import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            processed = _synthetic_processed(root, per_class=6)  # >= 5 validation samples for 5 bins
+            ckpt = root / "model.pt"
+            _random_checkpoint(ckpt)
+            out = root / "reports"
+            temperature_file = root / "models" / "temperature.txt"
+            with redirect_stdout(io.StringIO()):
+                main(["--checkpoint", str(ckpt), "--data-dir", str(processed),
+                      "--out-dir", str(out), "--temperature-out", str(temperature_file)])
+            temperature = float(temperature_file.read_text().strip())
+            self.assertGreater(temperature, 0.0)
+            self.assertTrue((out / "calibration_report.md").is_file())
+            self.assertTrue((out / "reliability_before.png").is_file())
+
+    def test_missing_checkpoint_exits_cleanly(self) -> None:
+        from training.calibration import main
+
+        with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                main(["--checkpoint", str(Path(tmp) / "nope.pt")])
+
+
 if __name__ == "__main__":
     unittest.main()
