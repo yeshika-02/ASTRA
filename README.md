@@ -177,6 +177,15 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu   # or the CU
 pip install -r requirements.txt
 ```
 
+For the exact versions CI verifies, install from the lock file instead (Python 3.11 or 3.12, any OS):
+
+```bash
+pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements-lock.txt
+```
+
+`requirements-lock.txt` pins every dependency except PyTorch. Its header holds the `uv` command that regenerates it from `requirements.txt`. The published runs used PyTorch 2.12.0 on Python 3.12 (see `models/saved/experiment_metadata_shared.json`).
+
 ### 3. Verify and Prepare the Frozen Dataset
 
 The repository ships the frozen 944-star dataset (processed arrays, hash-locked manifest and frozen split ids) but not in the `data/phase6/` layout the scripts use. One command verifies every shipped file and builds that layout:
