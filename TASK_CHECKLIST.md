@@ -44,12 +44,12 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 | SP-05 | Make ESLint a CI gate (roadmap 1.7) | P0 | Completed (in review) | `fix/eslint-react-hooks` | #6 | 308bf5b | CI web job with `--max-warnings=0` passes (PR #6) |
 | SP-06 | GitHub Actions → v7; caching; coverage artifact | P0 | Completed (in review) | `ci/actions-v7` | #3 | f3778c1, 7166f53, ebed6f0, 07311e7, 9a345aa | actionlint clean (was 1 error); no Node 20 annotations; `python-coverage` artifact uploaded; release archive dry run 5,351/5,351 files |
 | SP-07 | Fix 24 doc links → validator 100/100; PR-template casing; re-enable AgentOS workflows (T9) | P0 | Completed with exception (in review) | `docs/agentos-validator-100` | #4 | 5c9bdc6, 04015a5, 4fc95e4, 7ee7a95 | validator 100/100 on Windows and Linux (CI); suite 21/21; `lint.yml` stays manual, see SP-36 |
-| SP-08 | Python tests for `training/` helpers (roadmap 1.9, E2) | P1 | In Progress | `test/python-coverage` | #5 | a205ca4, 7ace8cd, 3a87533, 7267531, 40a6592 | 62 passed + 1 xfail; `training/` coverage 7% → 22.5% (target 40% needs SP-09 first) |
-| SP-09 | Central config replacing 27 hardcoded paths (T7, R3) | P0 | Pending | `refactor/config-paths` | — | — | — |
-| SP-10 | `--seed` / `--data-dir` / `--out-dir` CLI flags (T7, R2) | P0 | Pending | `refactor/config-paths` | — | — | — |
-| SP-11 | README reproduction commands that run (T7, R2) | P0 | Pending | `docs/reproduction-and-env` | — | — | — |
-| SP-12 | Pinned Python lock incl. `onnxruntime` (R5) | P1 | Pending | `docs/reproduction-and-env` | — | — | — |
-| SP-13 | Fresh-clone verification script | P1 | Pending | `docs/reproduction-and-env` | — | — | — |
+| SP-08 | Python tests for `training/` helpers (roadmap 1.9, E2) | P1 | Completed (in review) | `test/python-coverage` | #5 | a205ca4, 7ace8cd, 3a87533, 7267531, 40a6592 | 62 passed + 1 xfail; `training/` coverage 7% → 22.5% on #5; the ≥ 40% target is met by #7 (56%), so both land together on Day 7 |
+| SP-09 | Central config replacing 27 hardcoded paths (T7, R3) | P0 | Completed (in review) | `refactor/config-paths` | #7 | f8e2f9b, d43fb37, 7721ea6, 18d6ab2, a6da543, d78dda3, 820cb34, 11c0a4f, c72bb07, 94f59b6 | machine paths 27 → 0 (`test_no_machine_paths`); config resolution tested; 60 passed; CI 5/5 green |
+| SP-10 | `--seed` / `--data-dir` / `--out-dir` CLI flags (T7, R2) | P0 | Completed (in review) | `refactor/config-paths` | #7 | 015600c, 8f297db, 74ba11d, 98fcd3b, 5079fe5, 58b502a, 625f452 | end-to-end CLI runs on temp dirs (`test_train_cli`, `test_script_outputs`); `training/` coverage 56% |
+| SP-11 | README reproduction commands that run (T7, R2) | P0 | Completed (in review) | `docs/reproduction-and-env` | #8 | 513bc56, 6eb79a3, 7f29101, b35e6da, eea4aa8, 432b870, 8c235a6, fb170dc, eb56087, e07dbe9, 490176c, e63299a | all 8 Phase 3/4 commands exit 0 in the locked env (training/CV with fewer epochs/folds); `test_readme_commands` checks every documented flag; Phase 1–2 marked network-bound and historical |
+| SP-12 | Pinned Python lock incl. `onnxruntime` (R5) | P1 | Completed (in review) | `docs/reproduction-and-env` | #8 | 62cdc22, ba8273a, 807e0c6, 1d61e00, fb170dc | `requirements-lock.txt` (uv, universal, `--exclude-newer 2026-10-27`, 87 packages, torch excluded); clean venv: `pip check` OK, 92 passed; `test_dependency_lock` mutation-checked |
+| SP-13 | Fresh-clone verification script | P1 | Completed (in review) | `docs/reproduction-and-env` | #8 | 778f7a1, b69430e, f106d3f, c08536c, 5dee4d6, 82ce6d2, 4760f93 | `pipeline/prepare_from_repo.py`: 944 stars × 5 files verified, split hash matches, audit PASS; Windows fresh clone trains 1 epoch in 64 s with matching provenance; CI on e63299a: all 6 jobs passed (fresh-clone job verified 944 stars, split hash ebcdc44c…, audit PASS, provenance match), but each run is marked failed because a GitHub Actions incident (2026-11-09 18:12 UTC) skipped creating some jobs; needs one clean run before Day 7 |
 | SP-14 | Weights investigation record + recovery/retraining plan, ADR-0061 (T4) | P0 | Pending | `feat/evaluation-reproducibility` | — | — | — |
 | SP-15 | `training/evaluate.py` with bootstrap CIs (roadmap 1.3) | P0 | Pending | `feat/evaluation-reproducibility` | — | — | — |
 | SP-16 | Experiment provenance: git SHA, env, seed, data hash (R5) | P1 | Pending | `feat/evaluation-reproducibility` | — | — | — |
@@ -85,6 +85,13 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 | 2026-11-09 | SP-08 | Upload clipping uses non-robust mean/std (spike survives at abs(z) ~ 31) | SP-37 |
 | 2026-11-09 | SP-08 | `ASTRADataset` silently falls back to a random split without frozen files; test-split leakage check ignores `val` | SP-09, SP-21 |
 | 2026-11-09 | SP-03 | UI showed a hidden hardcoded val accuracy (field missing from `/api/model`) | fixed in #6; source in SP-20 |
+| 2026-11-09 | SP-09 | Three calibration temperatures in the repo: 1.257665 (published, UI, upload), 1.258631 (`models/saved/optimal_temperature.txt`), 1.2944 (uncertainty fallback) | SP-18 |
+| 2026-11-09 | SP-09 | 9 report writers crashed (missing output dir), reports written in cp1252, seaborn/pandas/onnxruntime undeclared, `cleanup_data.py` deleted files by default | fixed in #7 |
+| 2026-11-09 | SP-11 | `freeze_phase6_splits.py` uses 70/10/10/10 ratios but the committed split is 70/15/15/0, so the script cannot regenerate the published split | SP-21 (documented in README) |
+| 2026-11-09 | SP-11 | Model weights not shipped: both ONNX files reference absent `.onnx.data` weight files and no `.pt` is tracked, so inference returns 503 on every clone | SP-14 |
+| 2026-11-09 | SP-11 | `onnx`/`onnxscript` undeclared: `export_model.py` crashed under torch ≥ 2.9 (dynamo exporter) | fixed in #8 |
+| 2026-11-09 | SP-11 | README documented flags and paths that do not exist (`--variant`, `--model`, `--split`, `splits/`, `.pt` files, CSV upload) | fixed in #8 |
+| 2026-11-09 | SP-13 | Scripts crashed with `UnicodeEncodeError` when stdout was redirected on Windows (cp1252) | fixed in #8 |
 
 ### Acceptance criteria
 
