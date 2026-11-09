@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useStars } from '@/lib/hooks';
 import { useAstraStore } from '@/lib/store';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
-import { Panel, EmptyState, MetricCard } from '@/components/shared/UI';
+import { Panel, EmptyState } from '@/components/shared/UI';
 import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
 import Link from 'next/link';
 

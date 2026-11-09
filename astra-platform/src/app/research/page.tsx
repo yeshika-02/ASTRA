@@ -1,6 +1,6 @@
 'use client';
 
-import { MetricCard, Panel } from '@/components/shared/UI';
+import { Panel } from '@/components/shared/UI';
 import { useResearchFindings, useCalibrationDetails } from '@/lib/hooks';
 import { CLASS_LABELS, CLASS_COLORS, formatPercent } from '@/lib/utils';
 import {

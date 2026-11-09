@@ -3,9 +3,9 @@
 import { useParams } from 'next/navigation';
 import { useStar, useLightCurve, usePredict } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
-import { MetricCard, Panel, DataRow, ConfidenceBar, HashBadge, EmptyState, InferenceUnavailable } from '@/components/shared/UI';
+import { Panel, DataRow, ConfidenceBar, EmptyState, InferenceUnavailable } from '@/components/shared/UI';
 import { formatRA, formatDec, formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS, confidenceToColor } from '@/lib/utils';
-import type { AstraClass } from '@/lib/types';
+
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 function sampleArray(arr: number[], maxPoints: number): { x: number; y: number }[] {
