@@ -39,6 +39,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
+from astra.config import get_paths, resolve_cli_path
 from data.labels import CLASS_NAMES, LABEL_TO_NAME, NUM_CLASSES
 from pipeline.phase6_utils import assert_phase6_training_allowed
 from training.dataset import ASTRADataset
@@ -291,7 +292,7 @@ def save_diagnostics(
 
 
 # ─── Main training loop ─────────────────────────────────────────────
-def main() -> None:
+def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Train StarCNN on ASTRA stellar light curve dataset."
     )
@@ -307,9 +308,16 @@ def main() -> None:
     parser.add_argument(
         "--data-dir",
         type=str,
-        default="data/processed",
-        help="Path to processed data directory (default: data/processed)",
+        default=None,
+        help="Processed arrays (default: configured processed dir, data/phase6/processed)",
     )
+    parser.add_argument(
+        "--out-dir",
+        type=str,
+        default=None,
+        help="Checkpoints, history and diagnostics (default: configured models dir, models/saved)",
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     parser.add_argument(
         "--use-folded", action="store_true",
         help="Enable dual-branch mode (raw + phase-folded flux)",
@@ -322,19 +330,23 @@ def main() -> None:
         "--tag", type=str, default="",
         help="Optional tag for output files (e.g. 'raw_only', 'dual')",
     )
-    args = parser.parse_args()
+    return parser
 
-    # Enforce strict determinism at seed 42
-    set_deterministic_seeds(42)
 
-    data_dir = PROJECT_ROOT / args.data_dir
+def main(argv: list[str] | None = None) -> None:
+    args = build_arg_parser().parse_args(argv)
+    paths = get_paths()
+
+    set_deterministic_seeds(args.seed)
+
+    data_dir = resolve_cli_path(args.data_dir, paths.processed_dir)
     try:
         assert_phase6_training_allowed(data_dir)
     except RuntimeError as exc:
         print(f"\nERROR: {exc}")
         sys.exit(1)
 
-    save_dir = PROJECT_ROOT / "models" / "saved"
+    save_dir = resolve_cli_path(args.out_dir, paths.models_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
 
     tag = args.tag
@@ -571,7 +583,7 @@ def main() -> None:
     print("\n🔒 Test set lock protection verified: TEST_SET_ACCESSED is FALSE.")
 
     # ── Save Consolidated Experiment Metadata ──
-    split_meta_path = PROJECT_ROOT / "data" / "phase6" / "splits" / "split_metadata.json"
+    split_meta_path = paths.splits_dir / "split_metadata.json"
     split_hash = "unknown"
     if split_meta_path.exists():
         try:
@@ -592,13 +604,13 @@ def main() -> None:
     ckpt_sha256 = get_file_sha256(checkpoint_file)
 
     # Calculate dataset manifest hash
-    manifest_path = PROJECT_ROOT / "data" / "phase6" / "scientific_dataset_freeze_v2.csv"
+    manifest_path = paths.phase6_root / "scientific_dataset_freeze_v2.csv"
     manifest_sha256 = get_file_sha256(manifest_path)
 
     # Split files hashes
-    train_split_path = PROJECT_ROOT / "data" / "phase6" / "splits" / "train_ids.json"
-    val_split_path = PROJECT_ROOT / "data" / "phase6" / "splits" / "val_ids.json"
-    test_split_path = PROJECT_ROOT / "data" / "phase6" / "splits" / "test_ids.json"
+    train_split_path = paths.splits_dir / "train_ids.json"
+    val_split_path = paths.splits_dir / "val_ids.json"
+    test_split_path = paths.splits_dir / "test_ids.json"
 
     split_hashes = {
         "train": get_file_sha256(train_split_path),
@@ -608,7 +620,7 @@ def main() -> None:
 
     exp_metadata = {
         "variant": tag if tag else "cnn_dual",
-        "seed": 42,
+        "seed": args.seed,
         "device": str(device),
         "python_version": sys.version,
         "torch_version": torch.__version__,

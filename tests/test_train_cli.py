@@ -83,5 +83,30 @@ class TrainTransformerCliTests(unittest.TestCase):
         self.assertFalse(all(torch.equal(a[k], b[k]) for k in a))
 
 
+@unittest.skipIf(torch is None, "PyTorch not installed")
+class TrainCnnCliTests(unittest.TestCase):
+    def test_defaults_come_from_config(self) -> None:
+        from training.train_cnn import build_arg_parser
+
+        args = build_arg_parser().parse_args([])
+        self.assertEqual((args.seed, args.data_dir, args.out_dir), (42, None, None))
+
+    def test_one_epoch_dual_branch_run_writes_to_out_dir_and_records_the_seed(self) -> None:
+        import training.dataset as dataset_module
+        from training.train_cnn import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            processed = _synthetic_processed(root)
+            out = root / "run"
+            argv = ["--data-dir", str(processed), "--out-dir", str(out), "--seed", "3",
+                    "--epochs", "1", "--batch-size", "8", "--use-folded", "--tag", "cli"]
+            with patch.object(dataset_module, "TEST_SET_ACCESSED", False), redirect_stdout(io.StringIO()):
+                main(argv)
+            metadata = json.loads((out / "experiment_metadata_cli.json").read_text())
+            self.assertEqual(metadata["seed"], 3)
+            self.assertTrue(list(out.glob("best_star_cnn*.pt")))
+
+
 if __name__ == "__main__":
     unittest.main()
