@@ -40,12 +40,24 @@ export function CommandPalette() {
   
   const { audioState, setAudioState, qualityState, setQualityState } = useAstraStore();
 
-  // Toggle open state with Command+K / Ctrl+K
+  // Latest open state for the global key handler, which is registered once.
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // Toggle with Command+K / Ctrl+K. Opening always starts from an empty query.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        if (isOpenRef.current) {
+          setIsOpen(false);
+        } else {
+          setQuery('');
+          setSelectedIndex(0);
+          setIsOpen(true);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -54,11 +66,9 @@ export function CommandPalette() {
 
   // Autofocus input on open
   useEffect(() => {
-    if (isOpen) {
-      setQuery('');
-      setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+    if (!isOpen) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   // Click outside to close
