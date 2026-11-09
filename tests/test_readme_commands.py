@@ -1,8 +1,9 @@
-"""Every `python <script> --flag ...` command in README.md must match the script's CLI.
+"""Every `python <script> --flag ...` command in the user docs must match the script's CLI.
 
-The README used to document flags that did not exist (--seed, --model, --split,
---n_passes, --variant on train_cnn/cross_validate), so reproduction commands failed
-or were silently ignored. This test keeps the documentation and the code in sync.
+The README and docs/reproducibility.md used to document flags that did not exist
+(--seed, --model, --split, --n_passes, --variant on predict/calibration/uncertainty/
+export, --seed on cross_validate), so reproduction commands failed or were silently
+ignored. This test keeps the documentation and the code in sync.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-README = ROOT / "README.md"
+DOCUMENTS = (ROOT / "README.md", ROOT / "docs" / "reproducibility.md")
 
 
 def _bash_blocks(text: str) -> list[str]:
@@ -25,7 +26,8 @@ def _bash_blocks(text: str) -> list[str]:
 def _commands() -> list[tuple[str, list[str]]]:
     """(script path, flags) for each `python <file>.py ...` line, joining backslash continuations."""
     commands = []
-    for block in _bash_blocks(README.read_text(encoding="utf-8")):
+    blocks = [block for doc in DOCUMENTS for block in _bash_blocks(doc.read_text(encoding="utf-8"))]
+    for block in blocks:
         joined = re.sub(r"\\\n\s*", " ", block)
         for line in joined.splitlines():
             line = line.split(" #", 1)[0].strip()
@@ -46,6 +48,10 @@ def _help(script: str) -> str:
 class ReadmeCommandTests(unittest.TestCase):
     def test_readme_documents_runnable_commands(self) -> None:
         self.assertGreater(len(_commands()), 5)
+
+    def test_reproducibility_guide_is_checked(self) -> None:
+        guide = (ROOT / "docs" / "reproducibility.md").read_text(encoding="utf-8")
+        self.assertIn("python training/evaluate.py", "\n".join(_bash_blocks(guide)))
 
     def test_scripts_exist(self) -> None:
         missing = sorted({script for script, _ in _commands() if not (ROOT / script).is_file()})
