@@ -2,9 +2,10 @@
 
 The published test confusion matrices exist only as images
 (models/saved/test_confusion_matrix_transformer_shared.png and ..._cnn_dual.png).
-They are transcribed below. The metric code must reproduce every published number
-from them (docs/engineering-log/ground_truth_metrics.md), and their row sums must equal
-the class counts of the shipped frozen test split.
+They are transcribed once, in models/published_weights.json, which evaluate.py also
+uses. The metric code must reproduce every published number from them
+(docs/engineering-log/ground_truth_metrics.md), and their row sums must equal the class
+counts of the shipped frozen test split.
 """
 
 from __future__ import annotations
@@ -17,25 +18,15 @@ import numpy as np
 
 from data.labels import NUM_CLASSES
 from training.evaluate import bootstrap_ci, confusion_matrix, metrics_from_confusion, softmax
+from training.verify_weights import find_published
 
 ROOT = Path(__file__).resolve().parent.parent
+CHECKPOINTS = {"transformer_shared": "best_star_transformer_shared.pt", "cnn_dual": "best_star_cnn_dual_aug.pt"}
 
 # Rows: true rr_lyrae, cepheid, eclipsing_binary, solar_like, stable; columns: predicted, same order.
 PUBLISHED_CONFUSION = {
-    "transformer_shared": np.array([
-        [31, 0, 1, 0, 0],
-        [0, 30, 0, 1, 4],
-        [1, 0, 20, 2, 0],
-        [1, 5, 0, 11, 5],
-        [1, 4, 0, 6, 19],
-    ]),
-    "cnn_dual": np.array([
-        [31, 0, 1, 0, 0],
-        [1, 29, 0, 1, 4],
-        [0, 1, 20, 1, 1],
-        [1, 7, 1, 10, 3],
-        [1, 2, 1, 5, 21],
-    ]),
+    model: np.array(find_published(filename)["published_test"]["confusion_matrix"])
+    for model, filename in CHECKPOINTS.items()
 }
 
 # docs/engineering-log/ground_truth_metrics.md
@@ -71,6 +62,14 @@ class PublishedResultsTests(unittest.TestCase):
                     self.assertAlmostEqual(metrics[name], published[name], places=4)
                 f1 = [round(c["f1"], 4) for c in metrics["per_class"].values()]
                 self.assertEqual(f1, published["per_class_f1"])
+
+    def test_manifest_headline_numbers_match_the_audit(self) -> None:
+        for model, filename in CHECKPOINTS.items():
+            published = find_published(filename)["published_test"]
+            for name in ("accuracy", "macro_f1", "weighted_f1"):
+                self.assertEqual(published[name], PUBLISHED_METRICS[model][name], f"{model} {name}")
+            self.assertEqual(published["accuracy_ci95"], PUBLISHED_METRICS[model]["accuracy_ci"])
+            self.assertEqual(published["macro_f1_ci95"], PUBLISHED_METRICS[model]["macro_f1_ci"])
 
     def test_published_matrices_cover_the_shipped_test_split(self) -> None:
         ids = json.loads((ROOT / "docs/engineering-log/phase6_test_ids.json").read_text(encoding="utf-8"))
