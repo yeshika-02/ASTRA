@@ -22,6 +22,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+from astra.config import get_paths
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -29,8 +31,9 @@ from training.dataset import ASTRADataset
 from training.models.hybrid_transformer import HybridTransformer
 
 # Output paths
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 
 
 def compute_calibration_metrics(probs: torch.Tensor, labels: torch.Tensor, n_bins: int = 5) -> tuple[float, float, float, list[dict]]:
@@ -148,7 +151,7 @@ def main() -> None:
     device = torch.device("cpu")  # cpu is fine for calibration
 
     # ── 1. Load Validation Data ──
-    val_dataset = ASTRADataset(data_dir=PROJECT_ROOT / "data" / "phase6" / "processed", split="val", use_folded=True)
+    val_dataset = ASTRADataset(data_dir=PATHS.processed_dir, split="val", use_folded=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     # ── 2. Load Checkpoint ──
@@ -195,7 +198,7 @@ def main() -> None:
 
     optimal_T = torch.exp(log_temperature).item()
     print(f"\nOptimal Temperature T: {optimal_T:.4f}")
-    with open(PROJECT_ROOT / "models" / "saved" / "optimal_temperature.txt", "w") as f:
+    with open(PATHS.model("optimal_temperature.txt"), "w") as f:
         f.write(f"{optimal_T:.6f}\n")
 
     # ── 6. Compute Metrics AFTER Calibration ──

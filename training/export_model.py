@@ -18,6 +18,7 @@ import torch
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from training.models.hybrid_transformer import HybridTransformer
 
 # Setup logging
@@ -28,8 +29,9 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 
 
 def main() -> None:
@@ -53,7 +55,7 @@ def main() -> None:
 
     # 2. Export to TorchScript (JIT Trace)
     print("Exporting model to TorchScript...")
-    ts_path = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.torchscript"
+    ts_path = PATHS.model("best_star_transformer_shared.torchscript")
     with torch.no_grad():
         traced_model = torch.jit.trace(model, dummy_input)
     traced_model.save(ts_path)
@@ -61,7 +63,7 @@ def main() -> None:
 
     # 3. Export to ONNX
     print("Exporting model to ONNX...")
-    onnx_path = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.onnx"
+    onnx_path = PATHS.model("best_star_transformer_shared.onnx")
     with torch.no_grad():
         torch.onnx.export(
             model,

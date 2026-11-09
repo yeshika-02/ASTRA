@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from data.labels import LABEL_TO_NAME, NUM_CLASSES
 from training.models.hybrid_transformer import HybridTransformer
 
@@ -38,8 +39,9 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 
 
 def load_raw_timeseries(tic_id: int, name: str | None = None) -> tuple[np.ndarray | None, np.ndarray | None]:
@@ -164,7 +166,7 @@ def evaluate_model(
     with torch.no_grad():
         for tic_id_str in val_ids:
             tic_id = int(tic_id_str.split("_")[1])
-            star_dir = PROJECT_ROOT / "data" / "processed" / tic_id_str
+            star_dir = PATHS.processed_dir / tic_id_str
             flux_1000 = np.load(star_dir / "flux_1000.npy").copy()
             folded_disk = np.load(star_dir / "folded_flux_1000.npy").copy()
 

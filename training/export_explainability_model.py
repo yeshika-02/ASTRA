@@ -18,12 +18,14 @@ import torch
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from training.models.explainable_wrapper import ExplainableHybridTransformerWrapper
 from training.models.hybrid_transformer import HybridTransformer
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
-ONNX_OUT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared_explain.onnx"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
+ONNX_OUT_PATH = PATHS.model("best_star_transformer_shared_explain.onnx")
 
 def main() -> None:
     print("=" * 80)

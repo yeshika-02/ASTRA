@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from data.labels import LABEL_TO_NAME
 from training.dataset import ASTRADataset
 from training.models.hybrid_transformer import HybridTransformer
@@ -39,10 +40,11 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 # Try to load calibrated temperature from file, fallback to default if not found
-optimal_temp_file = PROJECT_ROOT / "models" / "saved" / "optimal_temperature.txt"
+optimal_temp_file = PATHS.model("optimal_temperature.txt")
 if optimal_temp_file.exists():
     try:
         CALIBRATION_TEMP = float(optimal_temp_file.read_text().strip())
@@ -94,7 +96,7 @@ def main() -> None:
     enable_dropout(model)
 
     # 2. Load validation dataset
-    val_dataset = ASTRADataset(data_dir=PROJECT_ROOT / "data" / "phase6" / "processed", split="val", use_folded=True)
+    val_dataset = ASTRADataset(data_dir=PATHS.processed_dir, split="val", use_folded=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     # 3. Extract inputs
