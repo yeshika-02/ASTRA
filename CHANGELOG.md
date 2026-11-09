@@ -10,6 +10,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 > On `main` since 2026-11-09 ([PR #1](https://github.com/yeshika-02/ASTRA/pull/1)); not yet released or deployed. The repository also carries a `v1.1.0` tag that has no matching entry in this file; to be reconciled in sprint task SP-35.
 
+### Pending in open sprint PRs (not yet on `main`)
+- Fixed a page crash (React error #300) when switching graphics quality to low; ESLint findings 86 → 0 and lint gated in CI ([#6](https://github.com/yeshika-02/ASTRA/pull/6)).
+- GitHub Actions upgraded to v7; Python coverage report in CI; release workflow fixed (`softprops/action-gh-release` v3, `git archive`) ([#3](https://github.com/yeshika-02/ASTRA/pull/3)).
+- 24 broken documentation links fixed; AgentOS validator 100/100; `validate` workflow re-enabled ([#4](https://github.com/yeshika-02/ASTRA/pull/4)).
+- 41 Python tests for losses, calibration metrics, dataset splits, explainability parity and inference helpers ([#5](https://github.com/yeshika-02/ASTRA/pull/5)).
+
 ### Security
 - **Command injection in `POST /api/upload` fixed.** Request fields were interpolated into a shell command; inference now spawns Python with an argument array (`shell: false`), sends flux over stdin, and validates every input. `upload_inference.py` no longer reads a server file when `--flux` is a path.
 

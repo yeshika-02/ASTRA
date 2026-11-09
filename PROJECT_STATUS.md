@@ -37,9 +37,14 @@ Status is based on what the code, data and runs show, not on README or engineeri
 
 ## 🟦 Current: 7-day sprint (2026-11-09 → 2026-11-15)
 
-- **Status:** planned; Day 1 not started.
+- **Status:** Day 1 done. PRs #3, #4, #5, #6 open and green, waiting for the Day 7 joint review; nothing from the sprint is on `main` yet.
+- **Day 1 results (pending merge):**
+  - ESLint 86 → 0 findings, and a page-crashing React hook bug fixed (#6).
+  - AgentOS validator 100/100 (#4).
+  - GitHub Actions on v7, with a coverage report in CI (#3).
+  - `training/` test coverage 7% → 22.5% (#5).
 - **Plan:** [7_DAY_SPRINT.md](7_DAY_SPRINT.md). **Tasks:** SP-00…SP-35 in [TASK_CHECKLIST.md](TASK_CHECKLIST.md).
-- **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk).
+- **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk), D6 (AgentOS framework lint debt).
 
 ## ✅ Phase 0 — completed and merged to `main` 2026-11-09 (not deployed to production)
 
