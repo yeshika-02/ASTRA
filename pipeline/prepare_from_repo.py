@@ -205,6 +205,8 @@ def _report(errors: list[str]) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     args = build_arg_parser().parse_args(argv)
     sources = Sources()
     n = len(read_manifest(sources.manifest)) if sources.manifest.is_file() else 0

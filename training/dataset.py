@@ -359,6 +359,8 @@ class ASTRADataset(Dataset):
 
 
 if __name__ == "__main__":
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     print("=" * 60)
     print("ASTRADataset — Statistics")
     print("=" * 60)

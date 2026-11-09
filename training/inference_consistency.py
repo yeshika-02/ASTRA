@@ -44,6 +44,8 @@ def compute_entropy(probs: torch.Tensor) -> torch.Tensor:
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Inference Consistency Audit")

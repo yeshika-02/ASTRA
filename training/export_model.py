@@ -35,6 +35,8 @@ CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Model Export & Deployment Benchmarking")
