@@ -1,8 +1,11 @@
 name: AgentOS Validate
 
-# Manual-only until ASTRA's docs link check passes and the AgentOS validator reaches 100/100
-# (ADR-0059, task T9). Then restore: push to [main, develop] and pull_request to [main].
+# Re-enabled once the validator reached 100/100 (ADR-0059 follow-up, sprint task SP-07).
 on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
