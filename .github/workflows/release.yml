@@ -13,9 +13,9 @@ jobs:
     name: Build & Publish Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -62,7 +62,7 @@ jobs:
           ls -lh astra-${VERSION}.tar.gz
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: astra-*.tar.gz
           generate_release_notes: true
