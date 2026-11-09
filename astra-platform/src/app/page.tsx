@@ -399,7 +399,7 @@ export default function Home() {
                               border: '1px solid rgba(255, 255, 255, 0.08)',
                               borderRadius: 4,
                               fontSize: 10,
-                              fontFamily: 'IBM Plex Mono, monospace',
+                              fontFamily: 'var(--font-plex-mono), monospace',
                               color: '#D7DEE7',
                             }}
                           />
