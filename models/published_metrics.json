@@ -1,0 +1,626 @@
+{
+  "description": "Authoritative record of every published ASTRA result and where it comes from (sprint task SP-18). pipeline/build_platform_artifacts.py computes the platform artifacts and docs/metrics.md from it. Test-set point metrics are recomputed from the committed confusion matrices; other values are recorded from the cited reports and cannot be recomputed until the weights are recovered (docs/model_recovery.md).",
+  "updated": "2026-11-10",
+  "classes": [
+    "rr_lyrae",
+    "cepheid",
+    "eclipsing_binary",
+    "solar_like",
+    "stable"
+  ],
+  "test_split": {
+    "n": 142,
+    "file": "docs/engineering-log/phase6_test_ids.json"
+  },
+  "models": {
+    "shared": {
+      "label": "HybridTransformer (shared)",
+      "checkpoint": "best_star_transformer_shared.pt",
+      "parameters": 1373701,
+      "production": true,
+      "training_history": "models/saved/training_history_transformer_shared.json",
+      "test_confusion_matrix": {
+        "matrix": [
+          [
+            31,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            30,
+            0,
+            1,
+            4
+          ],
+          [
+            1,
+            0,
+            20,
+            2,
+            0
+          ],
+          [
+            1,
+            5,
+            0,
+            11,
+            5
+          ],
+          [
+            1,
+            4,
+            0,
+            6,
+            19
+          ]
+        ],
+        "source": "models/saved/test_confusion_matrix_transformer_shared.png (identical: test_confusion_matrix_shared.png)"
+      },
+      "test_bootstrap_ci95": {
+        "accuracy": [
+          0.7113,
+          0.8521
+        ],
+        "macro_f1": [
+          0.6944,
+          0.832
+        ],
+        "weighted_f1": [
+          0.7076,
+          0.8485
+        ],
+        "source": "docs/engineering-log/ground_truth_metrics.md"
+      },
+      "subgroups": {
+        "catalog": {
+          "n": 90,
+          "accuracy": 0.9,
+          "macro_f1": 0.5602,
+          "ece": 0.0467
+        },
+        "bls": {
+          "n": 52,
+          "accuracy": 0.5769,
+          "macro_f1": 0.317,
+          "ece": 0.1465
+        },
+        "source": "docs/engineering-log/phase7_testset_results.md (accuracy, macro F1); docs/engineering-log/phase7_subgroup_analysis.md (ECE)",
+        "status": "recorded"
+      },
+      "calibration": {
+        "temperature_file": "models/saved/optimal_temperature_transformer_shared.txt",
+        "split": "test",
+        "ece_raw": 0.081,
+        "ece_calibrated": 0.0442,
+        "brier_raw": 0.3146,
+        "brier_calibrated": 0.3025,
+        "nll_raw": null,
+        "nll_calibrated": null,
+        "per_class_ece": {
+          "rr_lyrae": {
+            "raw": 0.0143,
+            "calibrated": 0.0252
+          },
+          "cepheid": {
+            "raw": 0.0158,
+            "calibrated": 0.0141
+          },
+          "eclipsing_binary": {
+            "raw": 0.0101,
+            "calibrated": 0.0155
+          },
+          "solar_like": {
+            "raw": 0.0908,
+            "calibrated": 0.0628
+          },
+          "stable": {
+            "raw": 0.0732,
+            "calibrated": 0.0685
+          }
+        },
+        "source": "docs/engineering-log/ground_truth_calibration.md",
+        "status": "recorded",
+        "note": "The audit reports NLL equal to ECE (a copy error), so no valid NLL is recorded."
+      },
+      "uncertainty": {
+        "error_detection_auroc": 0.8628,
+        "entropy": {
+          "correct_mean": 0.4973,
+          "correct_var": 0.0964,
+          "incorrect_mean": 0.9998,
+          "incorrect_var": 0.1038
+        },
+        "coverage_sweep": [
+          {
+            "confidence_threshold": 0.5,
+            "coverage": 0.866,
+            "accuracy": 0.846
+          },
+          {
+            "confidence_threshold": 0.6,
+            "coverage": 0.789,
+            "accuracy": 0.884
+          },
+          {
+            "confidence_threshold": 0.7,
+            "coverage": 0.718,
+            "accuracy": 0.922
+          },
+          {
+            "confidence_threshold": 0.8,
+            "coverage": 0.634,
+            "accuracy": 0.933
+          },
+          {
+            "confidence_threshold": 0.9,
+            "coverage": 0.43,
+            "accuracy": 0.984
+          }
+        ],
+        "source": "docs/engineering-log/ground_truth_uncertainty.md",
+        "status": "recorded",
+        "note": "The audit does not state which split was used."
+      }
+    },
+    "cnn_dual": {
+      "label": "CNN Dual-Branch",
+      "checkpoint": "best_star_cnn_dual_aug.pt",
+      "parameters": 1043333,
+      "training_history": "models/saved/training_history_dual_aug.json",
+      "test_confusion_matrix": {
+        "matrix": [
+          [
+            31,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            29,
+            0,
+            1,
+            4
+          ],
+          [
+            0,
+            1,
+            20,
+            1,
+            1
+          ],
+          [
+            1,
+            7,
+            1,
+            10,
+            3
+          ],
+          [
+            1,
+            2,
+            1,
+            5,
+            21
+          ]
+        ],
+        "source": "models/saved/test_confusion_matrix_cnn_dual.png"
+      },
+      "test_bootstrap_ci95": {
+        "accuracy": [
+          0.7183,
+          0.8451
+        ],
+        "macro_f1": [
+          0.6923,
+          0.8301
+        ],
+        "weighted_f1": [
+          0.7052,
+          0.8435
+        ],
+        "source": "docs/engineering-log/ground_truth_metrics.md"
+      },
+      "subgroups": {
+        "catalog": {
+          "n": 90,
+          "accuracy": 0.9111,
+          "macro_f1": 0.564
+        },
+        "bls": {
+          "n": 52,
+          "accuracy": 0.5577,
+          "macro_f1": 0.2667
+        },
+        "source": "docs/engineering-log/phase7_testset_results.md",
+        "status": "unverified",
+        "note": "From the Phase 7A CNN run, whose headline numbers do not match the published CNN confusion matrix."
+      },
+      "calibration": {
+        "temperature_file": "models/saved/optimal_temperature_cnn_dual.txt",
+        "split": "test",
+        "ece_raw": 0.0907,
+        "ece_calibrated": 0.0907,
+        "brier_raw": 0.262,
+        "brier_calibrated": 0.2617,
+        "nll_raw": null,
+        "nll_calibrated": null,
+        "per_class_ece": {
+          "rr_lyrae": {
+            "raw": 0.0255,
+            "calibrated": 0.0259
+          },
+          "cepheid": {
+            "raw": 0.0137,
+            "calibrated": 0.0135
+          },
+          "eclipsing_binary": {
+            "raw": 0.0089,
+            "calibrated": 0.0085
+          },
+          "solar_like": {
+            "raw": 0.0228,
+            "calibrated": 0.0221
+          },
+          "stable": {
+            "raw": 0.0354,
+            "calibrated": 0.036
+          }
+        },
+        "source": "docs/engineering-log/ground_truth_calibration.md",
+        "status": "recorded",
+        "note": "The audit reports NLL equal to ECE (a copy error), so no valid NLL is recorded."
+      },
+      "uncertainty": {
+        "error_detection_auroc": 0.9015,
+        "entropy": {
+          "correct_mean": 0.4381,
+          "correct_var": 0.0969,
+          "incorrect_mean": 0.9769,
+          "incorrect_var": 0.0588
+        },
+        "coverage_sweep": [
+          {
+            "confidence_threshold": 0.5,
+            "coverage": 0.915,
+            "accuracy": 0.823
+          },
+          {
+            "confidence_threshold": 0.6,
+            "coverage": 0.831,
+            "accuracy": 0.873
+          },
+          {
+            "confidence_threshold": 0.7,
+            "coverage": 0.732,
+            "accuracy": 0.942
+          },
+          {
+            "confidence_threshold": 0.8,
+            "coverage": 0.627,
+            "accuracy": 0.978
+          },
+          {
+            "confidence_threshold": 0.9,
+            "coverage": 0.472,
+            "accuracy": 1.0
+          }
+        ],
+        "source": "docs/engineering-log/ground_truth_uncertainty.md",
+        "status": "recorded",
+        "note": "The audit does not state which split was used."
+      }
+    },
+    "cross": {
+      "label": "HybridTransformer (cross)",
+      "checkpoint": "best_star_transformer_cross.pt",
+      "parameters": 1240965,
+      "training_history": "models/saved/training_history_transformer_cross.json",
+      "test_confusion_matrix": {
+        "matrix": [
+          [
+            31,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            30,
+            1,
+            0,
+            4
+          ],
+          [
+            0,
+            1,
+            21,
+            0,
+            1
+          ],
+          [
+            2,
+            3,
+            1,
+            11,
+            5
+          ],
+          [
+            1,
+            4,
+            1,
+            2,
+            22
+          ]
+        ],
+        "source": "models/saved/test_confusion_matrix_cross.png"
+      },
+      "test_bootstrap_ci95": {
+        "accuracy": [
+          0.7394,
+          0.8732
+        ],
+        "macro_f1": [
+          0.7252,
+          0.8594
+        ],
+        "source": "docs/engineering-log/phase7_testset_results.md"
+      },
+      "subgroups": {
+        "catalog": {
+          "n": 90,
+          "accuracy": 0.9111,
+          "macro_f1": 0.7016
+        },
+        "bls": {
+          "n": 52,
+          "accuracy": 0.6346,
+          "macro_f1": 0.2801
+        },
+        "source": "docs/engineering-log/phase7_testset_results.md",
+        "status": "recorded"
+      }
+    },
+    "separate": {
+      "label": "HybridTransformer (separate)",
+      "checkpoint": "best_star_transformer_separate.pt",
+      "parameters": 1687557,
+      "training_history": "models/saved/training_history_transformer_separate.json",
+      "test_confusion_matrix": {
+        "matrix": [
+          [
+            31,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            31,
+            0,
+            0,
+            4
+          ],
+          [
+            0,
+            1,
+            20,
+            0,
+            2
+          ],
+          [
+            1,
+            1,
+            1,
+            16,
+            3
+          ],
+          [
+            1,
+            1,
+            0,
+            6,
+            22
+          ]
+        ],
+        "source": "models/saved/test_confusion_matrix_separate.png"
+      },
+      "test_bootstrap_ci95": {
+        "accuracy": [
+          0.7817,
+          0.9016
+        ],
+        "macro_f1": [
+          0.7712,
+          0.9012
+        ],
+        "source": "docs/engineering-log/phase7_testset_results.md"
+      },
+      "subgroups": {
+        "catalog": {
+          "n": 90,
+          "accuracy": 0.9111,
+          "macro_f1": 0.7065
+        },
+        "bls": {
+          "n": 52,
+          "accuracy": 0.7308,
+          "macro_f1": 0.3055
+        },
+        "source": "docs/engineering-log/phase7_testset_results.md",
+        "status": "recorded"
+      }
+    },
+    "only": {
+      "label": "HybridTransformer (only)",
+      "checkpoint": "best_star_transformer_only.pt",
+      "parameters": 316933,
+      "training_history": "models/saved/training_history_transformer_only.json",
+      "test_confusion_matrix": {
+        "matrix": [
+          [
+            29,
+            1,
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            27,
+            1,
+            2,
+            4
+          ],
+          [
+            1,
+            0,
+            20,
+            0,
+            2
+          ],
+          [
+            0,
+            8,
+            0,
+            9,
+            5
+          ],
+          [
+            1,
+            1,
+            1,
+            9,
+            18
+          ]
+        ],
+        "source": "models/saved/test_confusion_matrix_only.png"
+      },
+      "test_bootstrap_ci95": {
+        "accuracy": [
+          0.6479,
+          0.8028
+        ],
+        "macro_f1": [
+          0.642,
+          0.7834
+        ],
+        "source": "docs/engineering-log/phase7_testset_results.md"
+      },
+      "subgroups": {
+        "catalog": {
+          "n": 90,
+          "accuracy": 0.8444,
+          "macro_f1": 0.5374
+        },
+        "bls": {
+          "n": 52,
+          "accuracy": 0.5192,
+          "macro_f1": 0.2258
+        },
+        "source": "docs/engineering-log/phase7_testset_results.md",
+        "status": "recorded"
+      }
+    }
+  },
+  "superseded": {
+    "source": "docs/engineering-log/phase7_benchmark_report.md",
+    "reason": "Results of an earlier experiment on a 269-star dataset (validation split of 54 stars), before the 944-star Phase 6 freeze. They are not results of the frozen dataset and must not be shown as such.",
+    "values": {
+      "cv_mean_validation_accuracy": 0.8468,
+      "cv_std_validation_accuracy": 0.0212,
+      "cv_ci95_validation_accuracy": [
+        0.836,
+        0.8575
+      ],
+      "cv_mean_macro_f1": 0.8349,
+      "cv_catalog_accuracy": 0.899,
+      "cv_bls_accuracy": 0.7569,
+      "ece_calibrated": 0.0478,
+      "nll_calibrated": 0.5332,
+      "entropy_correct_mean": 0.525,
+      "entropy_incorrect_mean": 0.8407,
+      "selective_prediction": [
+        {
+          "confidence_threshold": 0.0,
+          "coverage": 1.0,
+          "accuracy": 0.8582
+        },
+        {
+          "confidence_threshold": 0.5,
+          "coverage": 0.922,
+          "accuracy": 0.8846
+        },
+        {
+          "confidence_threshold": 0.7,
+          "coverage": 0.759,
+          "accuracy": 0.9346
+        },
+        {
+          "confidence_threshold": 0.8,
+          "coverage": 0.681,
+          "accuracy": 0.9479
+        },
+        {
+          "confidence_threshold": 0.9,
+          "coverage": 0.482,
+          "accuracy": 0.9265
+        }
+      ]
+    }
+  },
+  "conflicts": [
+    {
+      "metric": "CNN dual-branch test metrics",
+      "values": {
+        "phase7_testset_results.md (7A)": "macro F1 0.7654, weighted F1 0.7738, accuracy CI [71.13%, 84.51%]",
+        "ground_truth_metrics.md (7C)": "macro F1 0.7635, weighted F1 0.7756, accuracy CI [71.83%, 84.51%]"
+      },
+      "resolution": "7C: it matches the published CNN confusion matrix; 7A does not."
+    },
+    {
+      "metric": "Calibrated ECE of the shared transformer",
+      "values": {
+        "phase7_benchmark_report.md": "0.0478 (earlier 269-star experiment)",
+        "ground_truth_calibration.md": "0.0442 (test split)"
+      },
+      "resolution": "0.0442; 0.0478 belongs to the superseded experiment."
+    },
+    {
+      "metric": "Calibration temperature of the shared transformer",
+      "values": {
+        "optimal_temperature_transformer_shared.txt": "1.257665 (hash-locked in model_registry.json)",
+        "optimal_temperature.txt": "1.258631",
+        "training/uncertainty.py fallback": "1.2944"
+      },
+      "resolution": "1.257665 is the published temperature; the other two are not used for published results."
+    }
+  ],
+  "unsourced": [
+    {
+      "where": "astra-platform/src/lib/data/constants.ts DATASET_LINEAGE",
+      "values": [
+        3200,
+        2847,
+        1621,
+        1102,
+        978
+      ],
+      "note": "Stage counts of the data-collection funnel; no file in the repository records them."
+    },
+    {
+      "where": "astra-platform/src/lib/data/constants.ts SELECTIVE_PREDICTION_DATA",
+      "note": "Coverage/accuracy table matching no report; not used by any page."
+    },
+    {
+      "where": "astra-platform/src/lib/data/constants.ts PER_CLASS_ECE",
+      "note": "Per-class ECE halving after calibration; contradicts ground_truth_calibration.md; not used by any page."
+    }
+  ]
+}
