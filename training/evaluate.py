@@ -347,6 +347,27 @@ def render_markdown(result: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _positive_float(text: str) -> float:
+    value = float(text)
+    if value <= 0:
+        raise argparse.ArgumentTypeError(f"must be positive, got {text}")
+    return value
+
+
+def _positive_int(text: str) -> int:
+    value = int(text)
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"must be at least 1, got {text}")
+    return value
+
+
+def _probability(text: str) -> float:
+    value = float(text)
+    if not 0 < value < 1:
+        raise argparse.ArgumentTypeError(f"must be between 0 and 1, got {text}")
+    return value
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Evaluate a checkpoint on a frozen split with bootstrap CIs.")
     parser.add_argument("--checkpoint", required=True,
@@ -356,14 +377,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--data-dir", default=None, help="Processed arrays (default: configured processed dir)")
     parser.add_argument("--splits-dir", default=None, help="Frozen split files (default: configured splits dir)")
     temperature = parser.add_mutually_exclusive_group()
-    temperature.add_argument("--temperature", type=float, default=None,
+    temperature.add_argument("--temperature", type=_positive_float, default=None,
                              help="Temperature for scaling logits (default: 1.0, no scaling)")
     temperature.add_argument("--temperature-file", default=None,
                              help="File holding the temperature, e.g. optimal_temperature_transformer_shared.txt")
-    parser.add_argument("--bootstrap", type=int, default=1000, help="Bootstrap resamples (default: 1000)")
+    parser.add_argument("--bootstrap", type=_positive_int, default=1000, help="Bootstrap resamples (default: 1000)")
     parser.add_argument("--seed", type=int, default=42, help="Bootstrap seed (default: 42)")
-    parser.add_argument("--confidence", type=float, default=0.95, help="CI level (default: 0.95)")
-    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--confidence", type=_probability, default=0.95, help="CI level (default: 0.95)")
+    parser.add_argument("--batch-size", type=_positive_int, default=64)
     parser.add_argument("--out-dir", default=None, help="Report directory (default: outputs/evaluation)")
     parser.add_argument("--require-published", action="store_true",
                         help="Exit 1 unless the checkpoint is a verified published artifact and, on the "
@@ -383,24 +404,29 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Checkpoint not found: {checkpoint}")
         return 1
     temperature, source = 1.0, None
-    if args.temperature is not None:
-        temperature, source = args.temperature, "--temperature"
-    elif args.temperature_file:
-        temperature_path = resolve_cli_path(args.temperature_file, paths.models_dir)
-        temperature, source = read_temperature(temperature_path), str(temperature_path)
+    try:
+        if args.temperature is not None:
+            temperature, source = args.temperature, "--temperature"
+        elif args.temperature_file:
+            temperature_path = resolve_cli_path(args.temperature_file, paths.models_dir)
+            temperature, source = read_temperature(temperature_path), str(temperature_path)
 
-    result = evaluate(
-        checkpoint,
-        split=args.split,
-        data_dir=resolve_cli_path(args.data_dir, paths.processed_dir),
-        splits_dir=resolve_cli_path(args.splits_dir, paths.splits_dir) if args.splits_dir else None,
-        temperature=temperature,
-        temperature_source=source,
-        n_bootstrap=args.bootstrap,
-        seed=args.seed,
-        confidence=args.confidence,
-        batch_size=args.batch_size,
-    )
+        result = evaluate(
+            checkpoint,
+            split=args.split,
+            data_dir=resolve_cli_path(args.data_dir, paths.processed_dir),
+            splits_dir=resolve_cli_path(args.splits_dir, paths.splits_dir) if args.splits_dir else None,
+            temperature=temperature,
+            temperature_source=source,
+            n_bootstrap=args.bootstrap,
+            seed=args.seed,
+            confidence=args.confidence,
+            batch_size=args.batch_size,
+        )
+    except (FileNotFoundError, ValueError) as error:
+        # Missing frozen split files, an unreadable temperature file, or a malformed split.
+        print(f"ERROR: {error}")
+        return 1
 
     out_dir = resolve_cli_path(args.out_dir, paths.output_dir / "evaluation")
     out_dir.mkdir(parents=True, exist_ok=True)
