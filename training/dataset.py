@@ -84,6 +84,9 @@ class ASTRADataset(Dataset):
         self.use_folded = use_folded
         self.augment = augment
         self.augment_prob = augment_prob
+        # Where the split came from, for provenance: the frozen split files used (if any).
+        self.splits_dir: Path | None = None
+        self.frozen_split = False
         assert self.split in ("train", "val", "calibration", "test"), (
             f"split must be train, val, calibration, or test; got '{split}'"
         )
@@ -170,6 +173,8 @@ class ASTRADataset(Dataset):
         metadata_file = split_dir / "split_metadata.json"
 
         if split_file.exists() and metadata_file.exists():
+            self.splits_dir = split_dir
+            self.frozen_split = True
             with open(split_file, "r") as f:
                 frozen_ids = set(json.load(f))
             with open(metadata_file, "r") as f:
@@ -220,7 +225,10 @@ class ASTRADataset(Dataset):
                 raise ValueError(
                     f"Frozen Phase 6 split file required for split '{self.split}'."
                 )
-            logger.info("Frozen split not found. Falling back to dynamic GroupShuffleSplit.")
+            logger.warning(
+                "Frozen split files not found in %s. Falling back to a random GroupShuffleSplit: "
+                "results are not comparable with the published ones.", split_dir
+            )
             gss = GroupShuffleSplit(
                 n_splits=1, test_size=val_fraction, random_state=random_seed
             )
