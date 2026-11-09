@@ -14,8 +14,11 @@ from typing import Any, Iterable
 
 import numpy as np
 
+from astra.config import get_paths
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_PHASE6_ROOT = PROJECT_ROOT / "data" / "phase6"
+# data/phase6 unless ASTRA_PHASE6_ROOT is set (see astra/config.py).
+DEFAULT_PHASE6_ROOT = get_paths().phase6_root
 
 PHASE6_DIRS = (
     "raw",
