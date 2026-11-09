@@ -10,7 +10,7 @@
 - All open PRs reviewed; Day 7 rebase merge simulated: no conflicts, merged suite green, validator 100/100 on the final state.
 - Fixed in #9: training/calibration defaults no longer overwrite `models/saved/`; random-split provenance; strict `--require-published` with confusion-matrix check; `evaluate.py` input errors; CRLF refresh hint.
 - Routed: release notes before any tag (SP-18/SP-35), `--cov=astra` after merge (SP-34).
-- Slip: 14 #9 commits authored as `day7-sim` (simulation wrote shared git config). Identity restored; owner decided to keep those commits as they are (no rewrite).
+- Slip: 14 #9 commits authored as `day7-sim` (simulation wrote shared git config). Identity restored; at the owner's request the 14 commits were re-authored to `yeshika-02` (same tree, messages and dates) and #9 force-pushed (head `e969753`).
 
 ## Session 2026-11-10 — Sprint Day 3
 
