@@ -28,13 +28,13 @@ is an end-to-end machine learning pipeline for classifying stellar variability f
 | Best model | HybridTransformer (shared) |
 | Test accuracy | 78.17% (95% CI: [71.13%, 85.21%]) |
 | Macro F1 | 0.7677 |
-| Ground truth audits | 8/8 PASS, 0 mismatches |
+| Ground truth audits | 8/8 reported PASS by the original author ([what can be verified](metrics.md)) |
 
 ---
 
 ## Audit Trail
 
-All scientific results have been independently verified:
+The original author's audit reports. The trained weights are not in this repository, so the results can't be recomputed from a clone; see [metrics.md](metrics.md) for each number's source:
 
 - [`ground_truth_final_verdict.md`](../ground_truth_final_verdict.md) — Master audit verdict
 - [`ground_truth_metrics.md`](../ground_truth_metrics.md) — Recomputed metrics with bootstrap CIs
