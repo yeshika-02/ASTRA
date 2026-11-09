@@ -317,7 +317,7 @@ flowchart TD
 
 ### Phase 3 — Training & Validation
 
-All commands read the frozen dataset prepared in Quick Start step 3. `--out-dir` defaults to `models/saved/` for training, so pass a separate directory to avoid overwriting committed artifacts.
+All commands read the frozen dataset prepared in Quick Start step 3. Without `--out-dir`, training writes to `outputs/runs/`; `models/saved/` holds the published training records and is only written to when you pass it explicitly.
 
 ```bash
 # Train the production HybridTransformer (shared variant); 50 epochs by default

@@ -53,5 +53,5 @@ How should scripts find data, models and output locations so they work from any 
 ## Consequences
 
 - Every script runs from a fresh clone. Layouts such as "arrays from `astra-platform/data/processed`, splits rebuilt under `data/phase6/splits`" need only environment variables (used by WS-06's fresh-clone setup).
-- Script outputs no longer land in the repository by default (`outputs/` is ignored); committed artifacts change only when a path is given explicitly.
+- Script outputs no longer land in the repository by default (`outputs/` is ignored); committed artifacts change only when a path is given explicitly. This includes training (`outputs/runs/`) and the fitted temperature (next to the calibration report); until 2026-11-10 both still defaulted to `models/saved/` and overwrote the published records.
 - New scripts must use `get_paths()`; the guard test blocks hard-coded machine paths.
