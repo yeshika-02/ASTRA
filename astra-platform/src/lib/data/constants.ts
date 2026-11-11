@@ -63,35 +63,21 @@ export const CHECKPOINT_REGISTRY: CheckpointRecord[] = [
   { filename: 'best_star_cnn.pt', architecture: 'CNN (legacy)', loaded_params: 1144140, expected_params: 1043333, missing_keys: 0, unexpected_keys: 0, sha256: '02eb0d39ee86d421bf7e9421f839ba142c442375b7ab045e42487bf932e93aea' },
 ];
 
-export const DATASET_LINEAGE = [
-  { id: 'source-catalogs', label: 'Source Catalogs', description: 'VSX, ASAS-SN, GCVS, 2MASS, Gaia DR3 cross-matched candidates', count: 3200 },
-  { id: 'candidate-pool', label: 'Initial Candidate Pool', description: 'TIC targets with known variability classifications from cross-matching', count: 2847 },
-  { id: 'tess-filtering', label: 'TESS Availability Filter', description: 'Filtered to targets with confirmed TESS photometric coverage ≥1 sector', count: 1621 },
-  { id: 'quality-filter', label: 'Quality & Deduplication', description: 'SNR thresholding, coordinate deduplication (2 arcsec), period quality gates', count: 1102 },
-  { id: 'phase6-freeze', label: 'Phase 6 Initial Freeze', description: 'First scientific freeze with preprocessing v1. Metadata verified.', count: 978 },
-  { id: 'metadata-repair', label: 'Metadata Repair (Phase 6.5)', description: 'Period source re-classification, BLS re-estimation for missing catalog periods', count: 978 },
-  { id: 'class-rebalance', label: 'Class Rebalancing', description: 'Stable class expansion via relaxed SNR threshold. Coordinated with metadata v2.', count: 944 },
+// Stage counts: only the final freeze (944, from the hash-locked manifest) has a source. No file in the
+// repository records the earlier funnel counts, so they are null and shown as "not recorded" (SP-18/SP-20).
+export const DATASET_LINEAGE: { id: string; label: string; description: string; count: number | null }[] = [
+  { id: 'source-catalogs', label: 'Source Catalogs', description: 'VSX, ASAS-SN, GCVS, 2MASS, Gaia DR3 cross-matched candidates', count: null },
+  { id: 'candidate-pool', label: 'Initial Candidate Pool', description: 'TIC targets with known variability classifications from cross-matching', count: null },
+  { id: 'tess-filtering', label: 'TESS Availability Filter', description: 'Filtered to targets with confirmed TESS photometric coverage ≥1 sector', count: null },
+  { id: 'quality-filter', label: 'Quality & Deduplication', description: 'SNR thresholding, coordinate deduplication (2 arcsec), period quality gates', count: null },
+  { id: 'phase6-freeze', label: 'Phase 6 Initial Freeze', description: 'First scientific freeze with preprocessing v1. Metadata verified.', count: null },
+  { id: 'metadata-repair', label: 'Metadata Repair (Phase 6.5)', description: 'Period source re-classification, BLS re-estimation for missing catalog periods', count: null },
+  { id: 'class-rebalance', label: 'Class Rebalancing', description: 'Stable class expansion via relaxed SNR threshold. Coordinated with metadata v2.', count: null },
   { id: 'scientific-freeze-v2', label: 'Scientific Freeze V2', description: 'Final 944-star frozen dataset. SHA256 locked. Phase 7C verified.', count: 944 },
 ];
 
 export const AUDIT_EVENTS = [
   { phase: 'Phase 7A', title: 'Pre-Training Verification Gate', status: 'PASS', date: '2026-06-12', description: 'Split integrity, class balance, period balance, array integrity, and model sanity checks.' },
   { phase: 'Phase 7B', title: 'Large-Scale Retraining and Benchmark Suite', status: 'PASS', date: '2026-06-13', description: 'CNN Dual Branch and Transformer Shared retrained from scratch with SEED=42 determinism.' },
-  { phase: 'Phase 7C', title: 'Ground Truth Verification Audit', status: 'PASS', date: '2026-06-13', description: 'Zero-trust recomputation of all metrics, hashes, calibration, and uncertainty parameters. 0 mismatches.' },
-];
-
-export const SELECTIVE_PREDICTION_DATA = [
-  { threshold: 0.5, cnn_accuracy: 0.7817, trans_accuracy: 0.7817, cnn_coverage: 1.0, trans_coverage: 1.0 },
-  { threshold: 0.6, cnn_accuracy: 0.825, trans_accuracy: 0.831, cnn_coverage: 0.88, trans_coverage: 0.89 },
-  { threshold: 0.7, cnn_accuracy: 0.874, trans_accuracy: 0.885, cnn_coverage: 0.75, trans_coverage: 0.76 },
-  { threshold: 0.8, cnn_accuracy: 0.925, trans_accuracy: 0.938, cnn_coverage: 0.61, trans_coverage: 0.62 },
-  { threshold: 0.9, cnn_accuracy: 0.985, trans_accuracy: 0.991, cnn_coverage: 0.44, trans_coverage: 0.45 },
-];
-
-export const PER_CLASS_ECE = [
-  { class: 'rr_lyrae', before: 0.052, after: 0.021 },
-  { class: 'cepheid', before: 0.075, after: 0.038 },
-  { class: 'eclipsing_binary', before: 0.048, after: 0.019 },
-  { class: 'solar_like', before: 0.124, after: 0.062 },
-  { class: 'stable', before: 0.106, after: 0.051 },
+  { phase: 'Phase 7C', title: 'Ground Truth Verification Audit', status: 'PASS', date: '2026-06-13', description: 'Recomputation of metrics, hashes, calibration and uncertainty, as recorded by the original author (0 mismatches reported). See docs/metrics.md for what can be verified.' },
 ];

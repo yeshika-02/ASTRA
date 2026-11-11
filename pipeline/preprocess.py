@@ -43,6 +43,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.labels import NAME_TO_LABEL
+from pipeline.cli_validation import astra_class as astra_class_arg
+from pipeline.cli_validation import positive_int
 from pipeline.phase6_utils import (
     PERIOD_REQUIRED_CLASSES,
     PHASE6_PREPROCESSING_VERSION,
@@ -188,6 +190,9 @@ BLS_MIN_PERIOD = 0.1   # days (must be > BLS duration)
 BLS_MAX_PERIOD = 50.0  # days
 SAVGOL_WINDOW  = 301   # Savitzky-Golay window (must be odd)
 SAVGOL_POLY    = 2     # Savitzky-Golay polynomial order
+BLS_GRID_POINTS = 5000  # linear period grid between BLS_MIN_PERIOD and BLS_MAX_PERIOD
+BLS_DURATION   = 0.05  # days; the single transit duration BLS is run with
+BLS_MIN_POINTS = 100   # fewer points: no period search
 
 
 def _cleanup_star_dir(star_dir: Path | None, raw_star_dir: Path | None = None) -> None:
@@ -210,8 +215,72 @@ def _select_period(
     return None, "unknown"
 
 
+# ===================================================================== #
+#        Preprocessing v1 steps (behaviour pinned by test_preprocess_golden)  #
+# ===================================================================== #
+
+def cadence_minutes(time_values: np.ndarray) -> float:
+    """Median sampling interval in minutes, rounded to 0.1 (recorded as source_cadence)."""
+    dt = np.nanmedian(np.diff(time_values))
+    return round(dt * 24 * 60, 1)
+
+
+def savgol_window(n_points: int, window: int = SAVGOL_WINDOW) -> int:
+    """Savitzky-Golay window used for a light curve of n_points.
+
+    The window is a fixed number of points, not a time span, so the time it covers
+    depends on the cadence (audit S4; see detrend_window_days). Short light curves get
+    the largest odd window below their length, at least 5.
+    """
+    if window >= n_points:
+        window = n_points // 2 * 2 - 1  # largest odd < length
+        if window < 5:
+            window = 5
+    if window % 2 == 0:
+        window -= 1
+    return window
+
+
+def detrend_window_days(cadence: float, window: int = SAVGOL_WINDOW) -> float:
+    """Time span in days covered by the detrend window at a cadence given in minutes."""
+    return window * cadence / (24 * 60)
+
+
+def detrend(flux_arr: np.ndarray) -> np.ndarray:
+    """Subtract a Savitzky-Golay trend (v1: 301-point window, polynomial order 2)."""
+    from scipy.signal import savgol_filter
+
+    trend = savgol_filter(flux_arr, window_length=savgol_window(len(flux_arr)),
+                          polyorder=SAVGOL_POLY)
+    return flux_arr - trend
+
+
+def bls_period_grid() -> np.ndarray:
+    """v1 BLS trial periods: a linear grid of 5000 periods from 0.1 to 50 days."""
+    return np.linspace(BLS_MIN_PERIOD, BLS_MAX_PERIOD, BLS_GRID_POINTS)
+
+
+def bls_search(time_arr: np.ndarray, detrended: np.ndarray) -> tuple[float | None, float | None]:
+    """v1 period search: Box Least Squares with one 0.05-day duration on bls_period_grid().
+
+    Returns (best period, its power), or (None, None) for fewer than BLS_MIN_POINTS points.
+    BLS is built for transits; audit S5 documents how it behaves on pulsators and noise.
+    """
+    if len(time_arr) < BLS_MIN_POINTS:
+        return None, None
+    from astropy.timeseries import BoxLeastSquares
+
+    result = BoxLeastSquares(time_arr, detrended).power(bls_period_grid(), duration=BLS_DURATION)
+    best_idx = np.argmax(result.power)
+    return float(result.period[best_idx]), float(result.power[best_idx])
+
+
 def _resample_normalized(values: np.ndarray, length: int) -> np.ndarray:
     """Interpolate a sequence to fixed length and normalize it."""
+    if len(values) < 2:
+        raise ValueError(f"need at least 2 flux values to resample, got {len(values)}")
+    if length < 1:
+        raise ValueError(f"output length must be at least 1, got {length}")
     x_original = np.linspace(0, 1, len(values))
     x_new = np.linspace(0, 1, length)
     arr = np.interp(x_new, x_original, values).astype(np.float32)
@@ -229,6 +298,10 @@ def _phase_bin_normalized(
     length: int,
 ) -> np.ndarray:
     """Phase-fold and bin a flux sequence using selected_period."""
+    if not (np.isfinite(selected_period) and selected_period > 0):
+        raise ValueError(f"period must be a positive number of days, got {selected_period}")
+    if len(time_arr) != len(flux_arr) or len(time_arr) == 0:
+        raise ValueError(f"time and flux must be non-empty and the same length, got {len(time_arr)} and {len(flux_arr)}")
     phase = ((time_arr - time_arr[0]) % selected_period) / selected_period
     sort_idx = np.argsort(phase)
     phase_sorted = phase[sort_idx]
@@ -250,6 +323,27 @@ def _phase_bin_normalized(
         folded -= folded.mean()
         folded /= std
     return folded
+
+
+def _input_error(
+    tic_id: int | None,
+    astra_class: str,
+    max_sectors: int,
+    ra: float | None,
+    dec: float | None,
+) -> str | None:
+    """Describe the first invalid argument of process_star(), or None if all are valid."""
+    if astra_class not in NAME_TO_LABEL:
+        return f"unknown class {astra_class!r}; expected one of {', '.join(NAME_TO_LABEL)}"
+    if tic_id is not None and (isinstance(tic_id, bool) or not isinstance(tic_id, (int, np.integer)) or tic_id <= 0):
+        return f"tic_id must be a positive integer, got {tic_id!r}"
+    if not isinstance(max_sectors, (int, np.integer)) or max_sectors < 1:
+        return f"max_sectors must be at least 1, got {max_sectors!r}"
+    if ra is not None and not (np.isfinite(ra) and 0 <= ra < 360):
+        return f"ra must be in [0, 360) degrees, got {ra!r}"
+    if dec is not None and not (np.isfinite(dec) and -90 <= dec <= 90):
+        return f"dec must be in [-90, 90] degrees, got {dec!r}"
+    return None
 
 
 # ===================================================================== #
@@ -305,6 +399,15 @@ def process_star(
     This function is designed *not* to raise — all exceptions are caught and
     returned as error dicts so the batch processor never crashes.
     """
+
+    input_error = _input_error(tic_id, astra_class, max_sectors, ra, dec)
+    if input_error:
+        log.error("Invalid input for TIC %s: %s", tic_id, input_error)
+        return {"tic_id": tic_id, "error": input_error, "stage": "input"}
+    if catalog_period is not None and not (np.isfinite(catalog_period) and catalog_period > 0):
+        # Unchanged v1 behaviour (the BLS period is used instead), now said out loud.
+        log.warning("Ignoring invalid catalog period %r for TIC %s; using the BLS period instead",
+                    catalog_period, tic_id)
 
     try:
         import lightkurve as lk
@@ -557,8 +660,7 @@ def process_star(
             # Record cadence from the first light curve
             if source_cadence is None:
                 try:
-                    dt = np.nanmedian(np.diff(lc.time.value))
-                    source_cadence = round(dt * 24 * 60, 1)  # minutes
+                    source_cadence = cadence_minutes(lc.time.value)
                 except Exception:
                     source_cadence = None
 
@@ -656,20 +758,7 @@ def process_star(
     # 5. Detrending  (Savitzky-Golay)
     # ------------------------------------------------------------------ #
     try:
-        from scipy.signal import savgol_filter
-
-        window = SAVGOL_WINDOW
-        # Window must be odd and less than data length
-        if window >= len(flux_arr):
-            window = len(flux_arr) // 2 * 2 - 1  # largest odd < length
-            if window < 5:
-                window = 5
-        if window % 2 == 0:
-            window -= 1
-
-        trend = savgol_filter(flux_arr, window_length=window,
-                              polyorder=SAVGOL_POLY)
-        detrended = flux_arr - trend
+        detrended = detrend(flux_arr)
 
     except Exception as exc:
         msg = f"Detrending failed for {target}: {exc}"
@@ -683,16 +772,8 @@ def process_star(
     bls_period = None
     bls_power = None
     try:
-        from astropy.timeseries import BoxLeastSquares
-
-        if len(time_arr) >= 100:
-            bls = BoxLeastSquares(time_arr, detrended)
-            period_grid = np.linspace(BLS_MIN_PERIOD, BLS_MAX_PERIOD, 5000)
-            result = bls.power(period_grid, duration=0.05)
-
-            best_idx = np.argmax(result.power)
-            bls_period = float(result.period[best_idx])
-            bls_power = float(result.power[best_idx])
+        bls_period, bls_power = bls_search(time_arr, detrended)
+        if bls_period is not None:
             log.info("BLS best period: %.6f d  (power=%.4f)",
                      bls_period, bls_power)
         else:
@@ -887,9 +968,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="ASTRA — Preprocess a single TESS star",
     )
-    parser.add_argument("tic_id", type=int,
+    parser.add_argument("tic_id", type=positive_int,
                         help="TESS Input Catalog ID")
-    parser.add_argument("astra_class", type=str,
+    parser.add_argument("astra_class", type=astra_class_arg,
                         help="ASTRA class name "
                              "(rr_lyrae|cepheid|eclipsing_binary"
                              "|solar_like|stable)")
@@ -897,13 +978,9 @@ if __name__ == "__main__":
                         default=DEFAULT_OUTPUT_DIR,
                         help="Root output directory "
                              "(default: data/processed)")
-    parser.add_argument("--max-sectors", type=int, default=10,
+    parser.add_argument("--max-sectors", type=positive_int, default=10,
                         help="Max TESS sectors to download (default: 10)")
     args = parser.parse_args()
-
-    if args.astra_class not in NAME_TO_LABEL:
-        parser.error(f"Unknown class '{args.astra_class}'.  "
-                     f"Choose from: {list(NAME_TO_LABEL.keys())}")
 
     result = process_star(
         tic_id=args.tic_id,

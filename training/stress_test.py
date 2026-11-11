@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths
 from data.labels import LABEL_TO_NAME, NUM_CLASSES
 from training.models.hybrid_transformer import HybridTransformer
 
@@ -38,21 +39,24 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54")
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "saved" / "best_star_transformer_shared.pt"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+CHECKPOINT_PATH = PATHS.model("best_star_transformer_shared.pt")
 
 
 def load_raw_timeseries(tic_id: int, name: str | None = None) -> tuple[np.ndarray | None, np.ndarray | None]:
     """Load and stitch raw time and flux arrays from cached FITS files."""
     from astropy.io import fits
     padded_tic = f"{tic_id:016d}"
+    # lightkurve's download cache (ASTRA_LIGHTKURVE_CACHE, default ~/.lightkurve/cache)
+    mast = (PATHS.lightkurve_cache / "mastDownload").as_posix()
     patterns = [
-        f"/Users/soumyadebtripathy/.lightkurve/cache/mastDownload/**/*{padded_tic}*.fits",
-        f"/Users/soumyadebtripathy/.lightkurve/cache/mastDownload/**/*{tic_id}*.fits"
+        f"{mast}/**/*{padded_tic}*.fits",
+        f"{mast}/**/*{tic_id}*.fits",
     ]
     if name:
-        patterns.append(f"/Users/soumyadebtripathy/.lightkurve/cache/mastDownload/**/*{name.replace(' ', '')}*.fits")
-        patterns.append(f"/Users/soumyadebtripathy/.lightkurve/cache/mastDownload/**/*{name}*.fits")
+        patterns.append(f"{mast}/**/*{name.replace(' ', '')}*.fits")
+        patterns.append(f"{mast}/**/*{name}*.fits")
 
     files = []
     for pat in patterns:
@@ -164,7 +168,7 @@ def evaluate_model(
     with torch.no_grad():
         for tic_id_str in val_ids:
             tic_id = int(tic_id_str.split("_")[1])
-            star_dir = PROJECT_ROOT / "data" / "processed" / tic_id_str
+            star_dir = PATHS.processed_dir / tic_id_str
             flux_1000 = np.load(star_dir / "flux_1000.npy").copy()
             folded_disk = np.load(star_dir / "folded_flux_1000.npy").copy()
 
@@ -283,6 +287,9 @@ def evaluate_model(
 
 
 def main() -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("  ASTRA Astrophysical Stress Testing")
     print("=" * 70)
@@ -422,7 +429,7 @@ def main() -> None:
         })
 
     csv_path = ARTIFACT_DIR / "corruption_tables.csv"
-    with open(csv_path, "w", newline="") as f:
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=csv_rows[0].keys())
         writer.writeheader()
         writer.writerows(csv_rows)
@@ -436,7 +443,7 @@ def main() -> None:
         "",
         "## 1. Robustness Curves Overview",
         "",
-        "All robustness curves are visualized in the diagnostic plot: [robustness_curves.png](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54/robustness_curves.png)",
+        "All robustness curves are visualized in the diagnostic plot: [robustness_curves.png](robustness_curves.png)",
         "",
         "## 2. Quantitative Sensitivity Metrics",
         "",
@@ -483,11 +490,11 @@ def main() -> None:
         "",
         "## 3. Reference Datasets",
         "",
-        "- Detailed metrics: [corruption_tables.csv](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/6213b34b-7bbc-4ddd-bf18-dae93ae7cb54/corruption_tables.csv)",
+        "- Detailed metrics: [corruption_tables.csv](corruption_tables.csv)",
     ])
 
     report_path = ARTIFACT_DIR / "stress_test_report.md"
-    report_path.write_text("\n".join(report_lines) + "\n")
+    report_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     print(f"Stress test report saved successfully → {report_path}")
 
     # 7. Generate failure_taxonomy.md
@@ -520,7 +527,7 @@ def main() -> None:
     ]
 
     tax_path = ARTIFACT_DIR / "failure_taxonomy.md"
-    tax_path.write_text("\n".join(taxonomy_lines) + "\n")
+    tax_path.write_text("\n".join(taxonomy_lines) + "\n", encoding="utf-8")
     print(f"Failure taxonomy report saved successfully → {tax_path}")
 
 

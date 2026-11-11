@@ -27,28 +27,28 @@
 
 ## 🔭 Overview
 
-**ASTRA** is a reproducible, publication-grade research system that classifies variable stars into five astrophysical categories — RR Lyrae, Cepheid, Eclipsing Binary, Solar-like, and Stable — directly from TESS light curves. It combines a dual-branch Hybrid CNN + Transformer architecture that jointly processes raw and phase-folded photometry, achieving **78.17% test accuracy** and **macro F1 = 0.7677** on a cryptographically verified held-out test set of 142 stars drawn from 944 total. The pipeline spans the full research lifecycle: automated data acquisition from VSX/AAVSO and TESS/MAST, feature engineering, model training with rigorous cross-validation, post-hoc calibration, uncertainty quantification, and a deployable web platform with live ONNX inference.
+**ASTRA** is a reproducible, publication-grade research system that classifies variable stars into five astrophysical categories — RR Lyrae, Cepheid, Eclipsing Binary, Solar-like, and Stable — directly from TESS light curves. It combines a dual-branch Hybrid CNN + Transformer architecture that jointly processes raw and phase-folded photometry, achieving **78.17% test accuracy** and **macro F1 = 0.7677** on a cryptographically verified held-out test set of 142 stars drawn from 944 total. The pipeline spans the full research lifecycle: automated data acquisition from VSX/AAVSO and TESS/MAST, feature engineering, model training with rigorous cross-validation, post-hoc calibration, uncertainty quantification, and a web platform that serves ONNX inference when the model weights are installed (they are not in this repository; see [Web Platform](#-web-platform)).
 
 ---
 
 ## ⚠️ Scientific Integrity Notice
 
 > [!IMPORTANT]
-> **Verified Results** — The following numbers have been independently recomputed from checkpoint weights and test-set IDs and confirmed to zero mismatches in the ground truth audit. They are the authoritative, reportable metrics for this project:
-> - **Test Accuracy:** 78.17% (95% CI: [71.13%, 85.21%])
+> **Published results** — The project's reported metrics, from the original author's ground-truth audit (Phase 7C). The trained weights are not in this repository, so they can't be recomputed from a clone. The committed test confusion matrices do reproduce the point metrics. [`docs/metrics.md`](docs/metrics.md) lists every number with its source and status.
+> - **Test Accuracy:** 78.17% (111/142; 95% CI: [71.13%, 85.21%])
 > - **Macro F1:** 0.7677 (95% CI: [0.6944, 0.8320])
-> - **Dataset:** 944 stars, SHA256 fingerprint `f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58`
-> - **Ground Truth Audit:** All 8 checks **PASS**, 0 mismatches.
+> - **Dataset:** 944 stars, SHA256 fingerprint `f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58` (verified from the shipped files by `pipeline/prepare_from_repo.py`)
+> - **Ground Truth Audit:** all 8 checks reported PASS with 0 mismatches by the original author.
 
 > [!WARNING]
 > **Experimental / Under-Represented Class** — The **Solar-like** class achieves the lowest per-class F1 of **0.52** on the test set, significantly below all other classes. This class contains only 142 samples in the full dataset (15.04%) and has notably higher predictive uncertainty. Solar-like classification results should be interpreted with caution and are not considered production-ready. Additional data collection is recommended before deploying ASTRA predictions for Solar-like targets in any scientific analysis.
 
 > [!CAUTION]
 > **Known limitations (audit of 2026-11-09 — see [`PROJECT_AUDIT.md`](PROJECT_AUDIT.md) and [`PROJECT_STATUS.md`](PROJECT_STATUS.md))**
-> - **Model weights are not published in this repository.** The metrics above are internally consistent with the committed confusion matrix, but can't yet be reproduced from a clean clone.
+> - **Model weights are not published in this repository.** The metrics above are internally consistent with the committed confusion matrices, but can't yet be reproduced from a clean clone. Their SHA256 hashes are recorded in [`models/published_weights.json`](models/published_weights.json); the investigation and recovery plan are in [`docs/model_recovery.md`](docs/model_recovery.md).
 > - **The web platform does not run the model on its current deployment.** Prediction, explanation and upload endpoints return `503 inference_unavailable`, and the UI says so. Earlier versions showed synthetic outputs derived from catalog labels; those have been removed.
 > - **The class labels are confounded with pipeline metadata** (period source, source catalog, cadence), so the catalog-vs-BLS subgroup gap and the headline accuracy need re-evaluation. A 3-feature metadata baseline scores 86.6% on the same test split. This is being addressed in the roadmap ([`UPDATED_ROADMAP.md`](UPDATED_ROADMAP.md)).
-> - Some commands and paths in the sections below don't match the current scripts. Corrections are tracked as task T7.
+> - The commands in the sections below are checked against the scripts' command-line interfaces by `tests/test_readme_commands.py`.
 
 ---
 
@@ -59,10 +59,12 @@
 | Model | Params | Test Accuracy | 95% CI | Macro F1 | 95% CI |
 |:---|:---:|:---:|:---:|:---:|:---:|
 | **HybridTransformer (shared)** ⭐ | 1,373,701 | **78.17%** | [71.13%, 85.21%] | **0.7677** | [0.6944, 0.8320] |
-| CNN Dual-Branch | 1,043,333 | 78.17% | [71.13%, 84.51%] | 0.7654 | [0.6840, 0.8317] |
-| HybridTransformer (cross) | — | 80.99% | [73.94%, 87.32%] | 0.7949 | [0.7252, 0.8594] |
-| HybridTransformer (separate) | — | 84.51% | [78.17%, 90.16%] | 0.8394 | [0.7712, 0.9012] |
-| HybridTransformer (only) | — | 72.54% | [64.79%, 80.28%] | 0.7127 | [0.6420, 0.7834] |
+| CNN Dual-Branch | 1,043,333 | 78.17% | [71.83%, 84.51%] | 0.7635 | [0.6923, 0.8301] |
+| HybridTransformer (cross) | 1,240,965 | 80.99% | [73.94%, 87.32%] | 0.7949 | [0.7252, 0.8594] |
+| HybridTransformer (separate) | 1,687,557 | 84.51% | [78.17%, 90.16%] | 0.8394 | [0.7712, 0.9012] |
+| HybridTransformer (only) | 316,933 | 72.54% | [64.79%, 80.28%] | 0.7127 | [0.6420, 0.7834] |
+
+Accuracy and F1 are recomputed from each model's committed test confusion matrix; the CIs are recorded from the audit reports. The CNN row follows its confusion matrix and the Phase 7C audit; an earlier report (Phase 7A) lists different CNN figures that its matrix contradicts. Sources and status for every number: [`docs/metrics.md`](docs/metrics.md).
 
 > **Note:** The `shared` variant is the production model selected for calibration, ONNX/TorchScript export, and the web platform — chosen for its balance of accuracy, parameter efficiency, and interpretable attention maps. The `separate` and `cross` variants achieved higher raw test accuracy but were not selected as the production model.
 
@@ -76,87 +78,76 @@
 | Stable | **0.66** | Moderate — confusion with low-amplitude variables |
 | Solar-like | **0.52** | ⚠️ Experimental — low sample count, high ambiguity |
 
-### 📊 5-Fold Cross-Validation (3 Random Seeds: 42, 100, 2026)
+### 📊 Cross-Validation
 
-| Metric | Mean | Std Dev | 95% CI |
-|:---|:---:|:---:|:---:|
-| Validation Accuracy | 84.68% | 2.12% | [83.60%, 85.75%] |
-| Macro F1 | 0.8349 | — | — |
-| Catalog Subgroup Accuracy | 89.90% | 2.67% | — |
-| BLS Fallback Subgroup Accuracy | 75.69% | 4.27% | — |
+> [!NOTE]
+> No cross-validation result exists yet for the frozen 944-star dataset. The 5-fold, 3-seed table that used to be here (mean validation accuracy 84.68%) came from an earlier experiment on a 269-star dataset ([`phase7_benchmark_report.md`](docs/engineering-log/phase7_benchmark_report.md)). The current cross-validation script also draws folds from the test stars; sprint task SP-21 fixes the protocol.
 
 ---
 
 ## 📁 Repository Structure
 
 ```
-ASTRA — Automated Stellar Transient Recognition & Analysis/
+ASTRA/
 │
-├── 📄 README.md                          # This file
-├── 📄 CITATION.cff                       # Machine-readable citation metadata
-├── 📄 LICENSE                            # MIT License
-├── 📄 requirements.txt                   # Python dependencies
+├── 📄 README.md, CITATION.cff, LICENSE
+├── 📄 requirements.txt, pyproject.toml   # Python dependencies (CPU torch installed separately)
 ├── 📄 lineage.json                       # Dataset provenance & version tracking
-├── 📂 docs/engineering-log/              # Phase-by-phase audit trail (incl. dataset_fingerprint.md,
-│                                         #   ground_truth_final_verdict.md, phase6/7/8 audits)
+│
+├── 📂 astra/                             # Shared helpers: configurable paths (config.py), UTF-8 console (console.py)
 │
 ├── 📂 pipeline/                          # Data acquisition & preprocessing
+│   ├── prepare_from_repo.py              # Verify the shipped data and rebuild data/phase6/ (start here)
 │   ├── build_catalog.py                  # VSX/AAVSO catalog construction via VizieR
 │   ├── candidate_expander.py             # Star candidate expansion with cross-matching
-│   ├── dataset_builder.py               # TESS MAST light-curve downloader (lightkurve)
+│   ├── dataset_builder.py                # TESS MAST light-curve downloader (lightkurve)
 │   ├── preprocess.py                     # Normalize, detrend, phase-fold (1000 pts)
-│   ├── dataset_audit.py                 # Dataset integrity and label verification
-│   └── freeze_phase6_splits.py          # Train/val/test split freezing with hash locks
+│   ├── dataset_audit.py                  # Dataset integrity and label verification
+│   ├── freeze_phase6_splits.py           # Original split freezing (see the note under Reproducing Results)
+│   └── cleanup_data.py                   # Dry-run-by-default cleanup of failed downloads
 │
 ├── 📂 training/                          # Model definitions & training scripts
 │   ├── models/
 │   │   ├── hybrid_transformer.py         # HybridTransformer (4 variants)
 │   │   ├── star_cnn.py                   # Dual-branch CNN baseline
 │   │   └── explainable_wrapper.py        # Attention-return wrapper for ONNX export
-│   ├── train_transformer.py             # Main transformer training loop (MPS)
-│   ├── train_cnn.py                     # CNN training loop
-│   ├── cross_validate.py                # 5-fold × 3-seed stratified group CV
-│   ├── calibration.py                   # Temperature scaling (NLL minimization)
-│   ├── uncertainty.py                   # MC Dropout uncertainty (30 passes)
+│   ├── train_transformer.py              # Transformer training (--variant, --seed, --data-dir, --out-dir)
+│   ├── train_cnn.py                      # CNN training
+│   ├── cross_validate.py                 # 5-fold × 3-seed stratified group CV
+│   ├── calibration.py                    # Temperature scaling (NLL minimization)
+│   ├── uncertainty.py                    # MC Dropout uncertainty (30 passes)
 │   ├── dataset.py                        # ASTRADataset (raw + folded dual-channel)
 │   ├── focal_loss.py                     # Class-weighted Focal Loss
-│   ├── export_model.py                  # ONNX + TorchScript export pipeline
+│   ├── export_model.py                   # ONNX + TorchScript export
 │   ├── predict.py                        # Single-star inference
-│   └── visualize_attention.py           # Attention map visualization
+│   └── visualize_attention.py            # Attention map visualization
 │
-├── 📂 data/                              # Dataset artifacts
-│   ├── catalog_full.json                # Full 944-star catalog with TIC IDs
-│   ├── dataset_summary.json             # Class distribution summary
-│   ├── labels.py                         # CLASS_NAMES, NUM_CLASSES, LABEL_TO_NAME
-│   └── phase6/                          # Frozen Phase 6 dataset
-│       └── scientific_dataset_freeze_v2.csv  # Cryptographically locked manifest
+├── 📂 data/                              # Catalog and label definitions
+│   ├── catalog_full.json                 # Full 944-star catalog with TIC IDs
+│   ├── dataset_summary.json              # Class distribution summary
+│   └── labels.py                         # CLASS_NAMES, NUM_CLASSES, LABEL_TO_NAME
 │
-├── 📂 models/                            # Trained model artifacts
-│   └── saved/
-│       ├── best_star_transformer_shared.pt          # Best model checkpoint (PyTorch)
-│       ├── best_star_transformer_shared.onnx        # ONNX export (inference)
-│       ├── best_star_transformer_shared.torchscript # TorchScript export (deployment)
-│       ├── best_star_transformer_shared_explain.onnx # ONNX with attention maps
-│       ├── best_star_cnn_dual_aug.pt                # CNN dual-branch checkpoint
-│       ├── optimal_temperature_transformer_shared.txt # Calibration temperature T
-│       ├── experiment_metadata.json                 # Reproducibility hashes
-│       └── confusion_matrix_transformer_shared.png  # Validation confusion matrix
+├── 📂 models/saved/                      # Published training records (no weight files)
+│   ├── experiment_metadata_*.json        # Per-run hashes, seeds and hyperparameters
+│   ├── classification_report_*.txt       # Validation reports per run
+│   ├── confusion_matrix_*.png, training_curves_*.png, training_history_*.json
+│   └── optimal_temperature*.txt          # Calibration temperatures
 │
-├── 📂 splits/                            # Frozen data splits (hash-locked)
-│   ├── split_metadata.json
-│   ├── train_ids.json                   # 661 training star IDs
-│   ├── val_ids.json                     # 141 validation star IDs
-│   └── test_ids.json                    # 142 held-out test star IDs
+├── 📂 astra-platform/                    # Web platform (Next.js) and the shipped dataset
+│   ├── data/processed/TIC_*/             # 944 stars × 5 files, hash-locked by the manifest
+│   ├── data/scientific_dataset_freeze_v2.csv  # Cryptographically locked manifest
+│   ├── data/artifacts/                   # Audit, calibration, benchmark and registry JSON
+│   ├── data/*.onnx                       # ONNX graphs of the shared transformer (weight files not shipped)
+│   ├── src/                              # Next.js app source (TypeScript)
+│   └── tests/                            # Vitest API, security and no-fabrication tests
 │
-├── 📂 astra-platform/                   # Interactive web platform (Next.js)
-│   ├── src/                             # Next.js app source (TypeScript)
-│   ├── package.json                     # Dependencies (Three.js, ONNX Runtime)
-│   └── next.config.ts                   # Next.js configuration
-│
-├── 📂 docs/                             # Extended documentation
-├── 📂 tests/                            # Unit & integration tests
-└── 📂 logs/                             # Training and pipeline logs
+├── 📂 docs/engineering-log/              # Phase-by-phase audit trail and the frozen split ID files
+├── 📂 tests/                             # Python unit and integration tests (pytest)
+├── 📂 artifacts/decisions/               # Architecture decision records (ADRs)
+└── 📂 agents/, standards/, checklists/, context/ ...   # AgentOS development process files
 ```
+
+Created at run time and not tracked: `data/phase6/` (by `prepare_from_repo.py`) and `outputs/` (script reports and checkpoints).
 
 ---
 
@@ -164,40 +155,52 @@ ASTRA — Automated Stellar Transient Recognition & Analysis/
 
 ### Prerequisites
 
-- **Python 3.12** (tested with `3.12.12`)
-- **PyTorch 2.12.0** with MPS backend (Apple Silicon) or CUDA
-- **macOS** with Apple M-series chip (recommended), or Linux with CUDA GPU
+- **Python 3.11 or 3.12** (CI runs both)
+- **PyTorch ≥ 2.0**: CPU is enough for everything below; Apple MPS or CUDA is used automatically when available
+- Linux, macOS or Windows (all commands below are verified on Windows and on CI's Ubuntu)
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Rexy-5097/ASTRA.git
-cd "ASTRA — Automated Stellar Transient Recognition & Analysis"
+git clone https://github.com/yeshika-02/ASTRA.git
+cd ASTRA
 ```
 
 ### 2. Install Dependencies
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install torch --index-url https://download.pytorch.org/whl/cpu   # or the CUDA/MPS wheel you need
 pip install -r requirements.txt
 ```
 
-> [!TIP]
-> For Apple Silicon, PyTorch MPS acceleration is enabled automatically. Ensure `torch>=2.0` is installed with the correct wheel for your architecture.
-
-### 3. Verify Dataset Integrity
+For the exact versions CI verifies, install from the lock file instead (Python 3.11 or 3.12, any OS):
 
 ```bash
-python -c "
-import hashlib, pathlib
-data = pathlib.Path('data/phase6/scientific_dataset_freeze_v2.csv').read_bytes()
-h = hashlib.sha256(data).hexdigest()
-expected = 'f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58'
-print('✅ PASS' if h == expected else '❌ FAIL — dataset mismatch')
-print(f'  SHA256: {h}')
-"
+pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements-lock.txt
 ```
+
+`requirements-lock.txt` pins every dependency except PyTorch. Its header holds the `uv` command that regenerates it from `requirements.txt`. The published runs used PyTorch 2.12.0 on Python 3.12 (see `models/saved/experiment_metadata_shared.json`).
+
+### 3. Verify and Prepare the Frozen Dataset
+
+The repository ships the frozen 944-star dataset (processed arrays, hash-locked manifest and frozen split ids) but not in the `data/phase6/` layout the scripts use. One command verifies every shipped file and builds that layout:
+
+```bash
+python pipeline/prepare_from_repo.py --verify-only   # check only: manifest + 944 stars x 5 files
+python pipeline/prepare_from_repo.py                 # build data/phase6/{processed,splits,audits}
+```
+
+It checks:
+- the manifest SHA256 (`f99b4b06…`);
+- every array and metadata file against the manifest;
+- the three split files against their published hashes, and the recomputed split hash (`ebcdc44c…`).
+
+It then runs the dataset audit. Raw light curves are not shipped, so the audit records that raw files were not checked. `data/phase6/` is git-ignored.
+
+Paths can be changed with environment variables (`ASTRA_PHASE6_ROOT`, `ASTRA_PROCESSED_DIR`, `ASTRA_SPLITS_DIR`, `ASTRA_MODELS_DIR`, `ASTRA_OUTPUT_DIR`); see `astra/config.py`. Script reports go to `outputs/` (git-ignored).
 
 ---
 
@@ -248,6 +251,8 @@ flowchart TD
 
 ### Phase 1 — Data Acquisition
 
+Phases 1 and 2 record how the frozen dataset was built. They query VizieR and MAST over the network, and Phase 2 needs the raw light curves, which are not shipped. To work with the frozen dataset, use Quick Start step 3 instead.
+
 ```bash
 # Build the VSX/AAVSO catalog via VizieR
 python pipeline/build_catalog.py
@@ -271,6 +276,7 @@ python pipeline/preprocess.py
 python pipeline/dataset_audit.py
 
 # Freeze train/val/test splits with SHA256 hash locks
+# (do not rerun to regenerate the published split; see "Reproducing Results")
 python pipeline/freeze_phase6_splits.py
 ```
 
@@ -309,35 +315,53 @@ flowchart TD
 
 ### Phase 3 — Training & Validation
 
+All commands read the frozen dataset prepared in Quick Start step 3. Without `--out-dir`, training writes to `outputs/runs/`; `models/saved/` holds the published training records and is only written to when you pass it explicitly.
+
 ```bash
-# Train the production HybridTransformer (shared variant)
-python training/train_transformer.py --variant shared --seed 42
+# Train the production HybridTransformer (shared variant); 50 epochs by default
+python training/train_transformer.py --variant shared --seed 42 --out-dir outputs/run_shared
 
-# Train CNN dual-branch baseline
-python training/train_cnn.py --variant dual_aug --seed 42
+# Train the CNN dual-branch baseline (raw + phase-folded input, augmentation)
+python training/train_cnn.py --use-folded --augment --seed 42 --tag dual_aug --out-dir outputs/run_cnn
 
-# Run 5-fold × 3-seed cross-validation
-python training/cross_validate.py --variant shared --seeds 42 100 2026 --folds 5
+# 5-fold x 3-seed cross-validation of the shared transformer (defaults shown)
+python training/cross_validate.py --seeds 42 100 2026 --folds 5 --epochs 50
 
-# Apply temperature calibration (NLL minimization)
-python training/calibration.py --model transformer_shared
+# Temperature calibration on the validation split (NLL minimisation)
+python training/calibration.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --temperature-out outputs/run_shared/optimal_temperature.txt
 
-# Quantify predictive uncertainty via MC Dropout (30 passes)
-python training/uncertainty.py --model transformer_shared --n_passes 30
+# MC Dropout uncertainty on the validation split
+python training/uncertainty.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --temperature-file outputs/run_shared/optimal_temperature.txt --n-passes 30
 ```
+
+Every script has `--help`. Reports and plots go to `outputs/` (`--out-dir` to change).
+
+> [!NOTE]
+> Cross-validation currently selects each fold's best epoch on that fold's own validation data and includes the test stars, so its score is optimistic. Fixing this is sprint task SP-21.
 
 ### Phase 4 — Evaluation & Export
 
 ```bash
-# Evaluate on frozen held-out test set
-python training/predict.py --model transformer_shared --split test
+# Classify one prepared star with MC Dropout (needs a checkpoint)
+python training/predict.py --input data/phase6/processed/TIC_100009973 \
+    --checkpoint outputs/run_shared/best_star_transformer_shared.pt
 
-# Export to ONNX and TorchScript
-python training/export_model.py --variant shared
+# Attention maps for validation stars
+python training/visualize_attention.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --output-dir outputs/attention
 
-# Generate attention visualizations
-python training/visualize_attention.py --model transformer_shared
+# Export ONNX / TorchScript, check both against PyTorch, benchmark CPU latency
+python training/export_model.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --out-dir outputs/export
+
+# Evaluate a checkpoint on the frozen test split: metrics, 95% bootstrap CIs, calibration, per-star predictions
+python training/evaluate.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --temperature-file outputs/run_shared/optimal_temperature.txt --out-dir outputs/evaluation
 ```
+
+`evaluate.py` checks the checkpoint's SHA256 against [`models/published_weights.json`](models/published_weights.json). A checkpoint you trained yourself is reported as a new model, so its numbers never stand in for the published ones. Only the verified published checkpoint is compared with the published results. The published checkpoint is not in the repository; see "Known limitations" above.
 
 ---
 
@@ -429,9 +453,11 @@ A convolutional baseline with two parallel branches (raw + folded) using deeper 
 |:---|:---:|:---:|
 | Accuracy | **78.17%** | [71.13%, 85.21%] |
 | Macro F1 | **0.7677** | [0.6944, 0.8320] |
-| Weighted F1 | 0.7784 | — |
-| ECE (calibrated) | 0.0478 | — |
-| NLL (calibrated) | 0.5332 | — |
+| Weighted F1 | 0.7784 | [0.7076, 0.8485] |
+| ECE (raw → calibrated, T = 1.257665) | 0.0810 → 0.0442 | — |
+| NLL (calibrated) | not recorded | — |
+
+Calibration values come from [`ground_truth_calibration.md`](docs/engineering-log/ground_truth_calibration.md). That audit lists NLL equal to ECE, a copy error, so no valid NLL is recorded. The ECE 0.0478 and NLL 0.5332 shown here before came from the earlier 269-star experiment.
 
 <p align="center">
   <img src="models/saved/test_confusion_matrix_transformer_shared.png" alt="Test set confusion matrix — HybridTransformer (shared)" width="480"/>
@@ -439,17 +465,17 @@ A convolutional baseline with two parallel branches (raw + folded) using deeper 
 
 ### Selective Prediction via MC Dropout Uncertainty
 
-By thresholding on model confidence (30 stochastic MC Dropout passes), accuracy can be traded for coverage:
+By thresholding on model confidence (30 stochastic MC Dropout passes), accuracy can be traded for coverage. These values are recorded in [`ground_truth_uncertainty.md`](docs/engineering-log/ground_truth_uncertainty.md), which does not state the split:
 
 | Confidence Threshold | Coverage | Accuracy |
 |:---:|:---:|:---:|
-| 0.0 (all predictions) | 100.0% | 85.82% |
-| 0.5 | 92.2% | 88.46% |
-| 0.7 | 75.9% | 93.46% |
-| 0.8 | 68.1% | 94.79% |
-| 0.9 | 48.2% | 92.65% |
+| 0.5 | 86.6% | 84.6% |
+| 0.6 | 78.9% | 88.4% |
+| 0.7 | 71.8% | 92.2% |
+| 0.8 | 63.4% | 93.3% |
+| 0.9 | 43.0% | 98.4% |
 
-**Uncertainty correlation:** Incorrect predictions show mean entropy of **0.84 nats** vs. **0.53 nats** for correct predictions, confirming uncertainty is a reliable proxy for classification difficulty.
+**Uncertainty correlation:** incorrect predictions have a mean entropy of **0.9998 nats**, against **0.4973 nats** for correct ones. Predictive entropy flags errors with an AUROC of **0.8628**. The table shown here before (starting at 85.82%, with entropies 0.84 / 0.53 nats) came from the earlier 269-star experiment.
 
 ### Period Source Subgroup Analysis (Test Set, SHARED)
 
@@ -465,47 +491,53 @@ By thresholding on model confidence (30 stochastic MC Dropout passes), accuracy 
 
 ## 🔁 Reproducing Results
 
-All experimental results are fully reproducible from the hash-locked splits and checkpoints.
+What can be reproduced from a clone today:
+
+| Step | Status |
+|---|---|
+| Dataset, manifest and frozen splits | ✅ verified by `pipeline/prepare_from_repo.py` |
+| Training and cross-validation runs | ✅ runnable (CI trains one epoch from a fresh clone and checks the recorded data hashes) |
+| Evaluating any checkpoint on the frozen test split, with bootstrap CIs | ✅ `training/evaluate.py` (tested on the real arrays; its metric code reproduces the published numbers from the published confusion matrices) |
+| The published test metrics (78.17%) | ❌ not yet: the checkpoint (`best_star_transformer_shared.pt`, SHA256 `bf374ce4…`) is not in the repository ([recovery plan](docs/model_recovery.md)) |
 
 ### Verify Split Integrity
+
+The split files are verified, and the split hash recomputed, by `python pipeline/prepare_from_repo.py`. To check the shipped files by hand:
 
 ```bash
 python -c "
 import hashlib, pathlib
 
 hashes = {
-    'splits/train_ids.json': '5a9bf6c6ad40757a52d0f4a044626e82a4876839b175f5070fb28834c815eed0',
-    'splits/val_ids.json':   'c733ab95c4a22ebc29ca123b2e923c8b8069933ccdff2e9f03a3fdc882f761b3',
-    'splits/test_ids.json':  '2b62970d610f66f12711b6d9594305b33961a04d17c48807bd6123562350f4c0',
+    'docs/engineering-log/phase6_train_ids.json': '5a9bf6c6ad40757a52d0f4a044626e82a4876839b175f5070fb28834c815eed0',
+    'docs/engineering-log/phase6_val_ids.json':   'c733ab95c4a22ebc29ca123b2e923c8b8069933ccdff2e9f03a3fdc882f761b3',
+    'docs/engineering-log/phase6_test_ids.json':  '2b62970d610f66f12711b6d9594305b33961a04d17c48807bd6123562350f4c0',
 }
 
 for path, expected in hashes.items():
     actual = hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
-    status = '✅' if actual == expected else '❌'
-    print(f'{status}  {path}')
+    print('OK  ' if actual == expected else 'FAIL', path)
 "
-```
-
-### Evaluate Checkpoint on Test Set
-
-```bash
-# Reproduce the 78.17% test accuracy from the frozen checkpoint
-python training/predict.py \
-  --model transformer_shared \
-  --checkpoint models/saved/best_star_transformer_shared.pt \
-  --split test \
-  --temperature models/saved/optimal_temperature_transformer_shared.txt
 ```
 
 ### Reproduce Cross-Validation
 
 ```bash
-# 5-fold CV × 3 seeds = 15 total runs (approx 2–3 hours on Apple M-series)
-python training/cross_validate.py \
-  --variant shared \
-  --seeds 42 100 2026 \
-  --folds 5
+# 5-fold CV x 3 seeds = 15 runs of 50 epochs (hours on CPU; MPS/CUDA used when available)
+python training/cross_validate.py --seeds 42 100 2026 --folds 5 --epochs 50
 ```
+
+Note that `pipeline/freeze_phase6_splits.py` cannot regenerate the committed split: it uses 70/10/10/10 ratios, while the frozen split is 70/15/15/0. Use the shipped split files.
+
+### When the published checkpoint is recovered
+
+```bash
+python training/verify_weights.py --require best_star_transformer_shared.pt
+python training/evaluate.py --checkpoint models/saved/best_star_transformer_shared.pt \
+    --temperature-file models/saved/optimal_temperature_transformer_shared.txt --require-published
+```
+
+The report says `REPRODUCED` only if the hash matches, accuracy, macro F1 and weighted F1 equal the published values, and the confusion matrix equals the published one; `--require-published` exits 1 otherwise.
 
 ### Cryptographic Artifact Registry
 
@@ -539,19 +571,31 @@ The `astra-platform/` directory contains an interactive research web application
 
 ### Platform Features
 
-- **`/api/upload`** — Accepts raw TESS-format CSV, runs preprocessing (detrending → phase-folding → resampling), returns ONNX inference results with calibrated probabilities
-- **`/api/health`** — SystemState controller (`READY` / `DEGRADED` / `BLOCKED`) based on live dataset fingerprint verification
-- **Attention Visualization** — Live `250×250` self-attention map rendering on client canvas
-- **Mission Replay** — Animated walkthrough of a star's light-curve classification journey
-- **MC Dropout Display** — Real-time 10-pass uncertainty quantification per uploaded star
+- **`/api/upload`**: accepts JSON `{ "period": <days>, "flux": [...] }` (50 to 100,000 points), normalizes and resamples to 1,000 points, phase-folds at the given period, and runs the explainability ONNX model with temperature scaling (T = 1.257665). Returns class probabilities and the attention matrix.
+- **`/api/predict/[id]`**: 30-pass MC Dropout prediction for a catalog star from the PyTorch checkpoint, shown on the star detail page.
+- **`/api/health`**: reports `READY` (data verified and all inference runnable), `DEGRADED` (data verified, some or all inference unavailable) or `BLOCKED` (manifest or star database missing or not matching).
+- **Attention Visualization**: 250 × 250 self-attention map (125 raw + 125 folded CNN tokens), rendered on a client canvas.
+- **Mission Replay**: animated walkthrough of a star's light-curve classification.
+
+**Model weights are not in the repository.** The ONNX files in `astra-platform/data/` are graphs whose weights live in separate `.onnx.data` files, and the PyTorch checkpoint is not shipped. On a fresh clone the inference endpoints return `503` with `"status": "inference_unavailable"` and the reasons, and health reports `DEGRADED`. They never return placeholder predictions.
 
 ### Running Locally
 
+Requires Node.js 22.5 or later.
+
 ```bash
 cd astra-platform
-npm install
-npm run dev
-# Open http://localhost:3000
+npm ci              # install the exact versions in package-lock.json
+npm run dev         # open http://localhost:3000
+```
+
+Checks:
+
+```bash
+npm run typecheck
+npm run lint        # ESLint
+npm test            # Vitest: API, security, health and no-fabrication tests
+npm run build
 ```
 
 ---
