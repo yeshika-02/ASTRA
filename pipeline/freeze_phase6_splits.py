@@ -17,6 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.labels import CLASS_NAMES
+from pipeline.cli_validation import existing_dir, positive_int
 from pipeline.phase6_utils import DEFAULT_PHASE6_ROOT, ensure_phase6_structure
 
 
@@ -126,9 +127,9 @@ def freeze_splits(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Freeze ASTRA Phase 6 dataset splits")
-    parser.add_argument("--data-root", type=Path, default=DEFAULT_PHASE6_ROOT)
+    parser.add_argument("--data-root", type=existing_dir, default=DEFAULT_PHASE6_ROOT)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--minimum-samples", type=int, default=5000)
+    parser.add_argument("--minimum-samples", type=positive_int, default=5000)
     parser.add_argument("--allow-unpassed-audit", action="store_true")
     args = parser.parse_args()
 
