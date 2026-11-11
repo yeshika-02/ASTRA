@@ -43,6 +43,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.labels import NAME_TO_LABEL
+from pipeline.cli_validation import astra_class as astra_class_arg
+from pipeline.cli_validation import positive_int
 from pipeline.phase6_utils import (
     PERIOD_REQUIRED_CLASSES,
     PHASE6_PREPROCESSING_VERSION,
@@ -275,6 +277,10 @@ def bls_search(time_arr: np.ndarray, detrended: np.ndarray) -> tuple[float | Non
 
 def _resample_normalized(values: np.ndarray, length: int) -> np.ndarray:
     """Interpolate a sequence to fixed length and normalize it."""
+    if len(values) < 2:
+        raise ValueError(f"need at least 2 flux values to resample, got {len(values)}")
+    if length < 1:
+        raise ValueError(f"output length must be at least 1, got {length}")
     x_original = np.linspace(0, 1, len(values))
     x_new = np.linspace(0, 1, length)
     arr = np.interp(x_new, x_original, values).astype(np.float32)
@@ -292,6 +298,10 @@ def _phase_bin_normalized(
     length: int,
 ) -> np.ndarray:
     """Phase-fold and bin a flux sequence using selected_period."""
+    if not (np.isfinite(selected_period) and selected_period > 0):
+        raise ValueError(f"period must be a positive number of days, got {selected_period}")
+    if len(time_arr) != len(flux_arr) or len(time_arr) == 0:
+        raise ValueError(f"time and flux must be non-empty and the same length, got {len(time_arr)} and {len(flux_arr)}")
     phase = ((time_arr - time_arr[0]) % selected_period) / selected_period
     sort_idx = np.argsort(phase)
     phase_sorted = phase[sort_idx]
@@ -313,6 +323,27 @@ def _phase_bin_normalized(
         folded -= folded.mean()
         folded /= std
     return folded
+
+
+def _input_error(
+    tic_id: int | None,
+    astra_class: str,
+    max_sectors: int,
+    ra: float | None,
+    dec: float | None,
+) -> str | None:
+    """Describe the first invalid argument of process_star(), or None if all are valid."""
+    if astra_class not in NAME_TO_LABEL:
+        return f"unknown class {astra_class!r}; expected one of {', '.join(NAME_TO_LABEL)}"
+    if tic_id is not None and (isinstance(tic_id, bool) or not isinstance(tic_id, (int, np.integer)) or tic_id <= 0):
+        return f"tic_id must be a positive integer, got {tic_id!r}"
+    if not isinstance(max_sectors, (int, np.integer)) or max_sectors < 1:
+        return f"max_sectors must be at least 1, got {max_sectors!r}"
+    if ra is not None and not (np.isfinite(ra) and 0 <= ra < 360):
+        return f"ra must be in [0, 360) degrees, got {ra!r}"
+    if dec is not None and not (np.isfinite(dec) and -90 <= dec <= 90):
+        return f"dec must be in [-90, 90] degrees, got {dec!r}"
+    return None
 
 
 # ===================================================================== #
@@ -368,6 +399,15 @@ def process_star(
     This function is designed *not* to raise — all exceptions are caught and
     returned as error dicts so the batch processor never crashes.
     """
+
+    input_error = _input_error(tic_id, astra_class, max_sectors, ra, dec)
+    if input_error:
+        log.error("Invalid input for TIC %s: %s", tic_id, input_error)
+        return {"tic_id": tic_id, "error": input_error, "stage": "input"}
+    if catalog_period is not None and not (np.isfinite(catalog_period) and catalog_period > 0):
+        # Unchanged v1 behaviour (the BLS period is used instead), now said out loud.
+        log.warning("Ignoring invalid catalog period %r for TIC %s; using the BLS period instead",
+                    catalog_period, tic_id)
 
     try:
         import lightkurve as lk
@@ -928,9 +968,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="ASTRA — Preprocess a single TESS star",
     )
-    parser.add_argument("tic_id", type=int,
+    parser.add_argument("tic_id", type=positive_int,
                         help="TESS Input Catalog ID")
-    parser.add_argument("astra_class", type=str,
+    parser.add_argument("astra_class", type=astra_class_arg,
                         help="ASTRA class name "
                              "(rr_lyrae|cepheid|eclipsing_binary"
                              "|solar_like|stable)")
@@ -938,13 +978,9 @@ if __name__ == "__main__":
                         default=DEFAULT_OUTPUT_DIR,
                         help="Root output directory "
                              "(default: data/processed)")
-    parser.add_argument("--max-sectors", type=int, default=10,
+    parser.add_argument("--max-sectors", type=positive_int, default=10,
                         help="Max TESS sectors to download (default: 10)")
     args = parser.parse_args()
-
-    if args.astra_class not in NAME_TO_LABEL:
-        parser.error(f"Unknown class '{args.astra_class}'.  "
-                     f"Choose from: {list(NAME_TO_LABEL.keys())}")
 
     result = process_star(
         tic_id=args.tic_id,
