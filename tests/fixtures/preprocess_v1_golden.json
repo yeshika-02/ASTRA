@@ -1,0 +1,56 @@
+{
+  "description": "process_star() outputs for the synthetic stars in tests/fake_lightkurve.py, captured from pipeline/preprocess.py (preprocessing v1) before any refactoring. tests/test_preprocess_golden.py checks that v1 keeps producing them.",
+  "stars": {
+    "eclipsing_binary": {
+      "flux_1000_sha256": "4fcef769a63f0a4315862520dc51d1d594a862c1d8668c79c5a193e785bcc2ff",
+      "flux_200_sha256": "f2e11aeec9e06ca61110c2d7040efb9ef7075302c9e1301df6bec4fb25a097f8",
+      "folded_flux_1000_sha256": "41f03e3b414185de82124e557ba2e95cb41a799783123ecc7a503e5de101b705",
+      "folded_flux_200_sha256": "cdccdd6773c8b45b4fdf093a32fffe708a4bf9b56cf26de33ea880037c3b0679",
+      "bls_period": 2.4956791358271655,
+      "bls_power": 0.009698732106021684,
+      "selected_period": 2.4956791358271655,
+      "period_source": "BLS",
+      "source_cadence": 30.0,
+      "cadence_type": "long",
+      "variability_amplitude": 0.012245669126087409,
+      "estimated_snr": 2.166557011432712,
+      "n_points_raw": 2592,
+      "n_points_clean": 2590,
+      "n_sectors": 2
+    },
+    "cepheid_like": {
+      "flux_1000_sha256": "9b1066c62e61161653c2eb0dbc59db72430d77cb5cee739396c5627cdf427937",
+      "flux_200_sha256": "7e5442e9adb00e9af2359ca1266e7c8882fb2eee636972bd0db2f6b755e5c2ec",
+      "folded_flux_1000_sha256": "c42e24e0c5e087991a506a8a90b98a062b5b0c786899553613eca5c462c94f8e",
+      "folded_flux_200_sha256": "9cb962229632db3a1715293662c23c9a03ca20899522c44bbf46f82643cb845f",
+      "bls_period": 6.159071814362872,
+      "bls_power": 8.260647440038545e-06,
+      "selected_period": 5.0,
+      "period_source": "catalog",
+      "source_cadence": 2.0,
+      "cadence_type": "short",
+      "variability_amplitude": 0.0032601118821894088,
+      "estimated_snr": 0.9937476907582157,
+      "n_points_raw": 7200,
+      "n_points_clean": 7200,
+      "n_sectors": 1
+    },
+    "rr_lyrae_like": {
+      "flux_1000_sha256": "01083065b3b0264bc024d7d733ce32bd914d383d00babe467061b28793ff1ab8",
+      "flux_200_sha256": "03444f3540f78c0264d089265b59f29da640b1835e87684ea9d87cdcbadf6b14",
+      "folded_flux_1000_sha256": "95b31b4858c560dd79a7877c5f54eacee0776e84b0b8e191fd92138fb2c7d668",
+      "folded_flux_200_sha256": "1b2ed21319105642b2f5b5885bcbec12ddb496bf524ff835cf6d7e82de727425",
+      "bls_period": 0.5491898379675935,
+      "bls_power": 1.5767416838222355,
+      "selected_period": 0.5491898379675935,
+      "period_source": "BLS",
+      "source_cadence": 10.0,
+      "cadence_type": "long",
+      "variability_amplitude": 0.22850842229273977,
+      "estimated_snr": 4.229483780819464,
+      "n_points_raw": 2880,
+      "n_points_clean": 2880,
+      "n_sectors": 1
+    }
+  }
+}
