@@ -1,9 +1,15 @@
 # Project Heartbeat & Task State
 
-> **Last Heartbeat:** 2026-11-10
-> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–4 complete, PRs #3–#10 in review (see 7_DAY_SPRINT.md)
+> **Last Heartbeat:** 2026-11-11
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–5 complete except WS-09/WS-10 (carried over), PRs #3–#11 in review (see 7_DAY_SPRINT.md)
 
 ---
+
+## Session 2026-11-11 — Sprint Day 5
+
+- WS-11 [#11](https://github.com/yeshika-02/ASTRA/pull/11) (stacked on #10): golden fixture from unmodified v1, `tests/fake_lightkurve.py`, v1 steps extracted unchanged (byte-identical outputs), detrend/BLS characterisation, `pipeline/cli_validation.py` in 6 entry points, `process_star` input checks. 10 commits, 206 tests, `preprocess.py` coverage 57%.
+- Correction: Day 4's WS-09 (SP-21) and WS-10 (SP-22) were never started; carried over.
+- Next: WS-09/WS-10 carry-over or Day 6 (WS-13/WS-14), owner's call.
 
 ## Session 2026-11-10 (c) — Sprint Day 4
 
