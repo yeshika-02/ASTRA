@@ -43,6 +43,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.labels import CLASS_NAMES
+from pipeline.cli_validation import positive_int
 
 logging.basicConfig(
     level=logging.INFO,
@@ -405,13 +406,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="ASTRA Phase 6 — Batch process from usable_manifest.csv"
     )
-    parser.add_argument("--per-class", type=int, default=None,
+    parser.add_argument("--per-class", type=positive_int, default=None,
                         help="Max stars per class (default: all)")
-    parser.add_argument("--workers", type=int, default=3,
+    parser.add_argument("--workers", type=positive_int, default=3,
                         help="Parallel workers (default: 3)")
-    parser.add_argument("--max-sectors", type=int, default=8,
+    parser.add_argument("--max-sectors", type=positive_int, default=8,
                         help="Max TESS sectors per star (default: 8)")
-    parser.add_argument("--checkpoint-interval", type=int, default=50,
+    parser.add_argument("--checkpoint-interval", type=positive_int, default=50,
                         help="Write checkpoint every N stars (default: 50)")
     args = parser.parse_args()
 

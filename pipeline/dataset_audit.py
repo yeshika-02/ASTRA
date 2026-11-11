@@ -16,6 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.labels import CLASS_NAMES
+from pipeline.cli_validation import existing_dir, non_negative_int
 from pipeline.phase6_utils import (
     DEFAULT_PHASE6_ROOT,
     PHASE6_REQUIRED_METADATA,
@@ -370,8 +371,8 @@ def run_audit(data_root: Path = DEFAULT_PHASE6_ROOT, stage: int = 0, require_raw
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Audit ASTRA Phase 6 dataset")
-    parser.add_argument("--data-root", type=Path, default=DEFAULT_PHASE6_ROOT)
-    parser.add_argument("--stage", type=int, default=0)
+    parser.add_argument("--data-root", type=existing_dir, default=DEFAULT_PHASE6_ROOT)
+    parser.add_argument("--stage", type=non_negative_int, default=0)
     parser.add_argument("--no-require-raw", action="store_true",
                         help="Count missing raw light curves instead of failing (repository rebuilds)")
     args = parser.parse_args()
