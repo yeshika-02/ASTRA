@@ -57,11 +57,11 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 | SP-18 | Metric inventory + authoritative table (T8, R4, S11) | P0 | Completed (in review) | `fix/metrics-single-source` | #10 | 7f1ca5e, 7d36566, 26cf257, 8011143, b85aab2, 6ee02e0, c03b8d4, afe337d, b9c913f, 4bd1c55 | `models/published_metrics.json` + generated `docs/metrics.md`; every recorded value found in its cited report, matrices reproduce 7A/7C; README numbers all trace to the record (`test_readme_metrics`, mutation-checked); ADR-0063 |
 | SP-19 | Artifact generator, NLL fixed, tested on synthetic outputs (T8) | P1 | Completed (in review) | `fix/metrics-single-source` | #10 | f39b12b, 47fe53f, 12b1140, bac7b77, 0c3df6f | `pipeline/build_platform_artifacts.py`; NLL/ECE/Brier agree with `calibration.py` on synthetic logits; `--evaluation` recomputes NLL from logits; `--check` + test keep outputs current; artifact values changed only for the CNN row and the copied NLL |
 | SP-20 | UI reads only generated artifacts; unsourced constants removed (T8, U3) | P1 | Completed (in review) | `fix/metrics-single-source` | #10 | d7d5019, 9478b00, ebcec24, 5d66c57 | lineage counts without source → "count not recorded"; `SELECTIVE_PREDICTION_DATA`/`PER_CLASS_ECE` removed; constants and page literals pinned to the record; typecheck + 88 Vitest pass; CI on #10: all 6 jobs green in both runs (head 4bd1c55) |
-| SP-21 | Honest CV: no test stars, `duplicate_group_id`, nested selection, ADR-0062 (T10, S7) | P0 | Pending | `fix/honest-cross-validation` | — | — | — |
-| SP-22 | `training/baselines.py` (T6, S2) | P1 | Pending | `feat/feature-baselines` | — | — | — |
-| SP-23 | Detrend/cadence characterisation tests (S4) | P1 | Pending | `test/preprocessing-validation` | — | — | — |
-| SP-24 | Period-search characterisation tests (S5) | P1 | Pending | `test/preprocessing-validation` | — | — | — |
-| SP-25 | Pipeline input validation and clear errors (E4) | P1 | Pending | `test/preprocessing-validation` | — | — | — |
+| SP-21 | Honest CV: no test stars, `duplicate_group_id`, nested selection, ADR-0062 (T10, S7) | P0 | Pending — carried over from Day 4, not started | `fix/honest-cross-validation` | — | — | — |
+| SP-22 | `training/baselines.py` (T6, S2) | P1 | Pending — carried over from Day 4, not started | `feat/feature-baselines` | — | — | — |
+| SP-23 | Detrend/cadence characterisation tests (S4) | P1 | Completed (in review) | `test/preprocessing-validation` | #11 | fad7711, 1e828a9, 59e5ae5, 9d34533 | golden test (fixture from unmodified v1; outputs byte-identical after refactor); retained sinusoid share by period × cadence pinned; shipped Cepheid/RR Lyrae amplitude evidence |
+| SP-24 | Period-search characterisation tests (S5) | P1 | Completed (in review) | `test/preprocessing-validation` | #11 | bbc9ee3 | grid resolution, box vs sinusoid recovery, power ∝ flux², shipped edge pile-up (57% Solar-like / 28% Stable) |
+| SP-25 | Pipeline input validation and clear errors (E4) | P1 | Completed (in review) | `test/preprocessing-validation` | #11 | 147c9f8, 76d7e63, bbb49e0, 260d5dc, c0baf3d | `cli_validation` types in 6 entry points (10 subprocess cases); `process_star` stage "input"; failure stages leave no partial output; `preprocess.py` coverage 57%; CI on #11: all 6 jobs green in both runs (head c0baf3d) |
 | SP-26 | Opt-in preprocessing v2, ADR-0064 (needs D2) | P2 | Blocked (D2) | `feat/preprocess-v2-optin` | — | — | — |
 | SP-27 | API param validation, shared DB handle, generic errors (P8) | P1 | Pending | `fix/api-reliability` | — | — | — |
 | SP-28 | Consistent loading / empty / error / unavailable states | P1 | Pending | `fix/api-reliability` | — | — | — |
@@ -112,6 +112,10 @@ Priority: P0 = must land this sprint · P1 = planned · P2 = optional.
 | 2026-11-10 | SP-18 | `docs/experiments.md` variant accuracies 74.47% / 75.18% / 73.05% have no source; matrices give 80.99% / 84.51% / 72.54% | fixed in #10 |
 | 2026-11-10 | SP-19 | The calibration audit itself lists NLL equal to ECE; the copy spread to three artifacts | fixed in #10 (NLL null until logits exist) |
 | 2026-11-10 | SP-20 | Lineage funnel counts (3200, 2847, 1621, 1102, 978) have no source; two unused UI tables contradicted the reports | fixed in #10 |
+| 2026-11-11 | SP-23 | Detrend retention measured: a 6.2-d signal keeps ~0% / 0.7% / 35% of its spread at 2 / 10 / 30-min cadence | pinned in #11; input for SP-26 (D2) |
+| 2026-11-11 | SP-24 | BLS: 5-d sinusoid at 30-min cadence returns ~27 d; grid step is 10% of the period at 0.1 d; edge pile-up is in the shipped data, not in synthetic noise | pinned in #11; input for SP-26 (D2) |
+| 2026-11-11 | SP-25 | `process_star` accepted an unknown class and wrote label -1; 0 workers / 0 sectors surfaced as unrelated errors | fixed in #11 |
+| 2026-11-11 | Process | Day 4 was reported as done, but WS-09 (SP-21) and WS-10 (SP-22) were never started | carried over; scheduling decision for the owner |
 | 2026-11-10 | Review | Process slip: 14 review-fix commits on #9 were authored as `day7-sim` (simulation script wrote the shared git config); identity restored | owner then chose to re-author them: rewritten to `yeshika-02` (content, messages and author dates unchanged; same tree) and #9 force-pushed with lease, head `e969753` |
 
 ### Acceptance criteria
