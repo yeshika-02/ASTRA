@@ -188,6 +188,9 @@ BLS_MIN_PERIOD = 0.1   # days (must be > BLS duration)
 BLS_MAX_PERIOD = 50.0  # days
 SAVGOL_WINDOW  = 301   # Savitzky-Golay window (must be odd)
 SAVGOL_POLY    = 2     # Savitzky-Golay polynomial order
+BLS_GRID_POINTS = 5000  # linear period grid between BLS_MIN_PERIOD and BLS_MAX_PERIOD
+BLS_DURATION   = 0.05  # days; the single transit duration BLS is run with
+BLS_MIN_POINTS = 100   # fewer points: no period search
 
 
 def _cleanup_star_dir(star_dir: Path | None, raw_star_dir: Path | None = None) -> None:
@@ -208,6 +211,66 @@ def _select_period(
     if bls_period is not None and np.isfinite(bls_period) and bls_period > 0:
         return float(bls_period), "BLS"
     return None, "unknown"
+
+
+# ===================================================================== #
+#        Preprocessing v1 steps (behaviour pinned by test_preprocess_golden)  #
+# ===================================================================== #
+
+def cadence_minutes(time_values: np.ndarray) -> float:
+    """Median sampling interval in minutes, rounded to 0.1 (recorded as source_cadence)."""
+    dt = np.nanmedian(np.diff(time_values))
+    return round(dt * 24 * 60, 1)
+
+
+def savgol_window(n_points: int, window: int = SAVGOL_WINDOW) -> int:
+    """Savitzky-Golay window used for a light curve of n_points.
+
+    The window is a fixed number of points, not a time span, so the time it covers
+    depends on the cadence (audit S4; see detrend_window_days). Short light curves get
+    the largest odd window below their length, at least 5.
+    """
+    if window >= n_points:
+        window = n_points // 2 * 2 - 1  # largest odd < length
+        if window < 5:
+            window = 5
+    if window % 2 == 0:
+        window -= 1
+    return window
+
+
+def detrend_window_days(cadence: float, window: int = SAVGOL_WINDOW) -> float:
+    """Time span in days covered by the detrend window at a cadence given in minutes."""
+    return window * cadence / (24 * 60)
+
+
+def detrend(flux_arr: np.ndarray) -> np.ndarray:
+    """Subtract a Savitzky-Golay trend (v1: 301-point window, polynomial order 2)."""
+    from scipy.signal import savgol_filter
+
+    trend = savgol_filter(flux_arr, window_length=savgol_window(len(flux_arr)),
+                          polyorder=SAVGOL_POLY)
+    return flux_arr - trend
+
+
+def bls_period_grid() -> np.ndarray:
+    """v1 BLS trial periods: a linear grid of 5000 periods from 0.1 to 50 days."""
+    return np.linspace(BLS_MIN_PERIOD, BLS_MAX_PERIOD, BLS_GRID_POINTS)
+
+
+def bls_search(time_arr: np.ndarray, detrended: np.ndarray) -> tuple[float | None, float | None]:
+    """v1 period search: Box Least Squares with one 0.05-day duration on bls_period_grid().
+
+    Returns (best period, its power), or (None, None) for fewer than BLS_MIN_POINTS points.
+    BLS is built for transits; audit S5 documents how it behaves on pulsators and noise.
+    """
+    if len(time_arr) < BLS_MIN_POINTS:
+        return None, None
+    from astropy.timeseries import BoxLeastSquares
+
+    result = BoxLeastSquares(time_arr, detrended).power(bls_period_grid(), duration=BLS_DURATION)
+    best_idx = np.argmax(result.power)
+    return float(result.period[best_idx]), float(result.power[best_idx])
 
 
 def _resample_normalized(values: np.ndarray, length: int) -> np.ndarray:
@@ -557,8 +620,7 @@ def process_star(
             # Record cadence from the first light curve
             if source_cadence is None:
                 try:
-                    dt = np.nanmedian(np.diff(lc.time.value))
-                    source_cadence = round(dt * 24 * 60, 1)  # minutes
+                    source_cadence = cadence_minutes(lc.time.value)
                 except Exception:
                     source_cadence = None
 
@@ -656,20 +718,7 @@ def process_star(
     # 5. Detrending  (Savitzky-Golay)
     # ------------------------------------------------------------------ #
     try:
-        from scipy.signal import savgol_filter
-
-        window = SAVGOL_WINDOW
-        # Window must be odd and less than data length
-        if window >= len(flux_arr):
-            window = len(flux_arr) // 2 * 2 - 1  # largest odd < length
-            if window < 5:
-                window = 5
-        if window % 2 == 0:
-            window -= 1
-
-        trend = savgol_filter(flux_arr, window_length=window,
-                              polyorder=SAVGOL_POLY)
-        detrended = flux_arr - trend
+        detrended = detrend(flux_arr)
 
     except Exception as exc:
         msg = f"Detrending failed for {target}: {exc}"
@@ -683,16 +732,8 @@ def process_star(
     bls_period = None
     bls_power = None
     try:
-        from astropy.timeseries import BoxLeastSquares
-
-        if len(time_arr) >= 100:
-            bls = BoxLeastSquares(time_arr, detrended)
-            period_grid = np.linspace(BLS_MIN_PERIOD, BLS_MAX_PERIOD, 5000)
-            result = bls.power(period_grid, duration=0.05)
-
-            best_idx = np.argmax(result.power)
-            bls_period = float(result.period[best_idx])
-            bls_power = float(result.power[best_idx])
+        bls_period, bls_power = bls_search(time_arr, detrended)
+        if bls_period is not None:
             log.info("BLS best period: %.6f d  (power=%.4f)",
                      bls_period, bls_power)
         else:
