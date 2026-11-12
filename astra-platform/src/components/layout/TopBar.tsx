@@ -177,7 +177,8 @@ export function TopBar() {
             }}
             className="flex items-center gap-1 text-[10px] font-mono text-[#8B97A7] hover:text-[#D7DEE7] transition-colors"
             title="Graphics quality (low: static, medium: landing-page video, high: video and particles)"
-            aria-label={`Graphics quality: ${qualityState}. Activate to change.`}
+            // Starts with the visible text ("GFX: HIGH") so speech users can say what they see.
+            aria-label={`GFX: ${qualityState.toUpperCase()}, graphics quality. Activate to change.`}
           >
             <Cpu className="w-3.5 h-3.5" aria-hidden="true" />
             <span className="text-[9px]">GFX:</span>
