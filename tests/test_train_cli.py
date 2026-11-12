@@ -142,29 +142,44 @@ class CrossValidateCliTests(unittest.TestCase):
         from training.cross_validate import build_arg_parser
 
         args = build_arg_parser().parse_args([])
-        self.assertEqual((args.seeds, args.folds, args.epochs), ([42, 100, 2026], 5, 50))
+        self.assertEqual((args.seeds, args.folds, args.inner_folds, args.epochs), ([42, 100, 2026], 5, 5, 50))
 
-    def test_seeds_folds_and_epochs_are_honoured(self) -> None:
+    def test_seeds_folds_and_epochs_are_honoured_and_test_stars_excluded(self) -> None:
         import csv as csv_module
 
         from training.cross_validate import main
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            processed = _synthetic_processed(root)
+            processed = _synthetic_processed(root, per_class=6)
+            test_ids = sorted(p.name for p in processed.iterdir())[::6]  # one star per class
+            (root / "test_ids.json").write_text(json.dumps(test_ids), encoding="utf-8")
             out = root / "cv"
             with redirect_stdout(io.StringIO()):
-                main(["--data-dir", str(processed), "--out-dir", str(out),
-                      "--seeds", "1", "--folds", "2", "--epochs", "1"])
+                main(["--data-dir", str(processed), "--out-dir", str(out), "--test-ids", str(root / "test_ids.json"),
+                      "--seeds", "1", "--folds", "2", "--inner-folds", "2", "--epochs", "1", "--bootstrap", "20"])
             rows = list(csv_module.DictReader((out / "fold_metrics.csv").open()))
             self.assertEqual([(r["seed"], r["fold"]) for r in rows], [("1", "0"), ("1", "1")])
             aggregate = json.loads((out / "aggregate_metrics.json").read_text(encoding="utf-8"))
-            self.assertEqual(aggregate["protocol"]["seeds"], [1])
-            self.assertEqual((aggregate["protocol"]["folds"], aggregate["protocol"]["epochs"]), (2, 1))
+            protocol = aggregate["protocol"]
+            self.assertEqual(protocol["seeds"], [1])
+            self.assertEqual((protocol["folds"], protocol["inner_folds"], protocol["epochs"]), (2, 2, 1))
+            self.assertEqual((protocol["pool_stars"], protocol["excluded_test_stars"]), (25, 5))
+            scored = {tic for fold in aggregate["out_of_fold_predictions"] for tic in fold["tic_ids"]}
+            self.assertEqual(len(scored), 25)
+            self.assertFalse(scored & set(test_ids))
             self.assertEqual(aggregate["provenance"]["git"]["commit"], _head_commit())
             report = (out / "statistical_report.md").read_text(encoding="utf-8")
-            self.assertIn("2 folds, 1 seeds, 2 runs total", report)
+            self.assertIn("5 frozen test stars excluded", report)
             self.assertEqual(len(list(out.glob("confusion_matrix_seed1_fold*.png"))), 2)
+
+    def test_refuses_to_run_without_the_test_id_file(self) -> None:
+        from training.cross_validate import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            processed = _synthetic_processed(Path(tmp))
+            with redirect_stdout(io.StringIO()), self.assertRaisesRegex(FileNotFoundError, "must exclude the test stars"):
+                main(["--data-dir", str(processed), "--test-ids", str(Path(tmp) / "missing.json"), "--epochs", "1"])
 
 
 def _random_checkpoint(path: Path) -> None:
