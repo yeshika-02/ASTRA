@@ -46,3 +46,19 @@ describe('top bar controls', () => {
     expect(topBar).toMatch(/aria-label=\{`Graphics quality: \$\{qualityState\}/);
   });
 });
+
+describe('keyboard navigation', () => {
+  const container = read('components/layout/GlobalClientContainer.tsx');
+  const sidebar = read('components/layout/Sidebar.tsx');
+
+  it('offers a skip link to the main content before the navigation', () => {
+    expect(container).toContain('href="#main-content"');
+    expect(container).toContain('id="main-content"');
+    expect(container.indexOf('href="#main-content"')).toBeLessThan(container.indexOf('<Sidebar />'));
+  });
+
+  it('marks the current page in the sidebar', () => {
+    expect(sidebar).toContain("aria-current={isActive ? 'page' : undefined}");
+    expect(sidebar).toContain('<nav aria-label="Main"');
+  });
+});
