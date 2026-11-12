@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useStars, useLightCurve } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
 import { Panel, EmptyState } from '@/components/shared/UI';
+import { ChartFrame } from '@/components/shared/ChartFrame';
 import { LoadError } from '@/components/shared/DataState';
 import { formatRA, formatDec, formatPeriod } from '@/lib/utils';
 import type { Star } from '@/lib/types';
@@ -66,6 +67,7 @@ function LightCurveChart({
           </div>
         )}
         {!isLoading && !isError && chartData.length > 0 && (
+          <ChartFrame label={`${title} for TIC ${ticId}: normalised flux, ${chartData.length} sampled points.`}>
           <ResponsiveContainer width="100%" height={192}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="2 4" stroke="#1A2430" />
@@ -121,6 +123,7 @@ function LightCurveChart({
               />
             </LineChart>
           </ResponsiveContainer>
+          </ChartFrame>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Panel } from '@/components/shared/UI';
+import { ChartFrame, describeSeries } from '@/components/shared/ChartFrame';
 import { PageError, PageLoading } from '@/components/shared/DataState';
 import { useResearchFindings, useCalibrationDetails } from '@/lib/hooks';
 import { combineQueries } from '@/lib/hooks/queryState';
@@ -161,6 +162,7 @@ export default function ResearchFindingsPage() {
         <Panel title="Per-Class F1 Performance" subtitle="Accuracy representation per verified target class">
           <div className="h-64 flex flex-col justify-between">
             <div className="flex-1">
+              <ChartFrame label={`Bar chart of F1 score per class: ${describeSeries(classF1Data.map((d) => ({ name: d.name, value: d.f1 })), (v) => v.toFixed(2))}.`} className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={classF1Data} margin={{ left: -10, right: 10, top: 10, bottom: 5 }}>
                   <XAxis dataKey="name" stroke="#5A6878" tick={{ fontSize: 9 }} tickLine={false} />
@@ -188,6 +190,7 @@ export default function ResearchFindingsPage() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              </ChartFrame>
             </div>
             <div className="mt-4 text-[11px] text-[#5A6878] font-sans leading-normal">
               Note: Solar-like and Stable classes show the weakest performance due to low SNR in TESS sectors.
@@ -202,6 +205,7 @@ export default function ResearchFindingsPage() {
         >
           <div className="h-64 flex flex-col justify-between">
             <div className="flex-1">
+              <ChartFrame label={`Line chart of accuracy against confidence threshold (${lineData.map((d) => d.threshold).join(', ')}) for the CNN Dual Branch and Transformer Shared models.`} className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lineData} margin={{ left: -10, right: 10, top: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="2 4" stroke="#1A2430" />
@@ -221,6 +225,7 @@ export default function ResearchFindingsPage() {
                   <Line type="monotone" dataKey="Transformer Shared" stroke="#A78BFA" strokeWidth={1.5} dot />
                 </LineChart>
               </ResponsiveContainer>
+              </ChartFrame>
             </div>
             <div className="mt-4 text-[11px] text-[#5A6878] font-sans leading-normal">
               At threshold 0.9, coverage drops to ~43% of total dataset but class accuracy reaches{' '}

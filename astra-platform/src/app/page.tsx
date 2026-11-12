@@ -3,6 +3,7 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { Panel } from '@/components/shared/UI';
+import { ChartFrame, describeSeries } from '@/components/shared/ChartFrame';
 import { PageError, PageLoading } from '@/components/shared/DataState';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails, useModelDetails } from '@/lib/hooks';
@@ -368,6 +369,7 @@ export default function Home() {
                 <Panel title="Class Composition" subtitle="Proportions of stellar classes in the cohort">
                   <div className="h-60 flex flex-col justify-between">
                     <div className="flex-1 min-h-[160px]">
+                      <ChartFrame label={`Donut chart of stars per class: ${describeSeries(pieData)}.`} className="h-full w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -395,6 +397,7 @@ export default function Home() {
                           />
                         </PieChart>
                       </ResponsiveContainer>
+                      </ChartFrame>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 mt-2 text-[10px] font-mono">
                       {pieData.map((item, idx) => (
