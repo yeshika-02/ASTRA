@@ -216,15 +216,24 @@ export function CommandPalette() {
             ref={containerRef}
             className="w-full max-w-xl rounded border astra-glass overflow-hidden shadow-2xl flex flex-col max-h-[440px]"
             onKeyDown={handleKeyDown}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Command palette"
           >
             {/* Search Input Bar */}
             <div className="flex items-center gap-3 px-4 border-b border-white/5 h-12">
-              <Search className="w-4 h-4 text-white/40 shrink-0" />
+              <Search className="w-4 h-4 text-white/40 shrink-0" aria-hidden="true" />
               <input
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search targets, dashboards, OSINT dossiers..."
+                role="combobox"
+                aria-label="Search targets and pages"
+                aria-expanded={results.length > 0}
+                aria-controls="command-palette-results"
+                aria-autocomplete="list"
+                aria-activedescendant={results[selectedIndex] ? `command-palette-option-${selectedIndex}` : undefined}
                 className="w-full h-full bg-transparent border-0 outline-none text-[13px] text-[#D7DEE7] placeholder-white/20 font-mono"
               />
               <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/40 font-mono select-none">
@@ -233,7 +242,12 @@ export function CommandPalette() {
             </div>
 
             {/* List Results */}
-            <div className="flex-1 overflow-y-auto p-1.5 scrollbar-thin">
+            <div
+              id="command-palette-results"
+              role="listbox"
+              aria-label="Results"
+              className="flex-1 overflow-y-auto p-1.5 scrollbar-thin"
+            >
               {results.length > 0 ? (
                 results.map((item, index) => {
                   const Icon = item.icon;
@@ -241,6 +255,9 @@ export function CommandPalette() {
                   return (
                     <div
                       key={item.id}
+                      id={`command-palette-option-${index}`}
+                      role="option"
+                      aria-selected={isSelected}
                       onClick={() => triggerItem(item)}
                       onMouseEnter={() => setSelectedIndex(index)}
                       className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-colors duration-150 ${
@@ -249,7 +266,7 @@ export function CommandPalette() {
                           : 'border border-transparent text-white/70 hover:text-white'
                       }`}
                     >
-                      <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#6EA8FE]' : 'text-white/40'}`} />
+                      <Icon aria-hidden="true" className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#6EA8FE]' : 'text-white/40'}`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-[12px] font-mono font-medium truncate leading-tight">
                           {item.title}
