@@ -1,257 +1,203 @@
 # Reproducibility Guide
 
-This document enables any researcher to reproduce all ASTRA results from scratch,
-in compliance with the **zero-hallucination policy** — every step is traceable
-to source code and verified artifacts.
+How to reproduce ASTRA's pipeline from a clone, and what can and cannot be reproduced today. Every command below runs against the current scripts; `tests/test_readme_commands.py` checks their flags.
+
+> [!IMPORTANT]
+> The trained weights behind the published results are **not in this repository**. You can verify the dataset and splits, train, cross-validate and evaluate new models. You can't recompute the published test metrics (78.17% accuracy, macro F1 0.7677) until the published checkpoint is recovered. See [model_recovery.md](model_recovery.md).
 
 ---
 
 ## Prerequisites
 
-| Requirement | Verified Version |
-|-------------|:---:|
-| macOS | Apple Silicon (M-series) |
-| Python | 3.12 |
-| PyTorch | 2.12.0 |
-| MPS backend | ✅ Required for exact numerical parity |
+| Requirement | Notes |
+|---|---|
+| Python | 3.11 or 3.12 (CI runs both) |
+| PyTorch | Any 2.x. CPU is enough. The published runs used PyTorch 2.12.0 on Python 3.12 with Apple MPS (`models/saved/experiment_metadata_shared.json`); CI uses 2.15.0 CPU |
+| OS | Linux, macOS or Windows |
 
-> [!NOTE]
-> MPS (Apple Silicon GPU) produces numerically identical results to the original
-> training run. CPU fallback is supported but may produce slightly different
-> floating-point results due to different computation order.
+Training is not bitwise reproducible across hardware or library versions: MPS, CUDA and CPU kernels order floating-point operations differently. Seeds make runs repeatable on the same machine and software, not identical across machines. Compare runs statistically (`evaluate.py` gives bootstrap CIs), and identify models by checkpoint hash.
 
 ---
 
-## Step 0: Clone & Environment
+## Step 0: Clone and install
 
 ```bash
-git clone https://github.com/soumyadebtripathy/ASTRA.git
-cd "ASTRA — Automated Stellar Transient Recognition & Analysis"
-
+git clone https://github.com/yeshika-02/ASTRA.git
+cd ASTRA
 python -m venv .venv
-source .venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-**Verify installation:**
-```bash
-python -c "import torch; print(torch.backends.mps.is_available())"
-# Expected: True (on Apple Silicon)
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements-lock.txt   # pinned versions CI verifies (or requirements.txt for the latest allowed)
 ```
 
 ---
 
-## Step 1: Verify Dataset Integrity
-
-Before training, verify the dataset fingerprint:
+## Step 1: Verify the dataset and build the frozen layout
 
 ```bash
-python -c "
-import hashlib, os, json
-
-processed_dir = 'data/processed'
-tic_dirs = sorted([d for d in os.listdir(processed_dir) if d.startswith('TIC_')])
-hasher = hashlib.sha256()
-
-for tic_dir in tic_dirs:
-    for fname in sorted(['flux_1000.npy', 'flux_200.npy', 'metadata.json']):
-        fpath = os.path.join(processed_dir, tic_dir, fname)
-        if os.path.exists(fpath):
-            with open(fpath, 'rb') as f:
-                hasher.update(f.read())
-
-actual = hasher.hexdigest()
-expected = 'f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58'
-assert actual == expected, f'Dataset hash mismatch: {actual}'
-print('✅ Dataset integrity: VERIFIED')
-print(f'   Hash: {actual}')
-"
+python pipeline/prepare_from_repo.py --verify-only   # check only
+python pipeline/prepare_from_repo.py                 # build data/phase6/{processed,splits,audits}
 ```
+
+This checks two things:
+- the manifest `scientific_dataset_freeze_v2.csv` against its published SHA256 `f99b4b06…bf58`;
+- every one of the 944 stars × 5 files against the per-file SHA256 recorded in that manifest.
+
+It then rebuilds the frozen splits and recomputes the split hash (`ebcdc44c…`), and runs the dataset audit.
+
+`f99b4b06…` is the hash of the manifest file itself. An earlier version of this guide hashed the concatenated arrays and compared the result with it, a check that could never pass.
 
 ---
 
-## Step 2: Rebuild Dataset (Optional)
+## Step 2: Rebuild the dataset from the archives (optional, historical)
 
-If you want to rebuild from MAST/VSX from scratch (requires internet + hours):
+The steps that built the dataset query VizieR and MAST over the network. Preprocessing needs the raw light curves, which aren't shipped. To work with the frozen dataset, Step 1 is enough.
 
 ```bash
-# Build catalog
 python pipeline/build_catalog.py
-
-# Preprocess all stars
 python pipeline/batch_process.py
-
-# Audit processed data
 python pipeline/dataset_audit.py
 ```
 
 ---
 
-## Step 3: Verify Split Integrity
+## Step 3: Verify split integrity by hand (optional)
+
+`prepare_from_repo.py` already does this.
 
 ```bash
 python -c "
-import hashlib, json
-
-for split, fname in [('train', 'phase6_train_ids.json'),
-                      ('val',   'phase6_val_ids.json'),
-                      ('test',  'phase6_test_ids.json')]:
-    with open(fname, 'rb') as f:
-        h = hashlib.sha256(f.read()).hexdigest()
-    print(f'{split}: {h}')
-
-# Expected hashes (from experiment_metadata.json):
-# train: 5a9bf6c6ad40757a52d0f4a044626e82a4876839b175f5070fb28834c815eed0
-# val:   c733ab95c4a22ebc29ca123b2e923c8b8069933ccdff2e9f03a3fdc882f761b3
-# test:  2b62970d610f66f12711b6d9594305b33961a04d17c48807bd6123562350f4c0
+import hashlib, pathlib
+expected = {
+    'train': '5a9bf6c6ad40757a52d0f4a044626e82a4876839b175f5070fb28834c815eed0',
+    'val':   'c733ab95c4a22ebc29ca123b2e923c8b8069933ccdff2e9f03a3fdc882f761b3',
+    'test':  '2b62970d610f66f12711b6d9594305b33961a04d17c48807bd6123562350f4c0',
+}
+for split, want in expected.items():
+    path = pathlib.Path(f'docs/engineering-log/phase6_{split}_ids.json')
+    got = hashlib.sha256(path.read_bytes()).hexdigest()
+    print('OK  ' if got == want else 'FAIL', split)
 "
 ```
 
 ---
 
-## Step 4: Train Primary Model
+## Step 4: Train
 
 ```bash
-# HybridTransformer (shared) — primary result
-python training/train_transformer.py \
-    --variant shared \
-    --seed 42
+# HybridTransformer (shared), the production configuration
+python training/train_transformer.py --variant shared --seed 42 --out-dir outputs/run_shared
 
-# CNN Dual Branch — secondary result
-python training/train_cnn.py \
-    --seed 42
+# CNN dual-branch baseline
+python training/train_cnn.py --use-folded --augment --seed 42 --tag dual_aug --out-dir outputs/run_cnn
 ```
 
-**Expected outputs:**
-- `models/saved/best_star_transformer_shared.pt`
-- `models/saved/training_history_transformer_shared.json`
-- `models/saved/training_curves_transformer_shared.png`
+Without `--out-dir`, runs go to `outputs/runs/`. `models/saved/` holds the published training records and is never written to by default.
+
+Each run writes `experiment_metadata_<tag>.json`, which records:
+- the seed, data hashes and checkpoint SHA256;
+- a `provenance` block: git commit and dirty flag, Python/platform/package versions, the split files used, and whether they were the frozen ones.
+
+A retrained checkpoint is a new model: its hash won't match the published one.
 
 ---
 
-## Step 5: Reproduce Test Metrics
+## Step 5: Evaluate
 
 ```bash
-# Evaluate on held-out test set
-python training/predict.py --variant shared
-
-# Verify checkpoint integrity
-python -c "
-import hashlib, json
-
-with open('models/saved/experiment_metadata.json') as f:
-    meta = json.load(f)
-
-sha256 = meta['shared']['checkpoint_sha256']
-with open('models/saved/best_star_transformer_shared.pt', 'rb') as f:
-    actual = hashlib.sha256(f.read()).hexdigest()
-
-if actual == sha256:
-    print('✅ Checkpoint verified:', sha256)
-else:
-    print('❌ Hash mismatch!')
-    print('Expected:', sha256)
-    print('Actual:  ', actual)
-"
+python training/evaluate.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --split test --out-dir outputs/evaluation
 ```
 
-**Expected test accuracy: 78.17%**
-**Expected Macro F1: 0.7677**
+The output includes:
+- accuracy, macro and weighted F1, and 95% percentile bootstrap CIs (1,000 resamples of the 142 test stars, seed 42);
+- per-class precision, recall and F1, and the confusion matrix;
+- NLL, Brier and ECE;
+- per-star predictions and provenance, written to JSON and Markdown.
+
+The checkpoint's SHA256 is compared with [`models/published_weights.json`](../models/published_weights.json). Only a verified published checkpoint is compared with the published numbers.
+
+**With the published checkpoint** (once recovered):
+
+```bash
+python training/verify_weights.py --require best_star_transformer_shared.pt
+python training/evaluate.py --checkpoint models/saved/best_star_transformer_shared.pt \
+    --temperature-file models/saved/optimal_temperature_transformer_shared.txt --require-published
+```
+
+Expected:
+- 111/142 correct (78.17%), macro F1 0.7677, weighted F1 0.7784;
+- the confusion matrix in `models/saved/test_confusion_matrix_transformer_shared.png`.
+
+The metric code reproduces these numbers from that matrix (`tests/test_evaluate.py`).
 
 ---
 
-## Step 6: Run Cross-Validation
+## Step 6: Cross-validation
 
 ```bash
-# 5-fold CV across 3 seeds (long-running)
-python training/cross_validate.py --seed 42
-python training/cross_validate.py --seed 100
-python training/cross_validate.py --seed 2026
+# 5 folds x 3 seeds = 15 runs of 50 epochs (hours on CPU)
+python training/cross_validate.py --seeds 42 100 2026 --folds 5 --epochs 50 --out-dir outputs/cv
 ```
 
-Results stored in `fold_metrics.csv`.
+Writes `fold_metrics.csv`, `aggregate_metrics.json` (with protocol and provenance) and `statistical_report.md`.
+
+> [!NOTE]
+> The pool is the 802 frozen train + validation stars; the 142 test stars are excluded (`--test-ids`). Duplicate groups never straddle folds, the epoch is chosen on an inner selection set (`--inner-folds`), and each outer fold is scored once. The report gives the outer-fold mean and a bootstrap CI per seed ([ADR-0062](../artifacts/decisions/ADR-0062-evaluation-protocol.md)). Earlier versions of this script drew folds from all 944 stars and scored each fold with its own best epoch.
 
 ---
 
 ## Step 7: Calibration
 
 ```bash
-python training/calibration.py --variant shared
-python training/calibration.py --variant dual_aug
-
-# Optimal temperatures saved to:
-# models/saved/optimal_temperature_transformer_shared.txt
-# models/saved/optimal_temperature_cnn_dual.txt
+python training/calibration.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --temperature-out outputs/run_shared/optimal_temperature.txt --out-dir outputs/calibration
 ```
+
+This fits a single temperature by minimising validation NLL.
+
+The published temperature (T = 1.257665) is `models/saved/optimal_temperature_transformer_shared.txt`; its hash is in the manifest. The repository holds two other temperatures (1.258631 in `optimal_temperature.txt`, and the 1.2944 fallback in `uncertainty.py`), which sprint task SP-18 reconciles.
 
 ---
 
-## Step 8: Uncertainty Quantification
+## Step 8: Uncertainty (MC Dropout)
 
 ```bash
-python training/uncertainty.py --variant shared
+python training/uncertainty.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --temperature-file outputs/run_shared/optimal_temperature.txt --n-passes 30 --out-dir outputs/uncertainty
 ```
 
 ---
 
-## Step 9: Export Models
+## Step 9: Export
 
 ```bash
-# ONNX + TorchScript export
-python training/export_model.py --variant shared
-
-# Explainability model
-python training/export_explainability_model.py
+python training/export_model.py --checkpoint outputs/run_shared/best_star_transformer_shared.pt \
+    --out-dir outputs/export
 ```
+
+`export_model.py` exports TorchScript and ONNX, checks both against PyTorch, and benchmarks CPU latency.
+
+`python training/export_explainability_model.py` builds the ONNX model with attention outputs. It reads `best_star_transformer_shared.pt` from the models directory (`models/saved`, or `ASTRA_MODELS_DIR`).
 
 ---
 
-## Automated Test Suite
+## Tests
 
 ```bash
-# Run unit tests
-python -m pytest tests/ -v
-
-# Run pipeline integration test
-python tests/test_phase6_pipeline.py
+python -m pytest tests/
 ```
+
+This covers the dataset and split checks, the training and evaluation CLIs end to end on small synthetic data and on the real arrays, published-hash consistency, and the README and guide commands.
 
 ---
 
-## Numerical Reproducibility Notes
+## Records to check
 
-| Factor | Impact | Mitigation |
-|--------|--------|-----------|
-| MPS vs CPU | Minor float differences | Use MPS for exact parity |
-| PyTorch version | Potential kernel differences | Pin to 2.12.0 |
-| Seed | Critical | seed=42 for all primary results |
-| Data order | Fixed by frozen split JSON | Load from split files only |
-
-Setting `torch.manual_seed(42)` and `numpy.random.seed(42)` before any
-training operation ensures deterministic behavior on the same hardware.
-
----
-
-## Verified Artifact Registry
-
-All experiments produce a self-contained metadata file:
-
-```json
-// models/saved/experiment_metadata.json
-{
-  "shared": {
-    "variant": "shared",
-    "seed": 42,
-    "device": "mps",
-    "torch_version": "2.12.0",
-    "parameter_count": 1373701,
-    "dataset_fingerprint_hash": "f99b4b06...",
-    "split_hash_root": "ebcdc44c...",
-    "checkpoint_sha256": "bf374ce4...",
-    "timestamp": "2026-06-13T00:35:13Z"
-  }
-}
-```
-
-This file is the **ground truth** for all reproducibility verification.
+| File | What it pins |
+|---|---|
+| `astra-platform/data/scientific_dataset_freeze_v2.csv` | SHA256 of every shipped array and metadata file (the manifest itself hashes to `f99b4b06…`) |
+| `docs/engineering-log/phase6_*_ids.json` | The frozen split (`ebcdc44c…`) |
+| `models/published_weights.json` | SHA256 of every published checkpoint, ONNX file and temperature |
+| `models/saved/experiment_metadata_*.json` | Seed, data hashes and checkpoint hash of each published run |
+| `outputs/.../experiment_metadata_*.json` (your runs) | The same, plus the `provenance` block |

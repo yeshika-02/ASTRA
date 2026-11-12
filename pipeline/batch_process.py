@@ -37,6 +37,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.labels import CLASS_NAMES
+from pipeline.cli_validation import positive_int
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -280,7 +281,7 @@ def _write_report(success_count, failure_count, skipped_count,
         "class_name": class_name,
     }
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(REPORT_PATH, "w") as fp:
+    with open(REPORT_PATH, "w", encoding="utf-8") as fp:
         json.dump(report, fp, indent=2)
     log.info("Saved report → %s", REPORT_PATH)
 
@@ -291,14 +292,14 @@ if __name__ == "__main__":
     )
     parser.add_argument("--force", action="store_true",
                         help="Reprocess all stars")
-    parser.add_argument("--max-stars", type=int, default=None,
+    parser.add_argument("--max-stars", type=positive_int, default=None,
                         help="Limit total stars to process")
     parser.add_argument("--class-name", type=str, default=None,
                         choices=CLASS_NAMES,
                         help="Process only this class")
-    parser.add_argument("--workers", type=int, default=6,
+    parser.add_argument("--workers", type=positive_int, default=6,
                         help="Number of parallel workers (default: 6)")
-    parser.add_argument("--max-sectors", type=int, default=8,
+    parser.add_argument("--max-sectors", type=positive_int, default=8,
                         help="Max TESS sectors per star (default: 8)")
     args = parser.parse_args()
 

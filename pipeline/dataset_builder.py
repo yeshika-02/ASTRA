@@ -22,6 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.labels import CLASS_NAMES
+from pipeline.cli_validation import existing_file, positive_int
 from pipeline.phase6_utils import (
     DEFAULT_PHASE6_ROOT,
     MANIFEST_COLUMNS,
@@ -542,12 +543,12 @@ def build_phase6_catalog(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build ASTRA Phase 6 catalog manifests")
     parser.add_argument("--data-root", type=Path, default=DEFAULT_PHASE6_ROOT)
-    parser.add_argument("--target-per-class", type=int, default=200)
+    parser.add_argument("--target-per-class", type=positive_int, default=200)
     parser.add_argument("--use-network-catalogs", action="store_true")
     parser.add_argument("--verify-tess", action="store_true")
-    parser.add_argument("--tess-check-limit", type=int, default=None)
-    parser.add_argument("--gaia-csv", type=Path, default=None)
-    parser.add_argument("--asas-sn-csv", type=Path, default=None)
+    parser.add_argument("--tess-check-limit", type=positive_int, default=None)
+    parser.add_argument("--gaia-csv", type=existing_file, default=None)
+    parser.add_argument("--asas-sn-csv", type=existing_file, default=None)
     args = parser.parse_args()
 
     build_phase6_catalog(
