@@ -42,8 +42,9 @@ describe('top bar controls', () => {
     expect(topBar).toContain("aria-pressed={audioState === 'playing'}");
   });
 
-  it('names the graphics quality button with its current state', () => {
-    expect(topBar).toMatch(/aria-label=\{`Graphics quality: \$\{qualityState\}/);
+  it('names the graphics quality button with its current state, starting with the visible text', () => {
+    // WCAG 2.5.3 (label in name): the visible "GFX: HIGH" must be part of the accessible name.
+    expect(topBar).toMatch(/aria-label=\{`GFX: \$\{qualityState\.toUpperCase\(\)\}, graphics quality/);
   });
 });
 
