@@ -6,6 +6,7 @@ import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
 import { ConfidenceBar, EmptyState } from '@/components/shared/UI';
 import { formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS } from '@/lib/utils';
 import { InferenceUnavailable } from '@/components/shared/UI';
+import { LoadError } from '@/components/shared/DataState';
 import type { Star } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -96,16 +97,51 @@ export default function MissionReplayPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const { data: starsData, isLoading: starsLoading } = useStars({
+  const {
+    data: starsData,
+    isLoading: starsLoading,
+    isError: starsError,
+    error: starsErrorValue,
+    refetch: refetchStars,
+  } = useStars({
     q: query || undefined,
     limit: 50,
   });
 
-  const { data: lc, isLoading: lcLoading } = useLightCurve(selectedStar?.tic_id ?? null);
-  const { data: explainResult, isLoading: explainLoading } = useExplain(selectedStar?.tic_id ?? null);
+  const {
+    data: lc,
+    isLoading: lcLoading,
+    error: lcError,
+    refetch: refetchLc,
+  } = useLightCurve(selectedStar?.tic_id ?? null);
+  const {
+    data: explainResult,
+    isLoading: explainLoading,
+    isError: explainFailed,
+    error: explainError,
+    refetch: refetchExplain,
+  } = useExplain(selectedStar?.tic_id ?? null);
   // Only real model output is shown; when inference is unavailable the steps say so.
   const explainData = explainResult?.available ? explainResult.data : null;
   const inferenceReasons = explainResult && !explainResult.available ? explainResult.reasons : [];
+
+  // A failed request says nothing about whether the model is deployed, so it is shown as a
+  // load error with a retry, not as "inference unavailable".
+  const noModelOutput = (compact = false) =>
+    explainFailed ? (
+      <LoadError
+        compact
+        title="Could not reach the inference service"
+        error={explainError}
+        onRetry={() => void refetchExplain()}
+      />
+    ) : (
+      <InferenceUnavailable reasons={inferenceReasons} compact={compact} />
+    );
+
+  const lightCurveError = (
+    <LoadError compact title="Could not load the light curve" error={lcError} onRetry={() => void refetchLc()} />
+  );
 
   const handleSelectStar = (star: Star) => {
     setSelectedStar(star);
@@ -168,7 +204,19 @@ export default function MissionReplayPage() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {starsLoading && (
-            <p className="text-[0.75rem] text-[#5A6878] p-3 font-mono">Loading registry…</p>
+            <p role="status" className="text-[0.75rem] text-[#5A6878] p-3 font-mono">Loading registry…</p>
+          )}
+          {starsError && (
+            <LoadError
+              compact
+              className="m-3"
+              title="Could not load the registry"
+              error={starsErrorValue}
+              onRetry={() => void refetchStars()}
+            />
+          )}
+          {starsData && starsData.stars.length === 0 && (
+            <p className="text-[0.75rem] text-[#5A6878] p-3 font-mono">No targets match “{query}”.</p>
           )}
           {starsData?.stars.map((star) => (
             <button
@@ -369,7 +417,9 @@ export default function MissionReplayPage() {
                             Raw Photometric Time-Series
                           </p>
                           {lcLoading ? (
-                            <p className="text-[11px] text-[#5A6878] font-mono animate-pulse">Loading data arrays…</p>
+                            <p role="status" className="text-[11px] text-[#5A6878] font-mono animate-pulse">
+                              Loading data arrays…
+                            </p>
                           ) : lc ? (
                             <ResponsiveContainer width="100%" height={150}>
                               <LineChart data={sampleArray(lc.flux_1000, 200)}>
@@ -380,7 +430,7 @@ export default function MissionReplayPage() {
                               </LineChart>
                             </ResponsiveContainer>
                           ) : (
-                            <p className="text-[11px] text-red-400 font-mono">Error loading arrays</p>
+                            lightCurveError
                           )}
                         </div>
                       )}
@@ -463,7 +513,9 @@ export default function MissionReplayPage() {
                             Phase-Folded Curve (200 bins)
                           </p>
                           {lcLoading ? (
-                            <p className="text-[11px] text-[#5A6878] font-mono animate-pulse">Loading data arrays…</p>
+                            <p role="status" className="text-[11px] text-[#5A6878] font-mono animate-pulse">
+                              Loading data arrays…
+                            </p>
                           ) : lc ? (
                             <ResponsiveContainer width="100%" height={150}>
                               <LineChart data={sampleArray(lc.folded_flux_200, 200)}>
@@ -474,7 +526,7 @@ export default function MissionReplayPage() {
                               </LineChart>
                             </ResponsiveContainer>
                           ) : (
-                            <p className="text-[11px] text-red-400 font-mono">Error loading arrays</p>
+                            lightCurveError
                           )}
                         </div>
                       )}
@@ -511,7 +563,7 @@ export default function MissionReplayPage() {
                           ) : explainData?.attention_weights ? (
                             <AttentionHeatmap matrix={explainData.attention_weights} />
                           ) : (
-                            <InferenceUnavailable reasons={inferenceReasons} compact />
+                            noModelOutput(true)
                           )}
                         </div>
                       )}
@@ -535,7 +587,7 @@ export default function MissionReplayPage() {
                       {activeStep === 8 && (
                         <div className="space-y-3">
                           <p className="text-[10px] uppercase text-[#8B97A7] tracking-wider font-mono">Logit Probabilities</p>
-                          {!probabilities && <InferenceUnavailable reasons={inferenceReasons} />}
+                          {!probabilities && noModelOutput()}
                           <div className="space-y-2">
                             {probabilities && Object.entries(probabilities).map(([key, val]) => (
                               <div key={key}>
@@ -587,7 +639,7 @@ export default function MissionReplayPage() {
                               )}
                             </>
                           ) : (
-                            <InferenceUnavailable reasons={inferenceReasons} />
+                            noModelOutput()
                           )}
                           <p className="text-[11px] text-[#8B97A7]">
                             Catalog label (ground truth): <span className="font-mono text-[#D7DEE7]">{CLASS_LABELS[selectedStar.astra_class]}</span>
