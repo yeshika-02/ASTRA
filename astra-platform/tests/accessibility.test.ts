@@ -27,6 +27,10 @@ describe('reduced motion', () => {
   it('framer-motion follows the OS setting app-wide', () => {
     expect(read('components/layout/GlobalClientContainer.tsx')).toContain('<MotionConfig reducedMotion="user">');
   });
+
+  it('pages do not fade in on first load', () => {
+    expect(read('components/layout/GlobalClientContainer.tsx')).toContain('<AnimatePresence mode="wait" initial={false}>');
+  });
 });
 
 describe('top bar controls', () => {
