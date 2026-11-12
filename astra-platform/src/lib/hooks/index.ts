@@ -9,6 +9,7 @@ import type {
   ResearchResponse,
   SearchResult,
 } from '../types/artifacts';
+import { ApiError, fetchJson } from './fetchJson';
 
 export interface PredictResult {
   tic_id: number;
@@ -28,23 +29,6 @@ export interface ExplainResult {
   probabilities: Record<AstraClass, number>;
   attention_weights: number[][];
   source: 'model';
-}
-
-// Robust fetch helper that checks r.ok and parses the JSON error details if present
-async function fetchJson<T>(url: string): Promise<T> {
-  const r = await fetch(url);
-  if (!r.ok) {
-    const errorText = await r.text();
-    let errorMessage = `HTTP error! status: ${r.status}`;
-    try {
-      const errJson = JSON.parse(errorText);
-      errorMessage = errJson.error || errJson.details || errorMessage;
-    } catch {
-      // Not JSON
-    }
-    throw new Error(errorMessage);
-  }
-  return r.json();
 }
 
 // ─── Stars list ────────────────────────────────────────────────────────────────
@@ -164,7 +148,7 @@ async function fetchInference<T>(url: string): Promise<InferenceResult<T>> {
   }
   if (!r.ok) {
     const body = await r.json().catch(() => ({}));
-    throw new Error(body?.error || `HTTP error! status: ${r.status}`);
+    throw new ApiError(typeof body?.error === 'string' ? body.error : `Request failed (HTTP ${r.status}).`, r.status);
   }
   return { available: true, data: (await r.json()) as T };
 }
