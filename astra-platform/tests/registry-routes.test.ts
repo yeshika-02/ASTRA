@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeDatabase, getDatabase } from '@/lib/server/db';
 import { GET as starsGET } from '@/app/api/stars/route';
+import { GET as searchGET } from '@/app/api/search/route';
 import { snapshotEnv, tempDir } from './helpers';
 
 // Counts measured on the shipped registry (data/astra.sqlite, 944 stars).
@@ -121,5 +122,43 @@ describe('GET /api/stars', () => {
     expect(JSON.parse(text)).toEqual({ error: 'Failed to query database' });
     expect(text).not.toContain(dir);
     expect(text).not.toMatch(/sqlite|unable to open/i);
+  });
+});
+
+describe('GET /api/search', () => {
+  const search = async (q: string) => {
+    const res = await searchGET(getReq(`/api/search?q=${encodeURIComponent(q)}`));
+    return { status: res.status, body: await res.json() };
+  };
+
+  it('returns no results for queries shorter than two characters', async () => {
+    expect(await search('')).toEqual({ status: 200, body: { results: [] } });
+    expect(await search('c')).toEqual({ status: 200, body: { results: [] } });
+  });
+
+  it('matches on catalogue label and caps results at 20', async () => {
+    const { status, body } = await search('vsx');
+    expect(status).toBe(200);
+    expect(body.results.length).toBeGreaterThan(0);
+    expect(body.results.length).toBeLessThanOrEqual(20);
+  });
+
+  it('takes LIKE wildcards literally', async () => {
+    expect((await search('%%')).body.results).toEqual([]);
+  });
+
+  it('rejects an over-long query with 400', async () => {
+    const { status, body } = await search('x'.repeat(101));
+    expect(status).toBe(400);
+    expect(body).not.toHaveProperty('results');
+  });
+
+  it('answers a missing database with a generic 500', async () => {
+    const dir = useMissingDatabase();
+    const res = await searchGET(getReq('/api/search?q=cepheid'));
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(JSON.parse(text)).toEqual({ error: 'Failed to search database' });
+    expect(text).not.toContain(dir);
   });
 });
