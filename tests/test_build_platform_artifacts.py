@@ -133,7 +133,8 @@ class BuildTests(unittest.TestCase):
         page = self.outputs["metrics.md"]
         for model in self.record["models"].values():
             self.assertIn(model["label"], page)
-        for marker in ("Superseded results", "Numbers without a source", "not recorded", "111/142"):
+        for marker in ("Superseded results", "Numbers without a source", "not recorded", "111/142",
+                       "Baselines on the same test split", "| 12 statistics of the network's own inputs | RandomForest | 79.58%"):
             self.assertIn(marker, page)
 
     def test_committed_outputs_are_up_to_date(self) -> None:
