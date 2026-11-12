@@ -1,7 +1,10 @@
 'use client';
 
-import { MetricCard, Panel } from '@/components/shared/UI';
+import { Panel } from '@/components/shared/UI';
+import { ChartFrame, describeSeries } from '@/components/shared/ChartFrame';
+import { PageError, PageLoading } from '@/components/shared/DataState';
 import { useResearchFindings, useCalibrationDetails } from '@/lib/hooks';
+import { combineQueries } from '@/lib/hooks/queryState';
 import { CLASS_LABELS, CLASS_COLORS, formatPercent } from '@/lib/utils';
 import {
   LineChart,
@@ -18,28 +21,30 @@ import {
 } from 'recharts';
 
 export default function ResearchFindingsPage() {
-  const { data: researchData, isLoading: researchLoading } = useResearchFindings();
-  const { data: calibrationData, isLoading: calibrationLoading } = useCalibrationDetails();
+  const researchQuery = useResearchFindings();
+  const calibrationQuery = useCalibrationDetails();
+  const { data: researchData } = researchQuery;
+  const { data: calibrationData } = calibrationQuery;
+  const state = combineQueries([researchQuery, calibrationQuery]);
 
-  if (researchLoading || calibrationLoading) {
+  if (state.isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold text-[#D7DEE7]">Research Findings</h1>
-          <p className="text-[0.8125rem] text-[#8B97A7] mt-0.5 animate-pulse">
-            Loading research metrics and uncertainty coverage sweeps…
-          </p>
-        </div>
-        <div className="h-64 astra-glass rounded animate-pulse" />
-      </div>
+      <PageLoading
+        title="Research Findings"
+        message="Loading research metrics and uncertainty coverage sweeps…"
+        cards={0}
+      />
     );
   }
 
-  if (!researchData || !calibrationData) {
+  if (state.isError || !researchData || !calibrationData) {
     return (
-      <div className="p-6 text-center text-red-400 font-mono border border-red-500/20 bg-red-950/10 rounded">
-        System Error: Failed to retrieve dynamic research findings.
-      </div>
+      <PageError
+        heading="Research Findings"
+        title="Could not load research findings"
+        error={state.error}
+        onRetry={state.retry}
+      />
     );
   }
 
@@ -59,8 +64,8 @@ export default function ResearchFindingsPage() {
   const thresholds = [0.5, 0.6, 0.7, 0.8, 0.9];
   const sweep = uncertainty.coverage_sweep || [];
   const lineData = thresholds.map((t) => {
-    const cnnItem = sweep.find((d: any) => d.model === 'cnn_dual' && Math.abs(d.confidence_threshold - t) < 0.01);
-    const transItem = sweep.find((d: any) => d.model === 'shared' && Math.abs(d.confidence_threshold - t) < 0.01);
+    const cnnItem = sweep.find((d) => d.model === 'cnn_dual' && Math.abs(d.confidence_threshold - t) < 0.01);
+    const transItem = sweep.find((d) => d.model === 'shared' && Math.abs(d.confidence_threshold - t) < 0.01);
     
     return {
       threshold: t.toFixed(1),
@@ -157,6 +162,7 @@ export default function ResearchFindingsPage() {
         <Panel title="Per-Class F1 Performance" subtitle="Accuracy representation per verified target class">
           <div className="h-64 flex flex-col justify-between">
             <div className="flex-1">
+              <ChartFrame label={`Bar chart of F1 score per class: ${describeSeries(classF1Data.map((d) => ({ name: d.name, value: d.f1 })), (v) => v.toFixed(2))}.`} className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={classF1Data} margin={{ left: -10, right: 10, top: 10, bottom: 5 }}>
                   <XAxis dataKey="name" stroke="#5A6878" tick={{ fontSize: 9 }} tickLine={false} />
@@ -184,6 +190,7 @@ export default function ResearchFindingsPage() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              </ChartFrame>
             </div>
             <div className="mt-4 text-[11px] text-[#5A6878] font-sans leading-normal">
               Note: Solar-like and Stable classes show the weakest performance due to low SNR in TESS sectors.
@@ -198,6 +205,7 @@ export default function ResearchFindingsPage() {
         >
           <div className="h-64 flex flex-col justify-between">
             <div className="flex-1">
+              <ChartFrame label={`Line chart of accuracy against confidence threshold (${lineData.map((d) => d.threshold).join(', ')}) for the CNN Dual Branch and Transformer Shared models.`} className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lineData} margin={{ left: -10, right: 10, top: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="2 4" stroke="#1A2430" />
@@ -217,6 +225,7 @@ export default function ResearchFindingsPage() {
                   <Line type="monotone" dataKey="Transformer Shared" stroke="#A78BFA" strokeWidth={1.5} dot />
                 </LineChart>
               </ResponsiveContainer>
+              </ChartFrame>
             </div>
             <div className="mt-4 text-[11px] text-[#5A6878] font-sans leading-normal">
               At threshold 0.9, coverage drops to ~43% of total dataset but class accuracy reaches{' '}
@@ -229,7 +238,7 @@ export default function ResearchFindingsPage() {
       {/* Calibration Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Panel title="Calibration Comparison" subtitle="ECE comparison before and after temperature scaling">
-          <div className="overflow-x-auto text-[11px]">
+          <div className="overflow-x-auto text-[11px]" role="region" aria-label="Calibration comparison table" tabIndex={0}>
             <table className="w-full text-left text-[#D7DEE7]">
               <thead>
                 <tr className="border-b border-[#1A2430] bg-[#05070B]/50">

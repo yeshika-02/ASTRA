@@ -5,7 +5,8 @@ import dynamic from 'next/dynamic';
 import { useStars } from '@/lib/hooks';
 import { useAstraStore } from '@/lib/store';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
-import { Panel, EmptyState, MetricCard } from '@/components/shared/UI';
+import { Panel, EmptyState } from '@/components/shared/UI';
+import { LoadError } from '@/components/shared/DataState';
 import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -23,7 +24,7 @@ export default function VisualizationPage() {
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const { selectedStar, setSelectedStar } = useAstraStore();
 
-  const { data, isLoading } = useStars({
+  const { data, isLoading, isError, error, refetch } = useStars({
     class: selectedClass !== 'all' ? selectedClass : undefined,
     limit: 944, // Fetch all stars matching class for full globe projection
   });
@@ -40,13 +41,17 @@ export default function VisualizationPage() {
         </div>
         <div className="font-mono text-[11px] text-[#5A6878]">
           Projection radius: R=25 kpc (scaled) · Stars shown:{' '}
-          {data ? data.stars.length.toLocaleString() : 'Loading…'}
+          {data ? data.stars.length.toLocaleString() : isError ? 'unavailable' : 'Loading…'}
         </div>
       </div>
 
       {/* Class filters bar */}
-      <div className="p-3 rounded astra-glass flex flex-wrap gap-2 items-center shrink-0">
-        <span className="text-[10px] text-[#8B97A7] uppercase font-mono tracking-wider mr-2">
+      <div
+        role="group"
+        aria-labelledby="globe-filter"
+        className="p-3 rounded astra-glass flex flex-wrap gap-2 items-center shrink-0"
+      >
+        <span id="globe-filter" className="text-[10px] text-[#8B97A7] uppercase font-mono tracking-wider mr-2">
           Filter globe:
         </span>
         <button
@@ -54,6 +59,7 @@ export default function VisualizationPage() {
             setSelectedClass('all');
             setSelectedStar(null);
           }}
+          aria-pressed={selectedClass === 'all'}
           className={`px-2.5 py-1 text-[11px] font-medium rounded transition-colors ${
             selectedClass === 'all'
               ? 'bg-[#6EA8FE]/20 text-[#6EA8FE] border border-[#6EA8FE]/30'
@@ -69,6 +75,7 @@ export default function VisualizationPage() {
               setSelectedClass(key);
               setSelectedStar(null);
             }}
+            aria-pressed={selectedClass === key}
             className={`px-2.5 py-1 text-[11px] font-medium rounded transition-colors ${
               selectedClass === key
                 ? 'bg-[#6EA8FE]/20 text-[#6EA8FE] border border-[#6EA8FE]/30'
@@ -84,10 +91,28 @@ export default function VisualizationPage() {
       <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-6">
         {/* Three.js Globe rendering */}
         <div className="flex-1 astra-glass rounded overflow-hidden relative">
-          {!isLoading && data ? (
-            <StarGlobe stars={data.stars} />
+          {isError ? (
+            <div className="w-full h-full flex items-center justify-center p-6">
+              <LoadError
+                title="Could not load the star registry"
+                error={error}
+                onRetry={() => void refetch()}
+                className="max-w-sm"
+              />
+            </div>
+          ) : !isLoading && data ? (
+            <div
+              role="img"
+              aria-label={`Interactive 3D sky map of ${data.stars.length} stars coloured by class. The same stars are listed, with keyboard access, on Target Search.`}
+              className="w-full h-full"
+            >
+              <StarGlobe stars={data.stars} />
+            </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center font-mono text-[11px] text-[#5A6878]">
+            <div
+              role="status"
+              className="w-full h-full flex items-center justify-center font-mono text-[11px] text-[#5A6878]"
+            >
               Loading targets database…
             </div>
           )}

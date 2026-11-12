@@ -59,7 +59,7 @@ html, body {
 
 /* ── Typography ─────────────────────────────────────────── */
 .font-mono {
-  font-family: 'IBM Plex Mono', 'Fira Code', 'JetBrains Mono', ui-monospace, monospace !important;
+  font-family: var(--font-plex-mono), 'Fira Code', 'JetBrains Mono', ui-monospace, monospace !important;
 }
 
 /* ── Scrollbar ──────────────────────────────────────────── */
@@ -178,4 +178,22 @@ html, body {
   box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5), 
               inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
               inset 0 -1px 0 0 rgba(0, 0, 0, 0.25) !important;
+}
+/* ─── Reduced motion (SP-29) ─────────────────────────────────────────────────
+   Visitors who ask the OS for less motion get no pulsing skeletons, slide-ins or hover
+   lifts. Components with JavaScript-driven motion (particles, globe, page transitions)
+   check the same preference in usePrefersReducedMotion(). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .astra-glass-hover:hover {
+    transform: none;
+  }
 }

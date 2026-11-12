@@ -1,69 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseSync } from 'node:sqlite';
-import { pathToFileURL } from 'node:url';
-import * as path from 'path';
+import { getDatabase } from '@/lib/server/db';
+import { serverError } from '@/lib/server/errors';
+import { containsPattern, parseStarQuery } from '@/lib/server/query';
+import type { StarRow } from '@/lib/types/artifacts';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const parsed = parseStarQuery(request.nextUrl.searchParams);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+  const { q, classes, sources, split, page, limit } = parsed.value;
+
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q')?.toLowerCase().trim() || '';
-    const classFilter = searchParams.get('class') || '';
-    const sourceFilter = searchParams.get('source') || '';
-    const splitFilter = searchParams.get('split') || '';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    
-    const dbPath = path.join(process.cwd(), 'data', 'astra.sqlite');
-    const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
-    
+    const db = getDatabase();
+
     let sql = 'SELECT * FROM stars WHERE 1=1';
-    const params: any[] = [];
-    
-    if (query) {
-      sql += ' AND (CAST(tic_id AS TEXT) LIKE ? OR LOWER(astra_class) LIKE ? OR LOWER(primary_source) LIKE ?)';
-      const searchLike = `%${query}%`;
-      params.push(searchLike, searchLike, searchLike);
+    const params: (string | number)[] = [];
+
+    if (q) {
+      sql +=
+        " AND (CAST(tic_id AS TEXT) LIKE ? ESCAPE '\\' OR LOWER(astra_class) LIKE ? ESCAPE '\\'" +
+        " OR LOWER(primary_source) LIKE ? ESCAPE '\\')";
+      const pattern = containsPattern(q);
+      params.push(pattern, pattern, pattern);
     }
-    
-    if (classFilter) {
-      const classes = classFilter.split(',');
+
+    if (classes.length > 0) {
       sql += ` AND astra_class IN (${classes.map(() => '?').join(',')})`;
       params.push(...classes);
     }
-    
-    if (sourceFilter) {
-      const sources = sourceFilter.split(',');
+
+    if (sources.length > 0) {
       sql += ` AND period_source IN (${sources.map(() => '?').join(',')})`;
       params.push(...sources);
     }
-    
-    if (splitFilter && splitFilter !== 'all') {
+
+    if (split) {
       sql += ' AND split = ?';
-      params.push(splitFilter);
+      params.push(split);
     }
-    
-    // Get total matching
-    const countSql = `SELECT COUNT(*) as count FROM (${sql})`;
-    const countStmt = db.prepare(countSql);
-    const countResult = countStmt.get(...params) as { count: number };
-    const total = countResult.count;
-    
-    // Add pagination LIMIT & OFFSET
+
+    const { count: total } = db.prepare(`SELECT COUNT(*) AS count FROM (${sql})`).get(...params) as {
+      count: number;
+    };
+
     sql += ' LIMIT ? OFFSET ?';
     params.push(limit, (page - 1) * limit);
-    
-    const stmt = db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
-    
+
+    const rows = db.prepare(sql).all(...params) as unknown as StarRow[];
+
     const stars = rows.map((r) => ({
       ...r,
       source_catalogs: r.source_catalogs ? JSON.parse(r.source_catalogs) : [],
       sector_information: r.sector_information ? JSON.parse(r.sector_information) : [],
       has_folded_lc: r.has_folded_lc === 1,
     }));
-    
+
     return NextResponse.json({
       stars,
       total,
@@ -71,10 +65,7 @@ export async function GET(request: NextRequest) {
       limit,
       pages: Math.ceil(total / limit),
     });
-  } catch (error: any) {
-    return NextResponse.json({ 
-      error: 'Failed to query database', 
-      details: error.message || String(error)
-    }, { status: 500 });
+  } catch (error) {
+    return serverError('/api/stars', error, 'Failed to query database');
   }
 }

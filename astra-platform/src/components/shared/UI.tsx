@@ -81,7 +81,7 @@ export function Panel({ title, subtitle, children, className, headerRight }: Pan
       {title && (
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
           <div>
-            <p className="text-[0.8125rem] font-medium text-[#D7DEE7]">{title}</p>
+            <h2 className="text-[0.8125rem] font-medium text-[#D7DEE7]">{title}</h2>
             {subtitle && (
               <p className="text-[0.6875rem] text-[#8B97A7] mt-0.5">{subtitle}</p>
             )}

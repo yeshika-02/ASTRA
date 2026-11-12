@@ -3,13 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStars, useLightCurve, useExplain } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
-import { MetricCard, Panel, ConfidenceBar, EmptyState } from '@/components/shared/UI';
-import { formatRA, formatDec, formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS } from '@/lib/utils';
+import { ConfidenceBar, EmptyState } from '@/components/shared/UI';
+import { ChartFrame } from '@/components/shared/ChartFrame';
+import { formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS } from '@/lib/utils';
 import { InferenceUnavailable } from '@/components/shared/UI';
-import type { Star, AstraClass } from '@/lib/types';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LoadError } from '@/components/shared/DataState';
+import type { Star } from '@/lib/types';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Play, Pause, RotateCcw, AlertCircle } from 'lucide-react';
+import { ChevronRight, Play, Pause, RotateCcw } from 'lucide-react';
 
 function AttentionHeatmap({ matrix }: { matrix: number[][] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,7 +43,14 @@ function AttentionHeatmap({ matrix }: { matrix: number[][] }) {
   return (
     <div className="space-y-1.5 flex flex-col items-center">
       <div className="relative border border-white/10 bg-[#05070B] rounded overflow-hidden flex justify-center p-1">
-        <canvas ref={canvasRef} width={200} height={200} className="w-[180px] h-[180px]" />
+        <canvas
+          ref={canvasRef}
+          width={200}
+          height={200}
+          className="w-[180px] h-[180px]"
+          role="img"
+          aria-label={`Attention map: ${matrix.length} by ${matrix.length} self-attention weights from the model, brighter cells attend more strongly.`}
+        />
         <div className="absolute left-1 bottom-1 top-1 w-5 border-r border-white/5 bg-[#0C1118]/70 flex flex-col justify-around text-[6px] font-mono text-[#8B97A7] uppercase select-none pointer-events-none text-center">
           <span className="-rotate-90">Raw</span>
           <span className="-rotate-90">Fold</span>
@@ -96,16 +105,51 @@ export default function MissionReplayPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const { data: starsData, isLoading: starsLoading } = useStars({
+  const {
+    data: starsData,
+    isLoading: starsLoading,
+    isError: starsError,
+    error: starsErrorValue,
+    refetch: refetchStars,
+  } = useStars({
     q: query || undefined,
     limit: 50,
   });
 
-  const { data: lc, isLoading: lcLoading } = useLightCurve(selectedStar?.tic_id ?? null);
-  const { data: explainResult, isLoading: explainLoading } = useExplain(selectedStar?.tic_id ?? null);
+  const {
+    data: lc,
+    isLoading: lcLoading,
+    error: lcError,
+    refetch: refetchLc,
+  } = useLightCurve(selectedStar?.tic_id ?? null);
+  const {
+    data: explainResult,
+    isLoading: explainLoading,
+    isError: explainFailed,
+    error: explainError,
+    refetch: refetchExplain,
+  } = useExplain(selectedStar?.tic_id ?? null);
   // Only real model output is shown; when inference is unavailable the steps say so.
   const explainData = explainResult?.available ? explainResult.data : null;
   const inferenceReasons = explainResult && !explainResult.available ? explainResult.reasons : [];
+
+  // A failed request says nothing about whether the model is deployed, so it is shown as a
+  // load error with a retry, not as "inference unavailable".
+  const noModelOutput = (compact = false) =>
+    explainFailed ? (
+      <LoadError
+        compact
+        title="Could not reach the inference service"
+        error={explainError}
+        onRetry={() => void refetchExplain()}
+      />
+    ) : (
+      <InferenceUnavailable reasons={inferenceReasons} compact={compact} />
+    );
+
+  const lightCurveError = (
+    <LoadError compact title="Could not load the light curve" error={lcError} onRetry={() => void refetchLc()} />
+  );
 
   const handleSelectStar = (star: Star) => {
     setSelectedStar(star);
@@ -151,6 +195,7 @@ export default function MissionReplayPage() {
 
   return (
     <div className="flex gap-4 h-[calc(100vh-7rem)] select-text">
+      <h1 className="sr-only">Mission Replay</h1>
       
       {/* Target Selector Sidebar */}
       <div className="w-64 shrink-0 rounded astra-glass flex flex-col">
@@ -163,12 +208,25 @@ export default function MissionReplayPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search TIC ID or class…"
+            aria-label="Filter targets by TIC ID or class"
             className="w-full bg-[#05070B] border border-white/10 rounded px-2.5 py-1.5 text-[0.75rem] text-[#D7DEE7] placeholder-[#5A6878] focus:outline-none focus:border-[#6EA8FE] font-mono"
           />
         </div>
         <div className="flex-1 overflow-y-auto">
           {starsLoading && (
-            <p className="text-[0.75rem] text-[#5A6878] p-3 font-mono">Loading registry…</p>
+            <p role="status" className="text-[0.75rem] text-[#5A6878] p-3 font-mono">Loading registry…</p>
+          )}
+          {starsError && (
+            <LoadError
+              compact
+              className="m-3"
+              title="Could not load the registry"
+              error={starsErrorValue}
+              onRetry={() => void refetchStars()}
+            />
+          )}
+          {starsData && starsData.stars.length === 0 && (
+            <p className="text-[0.75rem] text-[#5A6878] p-3 font-mono">No targets match “{query}”.</p>
           )}
           {starsData?.stars.map((star) => (
             <button
@@ -208,17 +266,19 @@ export default function MissionReplayPage() {
               {/* Autoplay Controls */}
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setIsPlaying(!isPlaying)}
+                  aria-pressed={isPlaying}
                   className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border border-white/10 hover:bg-white/5 text-[#8B97A7] hover:text-[#D7DEE7]"
                 >
                   {isPlaying ? (
                     <>
-                      <Pause className="w-3 h-3 text-amber-500" />
+                      <Pause className="w-3 h-3 text-amber-500" aria-hidden="true" />
                       <span>Pause</span>
                     </>
                   ) : (
                     <>
-                      <Play className="w-3 h-3 text-emerald-400" />
+                      <Play className="w-3 h-3 text-emerald-400" aria-hidden="true" />
                       <span>Autoplay</span>
                     </>
                   )}
@@ -231,7 +291,7 @@ export default function MissionReplayPage() {
                   className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border border-white/10 hover:bg-white/5 text-[#8B97A7] hover:text-[#D7DEE7]"
                   title="Reset to start"
                 >
-                  <RotateCcw className="w-3 h-3" />
+                  <RotateCcw className="w-3 h-3" aria-hidden="true" />
                   <span>Reset</span>
                 </button>
               </div>
@@ -239,15 +299,18 @@ export default function MissionReplayPage() {
 
             {/* PIPELINE VISUAL FLOWCHART (Animated) */}
             <div className="px-4 py-3 border-b border-white/5 bg-[#05070B]/40 overflow-x-auto shrink-0 select-none">
-              <div className="flex items-center justify-between min-w-[760px] gap-1">
+              <div role="group" aria-label="Pipeline stages" className="flex items-center justify-between min-w-[760px] gap-1">
                 {FLOWCHART_NODES.map((node, index) => {
                   const isActive = activeStageId === node.id;
                   const isCompleted = activeStageId > node.id;
 
                   return (
                     <div key={node.id} className="flex items-center flex-1 gap-1">
-                      {/* Flowchart Node */}
-                      <motion.div
+                      {/* Flowchart Node: a button so the stages are reachable by keyboard */}
+                      <motion.button
+                        type="button"
+                        aria-current={isActive ? 'step' : undefined}
+                        aria-label={`Stage ${node.id + 1}: ${node.label}`}
                         animate={{
                           borderColor: isActive 
                             ? 'rgba(110, 168, 254, 0.5)' 
@@ -265,11 +328,11 @@ export default function MissionReplayPage() {
                           setActiveStep(node.steps[0]);
                           setIsPlaying(false);
                         }}
-                        className={`px-2 py-1.5 rounded border text-center flex-1 cursor-pointer transition-shadow ${
+                        className={`px-2 py-1.5 rounded border text-center flex-1 cursor-pointer transition-shadow focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#6EA8FE] ${
                           isActive ? 'shadow-[0_0_8px_rgba(110,168,254,0.15)]' : ''
                         }`}
                       >
-                        <p className={`text-[9px] font-mono font-medium leading-none ${
+                        <span className={`block text-[9px] font-mono font-medium leading-none ${
                           isActive 
                             ? 'text-[#6EA8FE]' 
                             : isCompleted 
@@ -277,17 +340,17 @@ export default function MissionReplayPage() {
                             : 'text-[#8B97A7]'
                         }`}>
                           {node.label}
-                        </p>
-                        <div className="flex items-center justify-center gap-1 mt-1 leading-none">
+                        </span>
+                        <span className="flex items-center justify-center gap-1 mt-1 leading-none">
                           <span className="text-[7px] text-white/30 font-mono">
                             STG 0{node.id + 1}
                           </span>
-                        </div>
-                      </motion.div>
+                        </span>
+                      </motion.button>
 
                       {/* Connection arrow */}
                       {index < FLOWCHART_NODES.length - 1 && (
-                        <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${
+                        <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 shrink-0 ${
                           isCompleted ? 'text-[#56D364]/50' : 'text-[#1A2430]'
                         }`} />
                       )}
@@ -369,8 +432,11 @@ export default function MissionReplayPage() {
                             Raw Photometric Time-Series
                           </p>
                           {lcLoading ? (
-                            <p className="text-[11px] text-[#5A6878] font-mono animate-pulse">Loading data arrays…</p>
+                            <p role="status" className="text-[11px] text-[#5A6878] font-mono animate-pulse">
+                              Loading data arrays…
+                            </p>
                           ) : lc ? (
+                            <ChartFrame label={`Raw light curve of TIC ${selectedStar.tic_id}: 1000 flux points drawn as 200 samples.`}>
                             <ResponsiveContainer width="100%" height={150}>
                               <LineChart data={sampleArray(lc.flux_1000, 200)}>
                                 <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.05)" />
@@ -379,8 +445,9 @@ export default function MissionReplayPage() {
                                 <Line type="monotone" dataKey="y" stroke="#6EA8FE" strokeWidth={1} dot={false} />
                               </LineChart>
                             </ResponsiveContainer>
+                            </ChartFrame>
                           ) : (
-                            <p className="text-[11px] text-red-400 font-mono">Error loading arrays</p>
+                            lightCurveError
                           )}
                         </div>
                       )}
@@ -463,8 +530,11 @@ export default function MissionReplayPage() {
                             Phase-Folded Curve (200 bins)
                           </p>
                           {lcLoading ? (
-                            <p className="text-[11px] text-[#5A6878] font-mono animate-pulse">Loading data arrays…</p>
+                            <p role="status" className="text-[11px] text-[#5A6878] font-mono animate-pulse">
+                              Loading data arrays…
+                            </p>
                           ) : lc ? (
+                            <ChartFrame label={`Phase-folded light curve of TIC ${selectedStar.tic_id}: 200 phase bins.`}>
                             <ResponsiveContainer width="100%" height={150}>
                               <LineChart data={sampleArray(lc.folded_flux_200, 200)}>
                                 <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.05)" />
@@ -473,8 +543,9 @@ export default function MissionReplayPage() {
                                 <Line type="monotone" dataKey="y" stroke="#A78BFA" strokeWidth={1} dot={false} />
                               </LineChart>
                             </ResponsiveContainer>
+                            </ChartFrame>
                           ) : (
-                            <p className="text-[11px] text-red-400 font-mono">Error loading arrays</p>
+                            lightCurveError
                           )}
                         </div>
                       )}
@@ -511,7 +582,7 @@ export default function MissionReplayPage() {
                           ) : explainData?.attention_weights ? (
                             <AttentionHeatmap matrix={explainData.attention_weights} />
                           ) : (
-                            <InferenceUnavailable reasons={inferenceReasons} compact />
+                            noModelOutput(true)
                           )}
                         </div>
                       )}
@@ -535,7 +606,7 @@ export default function MissionReplayPage() {
                       {activeStep === 8 && (
                         <div className="space-y-3">
                           <p className="text-[10px] uppercase text-[#8B97A7] tracking-wider font-mono">Logit Probabilities</p>
-                          {!probabilities && <InferenceUnavailable reasons={inferenceReasons} />}
+                          {!probabilities && noModelOutput()}
                           <div className="space-y-2">
                             {probabilities && Object.entries(probabilities).map(([key, val]) => (
                               <div key={key}>
@@ -587,7 +658,7 @@ export default function MissionReplayPage() {
                               )}
                             </>
                           ) : (
-                            <InferenceUnavailable reasons={inferenceReasons} />
+                            noModelOutput()
                           )}
                           <p className="text-[11px] text-[#8B97A7]">
                             Catalog label (ground truth): <span className="font-mono text-[#D7DEE7]">{CLASS_LABELS[selectedStar.astra_class]}</span>

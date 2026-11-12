@@ -1,41 +1,38 @@
 'use client';
 
-import { MetricCard, Panel, HashBadge, ConfidenceBar } from '@/components/shared/UI';
+import { MetricCard, Panel, HashBadge } from '@/components/shared/UI';
+import { ChartFrame, describeSeries } from '@/components/shared/ChartFrame';
+import { PageError, PageLoading } from '@/components/shared/DataState';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useModelDetails, useCheckpoints, useCalibrationDetails, useBenchmarkMetrics } from '@/lib/hooks';
+import { combineQueries } from '@/lib/hooks/queryState';
 import { CLASS_COLORS, CLASS_LABELS, formatParams, formatPercent, formatHash } from '@/lib/utils';
 import { BarChart, Bar, Cell, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { SHARED_BEST_VAL_ACCURACY } from '@/lib/data/constants';
 
 export default function ModelOperationsPage() {
-  const { data: modelDetails, isLoading: modelLoading } = useModelDetails();
-  const { data: checkpoints, isLoading: checkpointsLoading } = useCheckpoints();
-  const { data: calibration, isLoading: calibrationLoading } = useCalibrationDetails();
-  const { data: benchmark, isLoading: benchmarkLoading } = useBenchmarkMetrics();
+  const modelQuery = useModelDetails();
+  const checkpointsQuery = useCheckpoints();
+  const calibrationQuery = useCalibrationDetails();
+  const benchmarkQuery = useBenchmarkMetrics();
+  const { data: modelDetails } = modelQuery;
+  const { data: checkpoints } = checkpointsQuery;
+  const { data: calibration } = calibrationQuery;
+  const { data: benchmark } = benchmarkQuery;
+  const state = combineQueries([modelQuery, checkpointsQuery, calibrationQuery, benchmarkQuery]);
 
-  if (modelLoading || checkpointsLoading || calibrationLoading || benchmarkLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold text-[#D7DEE7]">Model Operations</h1>
-          <p className="text-[0.8125rem] text-[#8B97A7] mt-0.5 animate-pulse">
-            Loading model intelligence and calibrations…
-          </p>
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 astra-glass rounded" />
-          ))}
-        </div>
-        <div className="h-64 astra-glass rounded animate-pulse" />
-      </div>
-    );
+  if (state.isLoading) {
+    return <PageLoading title="Model Operations" message="Loading model intelligence and calibrations…" />;
   }
 
-  if (!modelDetails || !checkpoints || !calibration || !benchmark) {
+  if (state.isError || !modelDetails || !checkpoints || !calibration || !benchmark) {
     return (
-      <div className="p-6 text-center text-red-400 font-mono border border-red-500/20 bg-red-950/10 rounded">
-        System Error: Failed to retrieve dynamic model operations data.
-      </div>
+      <PageError
+        heading="Model Operations"
+        title="Could not load model operations data"
+        error={state.error}
+        onRetry={state.retry}
+      />
     );
   }
 
@@ -49,7 +46,7 @@ export default function ModelOperationsPage() {
   };
 
   const performance = {
-    val_accuracy: modelDetails.val_accuracy || 0.8582,
+    val_accuracy: SHARED_BEST_VAL_ACCURACY,
     test_accuracy: modelDetails.benchmark.test_accuracy,
     macro_f1: modelDetails.benchmark.macro_f1,
     weighted_f1: modelDetails.benchmark.weighted_f1,
@@ -77,7 +74,7 @@ export default function ModelOperationsPage() {
   };
 
   // Convert per-class ECE from calibration.json
-  const perClassEceData = Object.entries(calibration.per_class).map(([cls, metrics]: [string, any]) => ({
+  const perClassEceData = Object.entries(calibration.per_class).map(([cls, metrics]) => ({
     class: cls,
     before: metrics.transformer_raw,
     after: metrics.transformer_calibrated,
@@ -164,7 +161,7 @@ export default function ModelOperationsPage() {
 
       {/* Checkpoint Registry */}
       <Panel title="Checkpoint Registry" subtitle="Historical models and training parameters verified during Phase 7C">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Checkpoint registry table" tabIndex={0}>
           <table className="w-full text-left text-[11px] text-[#D7DEE7]">
             <thead>
               <tr className="border-b border-[#1A2430] bg-[#05070B]/50">
@@ -181,7 +178,7 @@ export default function ModelOperationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1A2430]">
-              {checkpoints.map((ckpt: any, idx: number) => {
+              {checkpoints.map((ckpt, idx) => {
                 const isProduction = ckpt.filename === 'best_star_transformer_shared.pt';
                 const hasKeysMismatch = ckpt.missing_keys > 0 || ckpt.unexpected_keys > 0;
                 const benchData = getBenchmarkForCheckpoint(ckpt.filename);
@@ -254,7 +251,7 @@ export default function ModelOperationsPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="Calibration temperature scaling table" tabIndex={0}>
               <table className="w-full text-left text-[11px] text-[#D7DEE7]">
                 <thead>
                   <tr className="border-b border-[#1A2430]">
@@ -288,6 +285,7 @@ export default function ModelOperationsPage() {
         <Panel title="Per-Class F1 Performance" subtitle="Accuracy representation per verified target class">
           <div className="h-64 flex flex-col justify-between">
             <div className="flex-1">
+              <ChartFrame label={`Bar chart of F1 score per class: ${describeSeries(classF1Data.map((d) => ({ name: d.name, value: d.f1 })), (v) => v.toFixed(2))}.`} className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={classF1Data} margin={{ left: -10, right: 10, top: 10, bottom: 5 }}>
                   <XAxis dataKey="name" stroke="#5A6878" tick={{ fontSize: 9 }} tickLine={false} />
@@ -315,6 +313,7 @@ export default function ModelOperationsPage() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              </ChartFrame>
             </div>
             <div className="mt-4 text-[11px] text-[#5A6878] leading-normal bg-[#05070B] p-2.5 rounded border border-[#1A2430] font-sans">
               Conclusion: The architecture excels at identifying <span className="text-amber-400 font-semibold">RR Lyrae</span> (F1: {performance.per_class_f1.rr_lyrae.toFixed(4)}) and <span className="text-emerald-400 font-semibold">Eclipsing Binaries</span> (F1: {performance.per_class_f1.eclipsing_binary.toFixed(4)}), but struggles with <span className="text-purple-400 font-semibold">Solar-like</span> stars (F1: {performance.per_class_f1.solar_like.toFixed(4)}) due to lower signal amplitudes.

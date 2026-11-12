@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useStars } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
 import { EmptyState, LoadingRows } from '@/components/shared/UI';
+import { LoadError } from '@/components/shared/DataState';
 import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
-import type { AstraClass, PeriodSource } from '@/lib/types';
+
 import Link from 'next/link';
 
 export default function TargetSearchPage() {
@@ -27,7 +28,7 @@ export default function TargetSearchPage() {
   }, [inputValue]);
 
   // Hook fetching data
-  const { data, isLoading, isError, error } = useStars({
+  const { data, isLoading, isError, error, refetch } = useStars({
     q: debouncedQuery || undefined,
     class: selectedClass !== 'all' ? selectedClass : undefined,
     source: selectedSource !== 'all' ? selectedSource : undefined,
@@ -62,7 +63,11 @@ export default function TargetSearchPage() {
           </p>
         </div>
         <div className="font-mono text-[11px] text-[#5A6878]">
-          {data && typeof data.total === 'number' ? `${data.total.toLocaleString()} targets match filter` : 'Loading registry…'}
+          {data && typeof data.total === 'number'
+            ? `${data.total.toLocaleString()} targets match filter`
+            : isError
+              ? 'Registry unavailable'
+              : 'Loading registry…'}
         </div>
       </div>
 
@@ -70,8 +75,9 @@ export default function TargetSearchPage() {
       <div className="p-4 rounded astra-glass space-y-4">
         {/* Text Search Input */}
         <div>
-          <label className="block text-[10px] text-[#8B97A7] uppercase tracking-wider mb-1.5">Search Query</label>
+          <label htmlFor="target-search" className="block text-[10px] text-[#8B97A7] uppercase tracking-wider mb-1.5">Search Query</label>
           <input
+            id="target-search"
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -82,10 +88,11 @@ export default function TargetSearchPage() {
 
         {/* Classes toggle */}
         <div>
-          <label className="block text-[10px] text-[#8B97A7] uppercase tracking-wider mb-1.5">Class Selection</label>
-          <div className="flex flex-wrap gap-2">
+          <p id="filter-class" className="block text-[10px] text-[#8B97A7] uppercase tracking-wider mb-1.5">Class Selection</p>
+          <div role="group" aria-labelledby="filter-class" className="flex flex-wrap gap-2">
             <button
               onClick={() => handleClassToggle('all')}
+              aria-pressed={selectedClass === 'all'}
               className={`px-2.5 py-1 text-[11px] font-medium rounded transition-colors ${
                 selectedClass === 'all'
                   ? 'bg-[#6EA8FE]/20 text-[#6EA8FE] border border-[#6EA8FE]/30'
@@ -98,6 +105,7 @@ export default function TargetSearchPage() {
               <button
                 key={key}
                 onClick={() => handleClassToggle(key)}
+                aria-pressed={selectedClass === key}
                 className={`px-2.5 py-1 text-[11px] font-medium rounded transition-colors ${
                   selectedClass === key
                     ? 'bg-[#6EA8FE]/20 text-[#6EA8FE] border border-[#6EA8FE]/30'
@@ -114,12 +122,13 @@ export default function TargetSearchPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Period source filter */}
           <div>
-            <label className="block text-[10px] text-[#8B97A7] uppercase tracking-wider mb-1.5">Period Source</label>
-            <div className="flex gap-2">
+            <p id="filter-source" className="block text-[10px] text-[#8B97A7] uppercase tracking-wider mb-1.5">Period Source</p>
+            <div role="group" aria-labelledby="filter-source" className="flex gap-2">
               {['all', 'catalog', 'BLS'].map((src) => (
                 <button
                   key={src}
                   onClick={() => handleSourceToggle(src)}
+                  aria-pressed={selectedSource === src}
                   className={`flex-1 px-2.5 py-1 text-[11px] font-medium rounded transition-colors text-center border ${
                     selectedSource === src
                       ? 'bg-[#6EA8FE]/20 text-[#6EA8FE] border-[#6EA8FE]/30'
@@ -134,12 +143,13 @@ export default function TargetSearchPage() {
 
           {/* Split filter */}
           <div>
-            <label className="block text-[10px] text-[#8B97A7] uppercase tracking-wider mb-1.5">Dataset Split</label>
-            <div className="flex gap-2">
+            <p id="filter-split" className="block text-[10px] text-[#8B97A7] uppercase tracking-wider mb-1.5">Dataset Split</p>
+            <div role="group" aria-labelledby="filter-split" className="flex gap-2">
               {['all', 'train', 'val', 'test'].map((split) => (
                 <button
                   key={split}
                   onClick={() => handleSplitToggle(split)}
+                  aria-pressed={selectedSplit === split}
                   className={`flex-1 px-2.5 py-1 text-[11px] font-medium rounded transition-colors text-center border ${
                     selectedSplit === split
                       ? 'bg-[#6EA8FE]/20 text-[#6EA8FE] border-[#6EA8FE]/30'
@@ -156,7 +166,7 @@ export default function TargetSearchPage() {
 
       {/* Results Panel */}
       <div className="astra-glass rounded overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Search results table" tabIndex={0}>
           <table className="w-full text-left text-[11px] text-[#D7DEE7]">
             <thead>
               <tr className="bg-[#05070B]/50 border-b border-white/5">
@@ -175,11 +185,8 @@ export default function TargetSearchPage() {
               {isLoading && <LoadingRows count={10} />}
               {!isLoading && isError && (
                 <tr>
-                  <td colSpan={9} className="py-8">
-                    <EmptyState
-                      message="Failed to load target registry"
-                      sub={error instanceof Error ? error.message : "An unknown error occurred."}
-                    />
+                  <td colSpan={9} className="p-4">
+                    <LoadError title="Could not load the target registry" error={error} onRetry={() => void refetch()} />
                   </td>
                 </tr>
               )}

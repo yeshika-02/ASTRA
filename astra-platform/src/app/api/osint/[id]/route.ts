@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseSync } from 'node:sqlite';
-import { pathToFileURL } from 'node:url';
-import * as path from 'path';
+import { getDatabase } from '@/lib/server/db';
+import { serverError } from '@/lib/server/errors';
 import { parseTicId } from '@/lib/server/validation';
+import type { StarRow } from '@/lib/types/artifacts';
 
 export const dynamic = 'force-dynamic';
+
+interface CrossMatch {
+  catalog: string;
+  identifier: string | null;
+  otype: string | null;
+  distance_arcsec: number | null;
+  notes: string;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -17,11 +25,8 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid TIC identifier.' }, { status: 400 });
     }
 
-    const dbPath = path.join(process.cwd(), 'data', 'astra.sqlite');
-    const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
-    
-    const stmt = db.prepare('SELECT * FROM stars WHERE tic_id = ?');
-    const r = stmt.get(ticId) as any;
+    const stmt = getDatabase().prepare('SELECT * FROM stars WHERE tic_id = ?');
+    const r = stmt.get(ticId) as StarRow | undefined;
     
     if (!r) {
       return NextResponse.json({ error: 'Star not found in ASTRA registry' }, { status: 404 });
@@ -37,7 +42,7 @@ export async function GET(
     const ra = star.ra;
     const dec = star.dec;
     
-    const crossMatches: any[] = [];
+    const crossMatches: CrossMatch[] = [];
     
     // Only fields stored in the ASTRA registry are reported. No positional cross-match is run here,
     // so match distance and observation dates are null rather than invented.
@@ -91,10 +96,7 @@ export async function GET(
       scientific_notes: `TIC ${ticId} carries the catalog label "${star.astra_class.replace('_', ' ')}" (ground truth, not a model prediction). Stored period: ${periodText}, taken from ${periodSourceText}.`,
       audit_hash: star.preprocessing_hash ?? 'N/A',
     });
-  } catch (error: any) {
-    return NextResponse.json({ 
-      error: 'Failed to generate OSINT report', 
-      details: error.message || String(error)
-    }, { status: 500 });
+  } catch (error) {
+    return serverError('/api/osint/[id]', error, 'Failed to generate OSINT report');
   }
 }

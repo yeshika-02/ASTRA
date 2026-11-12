@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { useAstraStore } from '@/lib/store';
+import { usePrefersReducedMotion } from '@/lib/hooks/useMotionPreferences';
 
 interface Particle {
   x: number;
@@ -16,9 +17,11 @@ interface Particle {
 export function ParticleLayer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { qualityState } = useAstraStore();
+  const reducedMotion = usePrefersReducedMotion();
+  const enabled = qualityState !== 'low' && !reducedMotion;
 
   useEffect(() => {
-    if (qualityState === 'low') return;
+    if (!enabled) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -94,15 +97,16 @@ export function ParticleLayer() {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [qualityState]);
+  }, [enabled, qualityState]);
 
-  if (qualityState === 'low') {
+  if (!enabled) {
     return null;
   }
 
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       className="fixed inset-0 pointer-events-none z-0"
       style={{ mixBlendMode: 'screen' }}
     />

@@ -1,31 +1,31 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { MetricCard, Panel } from '@/components/shared/UI';
+import { Panel } from '@/components/shared/UI';
+import { ChartFrame, describeSeries } from '@/components/shared/ChartFrame';
+import { PageError, PageLoading } from '@/components/shared/DataState';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails, useModelDetails } from '@/lib/hooks';
-import { AUDIT_EVENTS, CLASS_LABELS, CLASS_COLORS } from '@/lib/data/constants';
-import { formatParams, formatPercent } from '@/lib/utils';
+import { combineQueries } from '@/lib/hooks/queryState';
+import { AUDIT_EVENTS, CLASS_LABELS, CLASS_COLORS, SHARED_BEST_VAL_ACCURACY } from '@/lib/data/constants';
+import { formatParams } from '@/lib/utils';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { 
-  ChevronDown, 
-  ArrowRight, 
-  ShieldCheck, 
-  Cpu, 
-  Database, 
-  Compass, 
-  Globe, 
-  Sparkles, 
-  AlertTriangle, 
-  Activity, 
-  Play, 
-  TrendingUp, 
-  Search, 
-  BarChart2, 
-  FileText, 
-  CheckCircle2 
+import {
+  ChevronDown,
+  ArrowRight,
+  ShieldCheck,
+  Cpu,
+  Database,
+  Globe,
+  AlertTriangle,
+  Activity,
+  Play,
+  TrendingUp,
+  Search,
+  BarChart2,
+  FileText,
 } from 'lucide-react';
 
 const sectionNames = [
@@ -45,68 +45,38 @@ const sectionVariants = {
   }
 };
 
-const staggerContainer = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { duration: 0.25, ease: 'easeOut' as const }
-  }
-};
-
 // Simple animated counter helper
 function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
   const [count, setCount] = useState(0);
 
+  // Counts from 0 to `value` over 1.2 s. State updates happen only inside animation
+  // frames, never synchronously in the effect body.
   useEffect(() => {
-    let start = 0;
-    const end = value;
-    if (start === end) {
-      setCount(end);
-      return;
-    }
-
-    const duration = 1200; // 1.2s
-    const stepTime = Math.max(Math.floor(duration / end), 16);
-    const stepSize = Math.ceil(end / (duration / stepTime));
-
-    const timer = setInterval(() => {
-      start += stepSize;
-      if (start >= end) {
-        clearInterval(timer);
-        setCount(end);
-      } else {
-        setCount(start);
-      }
-    }, stepTime);
-
-    return () => clearInterval(timer);
+    const duration = 1200;
+    let frame = 0;
+    const startTime = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      setCount(Math.round(value * t));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
   }, [value]);
 
   return <span>{count.toLocaleString()}{suffix}</span>;
 }
 
-export default function Home() {
-  const [health, setHealth] = useState<any>(null);
-  const [activeSection, setActiveSection] = useState(0);
-  const [mainElement, setMainElement] = useState<HTMLElement | null>(null);
-  const mainRef = useRef<HTMLElement | null>(null);
+// The scroll container is the <main> element rendered by the app shell. Read it as an
+// external value: null during server rendering, the element on the client.
+const subscribeToNothing = () => () => {};
+const getMainElement = () => document.querySelector('main');
+const getServerMainElement = () => null;
 
-  // Look up scrollable main container at runtime
-  useEffect(() => {
-    const mainEl = document.querySelector('main');
-    if (mainEl instanceof HTMLElement) {
-      setMainElement(mainEl);
-      mainRef.current = mainEl;
-    }
-  }, []);
+export default function Home() {
+  const [health, setHealth] = useState<{ status: string; summary?: string } | null>(null);
+  const [activeSection, setActiveSection] = useState(0);
+  const mainElement = useSyncExternalStore(subscribeToNothing, getMainElement, getServerMainElement);
 
   // Bind scroll progress directly to the main container
   const { scrollYProgress } = useScroll({
@@ -152,36 +122,24 @@ export default function Home() {
       .catch(() => setHealth({ status: 'BLOCKED' }));
   }, []);
 
-  const { data: datasetDetails, isLoading: datasetLoading } = useDatasetDetails();
-  const { data: modelDetails, isLoading: modelLoading } = useModelDetails();
+  const datasetQuery = useDatasetDetails();
+  const modelQuery = useModelDetails();
+  const { data: datasetDetails } = datasetQuery;
+  const { data: modelDetails } = modelQuery;
+  const state = combineQueries([datasetQuery, modelQuery]);
 
-  if (datasetLoading || modelLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-[#D7DEE7]">Mission Control</h1>
-          <p className="text-[11px] text-[#8B97A7] mt-0.5 animate-pulse font-mono">
-            Loading stellar intelligence parameters…
-          </p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 astra-glass rounded animate-pulse" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="h-64 astra-glass rounded animate-pulse" />
-          <div className="h-64 astra-glass rounded animate-pulse" />
-        </div>
-      </div>
-    );
+  if (state.isLoading) {
+    return <PageLoading title="Mission Control" message="Loading stellar intelligence parameters…" panels={2} />;
   }
 
-  if (!datasetDetails || !modelDetails) {
+  if (state.isError || !datasetDetails || !modelDetails) {
     return (
-      <div className="p-6 text-center text-red-400 font-mono border border-red-500/20 bg-red-950/10 rounded">
-        System Error: Failed to retrieve dynamic registry configurations. Check API status.
-      </div>
+      <PageError
+        heading="Mission Control"
+        title="Could not load the registry and model summaries"
+        error={state.error}
+        onRetry={state.retry}
+      />
     );
   }
 
@@ -204,7 +162,7 @@ export default function Home() {
   };
 
   const performanceMetrics = {
-    val_accuracy: modelDetails.val_accuracy || 0.8582,
+    val_accuracy: SHARED_BEST_VAL_ACCURACY,
     test_accuracy: modelDetails.benchmark.test_accuracy,
     macro_f1: modelDetails.benchmark.macro_f1,
     weighted_f1: modelDetails.benchmark.weighted_f1,
@@ -270,7 +228,7 @@ export default function Home() {
                     />
                   )}
                   <span className={`text-[10px] leading-none tracking-[0.12em] ${isActive ? 'text-[#6EA8FE] font-bold' : 'text-[#5A6878] group-hover:text-[#8B97A7]'}`}>
-                    {node.tag} // {node.title}
+                    {node.tag} {'//'} {node.title}
                   </span>
                   <span className={`text-[9px] leading-none mt-1.5 ${isActive ? 'text-white/60' : 'text-transparent group-hover:text-white/20'}`}>
                     {node.desc}
@@ -411,6 +369,7 @@ export default function Home() {
                 <Panel title="Class Composition" subtitle="Proportions of stellar classes in the cohort">
                   <div className="h-60 flex flex-col justify-between">
                     <div className="flex-1 min-h-[160px]">
+                      <ChartFrame label={`Donut chart of stars per class: ${describeSeries(pieData)}.`} className="h-full w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -432,12 +391,13 @@ export default function Home() {
                               border: '1px solid rgba(255, 255, 255, 0.08)',
                               borderRadius: 4,
                               fontSize: 10,
-                              fontFamily: 'IBM Plex Mono, monospace',
+                              fontFamily: 'var(--font-plex-mono), monospace',
                               color: '#D7DEE7',
                             }}
                           />
                         </PieChart>
                       </ResponsiveContainer>
+                      </ChartFrame>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 mt-2 text-[10px] font-mono">
                       {pieData.map((item, idx) => (
@@ -714,7 +674,7 @@ export default function Home() {
             {/* Audit log table in Launch section */}
             <div className="pt-8">
               <Panel title="Mission Milestones" subtitle="Verified project gate releases and audits">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto" role="region" aria-label="Mission milestones table" tabIndex={0}>
                   <table className="w-full text-left text-[11px] text-[#D7DEE7]">
                     <thead>
                       <tr className="border-b border-white/5">

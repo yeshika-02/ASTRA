@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Compass, Target, Shield, HelpCircle, Activity, Layout, Volume2, Cpu } from 'lucide-react';
 import { useAstraStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { SearchResult as ApiSearchResult } from '@/lib/types/artifacts';
 
 interface SearchResult {
   id: string;
@@ -40,12 +41,24 @@ export function CommandPalette() {
   
   const { audioState, setAudioState, qualityState, setQualityState } = useAstraStore();
 
-  // Toggle open state with Command+K / Ctrl+K
+  // Latest open state for the global key handler, which is registered once.
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // Toggle with Command+K / Ctrl+K. Opening always starts from an empty query.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        if (isOpenRef.current) {
+          setIsOpen(false);
+        } else {
+          setQuery('');
+          setSelectedIndex(0);
+          setIsOpen(true);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -54,11 +67,9 @@ export function CommandPalette() {
 
   // Autofocus input on open
   useEffect(() => {
-    if (isOpen) {
-      setQuery('');
-      setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+    if (!isOpen) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   // Click outside to close
@@ -136,10 +147,10 @@ export function CommandPalette() {
           if (res.ok) {
             const data = await res.json();
             if (active && data.results) {
-              remoteMatches = data.results.map((r: any) => ({
+              remoteMatches = (data.results as ApiSearchResult[]).map((r) => ({
                 id: `target-${r.tic_id}`,
                 title: `TIC ${r.tic_id}`,
-                subtitle: `${r.astra_class} — Period: ${parseFloat(r.period).toFixed(4)} d (${r.period_source})`,
+                subtitle: `${r.astra_class} — Period: ${r.period.toFixed(4)} d (${r.period_source})`,
                 type: 'target' as const,
                 url: `/target/${r.tic_id}`,
                 icon: Target,
@@ -205,15 +216,24 @@ export function CommandPalette() {
             ref={containerRef}
             className="w-full max-w-xl rounded border astra-glass overflow-hidden shadow-2xl flex flex-col max-h-[440px]"
             onKeyDown={handleKeyDown}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Command palette"
           >
             {/* Search Input Bar */}
             <div className="flex items-center gap-3 px-4 border-b border-white/5 h-12">
-              <Search className="w-4 h-4 text-white/40 shrink-0" />
+              <Search className="w-4 h-4 text-white/40 shrink-0" aria-hidden="true" />
               <input
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search targets, dashboards, OSINT dossiers..."
+                role="combobox"
+                aria-label="Search targets and pages"
+                aria-expanded={results.length > 0}
+                aria-controls="command-palette-results"
+                aria-autocomplete="list"
+                aria-activedescendant={results[selectedIndex] ? `command-palette-option-${selectedIndex}` : undefined}
                 className="w-full h-full bg-transparent border-0 outline-none text-[13px] text-[#D7DEE7] placeholder-white/20 font-mono"
               />
               <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/40 font-mono select-none">
@@ -222,7 +242,12 @@ export function CommandPalette() {
             </div>
 
             {/* List Results */}
-            <div className="flex-1 overflow-y-auto p-1.5 scrollbar-thin">
+            <div
+              id="command-palette-results"
+              role="listbox"
+              aria-label="Results"
+              className="flex-1 overflow-y-auto p-1.5 scrollbar-thin"
+            >
               {results.length > 0 ? (
                 results.map((item, index) => {
                   const Icon = item.icon;
@@ -230,6 +255,9 @@ export function CommandPalette() {
                   return (
                     <div
                       key={item.id}
+                      id={`command-palette-option-${index}`}
+                      role="option"
+                      aria-selected={isSelected}
                       onClick={() => triggerItem(item)}
                       onMouseEnter={() => setSelectedIndex(index)}
                       className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-colors duration-150 ${
@@ -238,7 +266,7 @@ export function CommandPalette() {
                           : 'border border-transparent text-white/70 hover:text-white'
                       }`}
                     >
-                      <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#6EA8FE]' : 'text-white/40'}`} />
+                      <Icon aria-hidden="true" className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#6EA8FE]' : 'text-white/40'}`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-[12px] font-mono font-medium truncate leading-tight">
                           {item.title}

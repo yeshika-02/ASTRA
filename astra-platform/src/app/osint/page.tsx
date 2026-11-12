@@ -1,42 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { useStars } from '@/lib/hooks';
-import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
+import { useOsint, useStars } from '@/lib/hooks';
+import { ClassBadge } from '@/components/shared/Badges';
 import { Panel, EmptyState, DataRow } from '@/components/shared/UI';
-import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
+import { LoadError } from '@/components/shared/DataState';
+import { formatRA, formatDec, formatPeriod } from '@/lib/utils';
 import type { Star } from '@/lib/types';
-import { useQuery } from '@tanstack/react-query';
-
-interface OsintData {
-  tic_id: number;
-  astra_class: string;
-  period: number;
-  period_source: string;
-  ra: number;
-  dec: number;
-  cross_matches: { catalog: string; identifier: string | null; otype: string | null; distance_arcsec: number | null; notes: string }[];
-  observational_history: { observatory: string; instrument: string; filters: string; observations: number | null; first_obs: string | null; last_obs: string | null; cadence: string | null }[];
-  related_objects: { identifier: string; class: string; ra: number; dec: number; separation: string; notes: string }[];
-  provenance: { step: string; agent: string; detail: string }[];
-  scientific_notes: string;
-  audit_hash: string;
-}
 
 export default function SpaceOsintPage() {
   const [selectedStar, setSelectedStar] = useState<Star | null>(null);
   const [query, setQuery] = useState('');
 
-  const { data: starsData, isLoading: starsLoading } = useStars({
+  const {
+    data: starsData,
+    isLoading: starsLoading,
+    isError: starsError,
+    error: starsErrorValue,
+    refetch: refetchStars,
+  } = useStars({
     q: query || undefined,
     limit: 50,
   });
 
-  const { data: osint, isLoading: osintLoading } = useQuery<OsintData>({
-    queryKey: ['osint', selectedStar?.tic_id],
-    queryFn: () => fetch(`/api/osint/${selectedStar?.tic_id}`).then((r) => r.json()),
-    enabled: !!selectedStar,
-  });
+  const {
+    data: osint,
+    isLoading: osintLoading,
+    isError: osintError,
+    error: osintErrorValue,
+    refetch: refetchOsint,
+  } = useOsint(selectedStar?.tic_id ?? null);
 
   const handleSelectStar = (star: Star) => {
     setSelectedStar(star);
@@ -44,6 +37,7 @@ export default function SpaceOsintPage() {
 
   return (
     <div className="flex gap-0 h-[calc(100vh-7rem)]">
+      <h1 className="sr-only">Space OSINT</h1>
       {/* Target Selector Sidebar */}
       <div className="w-64 shrink-0 rounded-l astra-glass border-r-0 flex flex-col">
         <div className="px-3 py-2.5 border-b border-white/5">
@@ -55,12 +49,25 @@ export default function SpaceOsintPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search Target ID…"
+            aria-label="Filter targets by TIC ID"
             className="w-full bg-[#05070B]/50 border border-white/5 rounded px-2.5 py-1.5 text-[0.75rem] text-[#D7DEE7] placeholder-[#5A6878] focus:outline-none focus:border-[#6EA8FE]"
           />
         </div>
         <div className="flex-1 overflow-y-auto">
           {starsLoading && (
-            <p className="text-[0.75rem] text-[#5A6878] p-3 font-mono">Loading registry…</p>
+            <p role="status" className="text-[0.75rem] text-[#5A6878] p-3 font-mono">Loading registry…</p>
+          )}
+          {starsError && (
+            <LoadError
+              compact
+              className="m-3"
+              title="Could not load the registry"
+              error={starsErrorValue}
+              onRetry={() => void refetchStars()}
+            />
+          )}
+          {starsData && starsData.stars.length === 0 && (
+            <p className="text-[0.75rem] text-[#5A6878] p-3 font-mono">No targets match “{query}”.</p>
           )}
           {starsData?.stars.map((star) => (
             <button
@@ -88,7 +95,17 @@ export default function SpaceOsintPage() {
           />
         ) : osintLoading ? (
           <div className="h-64 flex flex-col items-center justify-center space-y-2">
-            <span className="text-[11px] text-[#5A6878] font-mono animate-pulse">Running cross-matching algorithms…</span>
+            <span role="status" className="text-[11px] text-[#5A6878] font-mono animate-pulse">
+              Running cross-matching algorithms…
+            </span>
+          </div>
+        ) : osintError ? (
+          <div className="p-6">
+            <LoadError
+              title={`Could not generate the report for TIC ${selectedStar.tic_id}`}
+              error={osintErrorValue}
+              onRetry={() => void refetchOsint()}
+            />
           </div>
         ) : osint ? (
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -98,7 +115,7 @@ export default function SpaceOsintPage() {
                 <span className="text-[10px] text-emerald-400 font-mono tracking-widest uppercase block mb-1">
                   Target Intelligence Report · SECURE
                 </span>
-                <h1 className="text-xl font-bold text-[#D7DEE7] font-mono">TIC {selectedStar.tic_id}</h1>
+                <h2 className="text-xl font-bold text-[#D7DEE7] font-mono">TIC {selectedStar.tic_id}</h2>
                 <p className="text-[11px] text-[#8B97A7] mt-1">
                   Source: TESS Input Catalog · Preprocessing: {selectedStar.preprocessing_version} · Hash: {osint.audit_hash.slice(0, 16)}…
                 </p>
@@ -137,7 +154,7 @@ export default function SpaceOsintPage() {
 
             {/* Cross Matches */}
             <Panel title="Astronomical Database Cross-Matches" subtitle="Cross-identification with celestial registries">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" role="region" aria-label="Catalog cross-match table" tabIndex={0}>
                 <table className="w-full text-left text-[11px] text-[#D7DEE7]">
                   <thead>
                     <tr className="border-b border-[#1A2430] bg-[#05070B]/50">
@@ -165,7 +182,7 @@ export default function SpaceOsintPage() {
 
             {/* Observational History */}
             <Panel title="Astronomical Observations History" subtitle="Physical sensor logs">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" role="region" aria-label="Observation history table" tabIndex={0}>
                 <table className="w-full text-left text-[11px] text-[#D7DEE7]">
                   <thead>
                     <tr className="border-b border-[#1A2430] bg-[#05070B]/50">
@@ -197,7 +214,7 @@ export default function SpaceOsintPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Related objects */}
               <Panel title="Related Celestial Objects" subtitle="Nearby stellar coordinates in same sector">
-                <div className="overflow-x-auto text-[11px]">
+                <div className="overflow-x-auto text-[11px]" role="region" aria-label="Related objects table" tabIndex={0}>
                   <table className="w-full text-left text-[#D7DEE7]">
                     <thead>
                       <tr className="border-b border-[#1A2430]">
