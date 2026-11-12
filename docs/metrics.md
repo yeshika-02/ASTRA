@@ -43,7 +43,7 @@ Point metrics: *computed* from each model's published test confusion matrix. CIs
 | 12 statistics of the network's own inputs | LogReg | 73.24% | [65.49%, 80.28%] | 0.7347 | [0.6519, 0.8006] |
 | 12 statistics of the network's own inputs | RandomForest | 79.58% | [72.54%, 85.92%] | 0.7867 | [0.7137, 0.8560] |
 
-Source: `training/baselines.py (EXP-0001 metadata baselines; EXP-0003 light-curve statistics)`; fit on the frozen train split (661), evaluated once on the frozen test split (142); bootstrap: percentile, 1000 resamples over the test stars, seed 42. Period features use the VSX catalog period for RR Lyrae, Cepheids and eclipsing binaries (external information) and a mostly unreliable BLS period for Solar-like and Stable stars. A model counts as better only if it beats these on the same split (ADR-0062).
+Source: `training/baselines.py (EXP-0001 metadata baselines; EXP-0003 light-curve statistics)`; fit on the frozen train split (661), evaluated once on the frozen test split (142); bootstrap: percentile, 1000 resamples over the test stars, seed 42. Period features use the VSX catalog period for RR Lyrae, Cepheids and eclipsing binaries (external information) and a mostly unreliable BLS period for Solar-like and Stable stars. The light-curve baselines can differ by one test star between platforms (floating-point differences in the statistics; on Linux the logistic regression gets 103/142 instead of 104/142). A model counts as better only if it beats these on the same split (ADR-0062).
 
 ## Validation (best epoch, 141 stars) — *computed*
 
