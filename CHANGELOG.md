@@ -20,6 +20,8 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `training/evaluate.py` (frozen-split evaluation with bootstrap CIs and published-checkpoint hash verification), `models/published_weights.json` and `training/verify_weights.py`, `astra.provenance` in training/CV/evaluation records, the weights investigation and recovery plan (ADR-0061), and a rewritten reproducibility guide ([#9](https://github.com/yeshika-02/ASTRA/pull/9)).
 - One authoritative record of published metrics (`models/published_metrics.json`, generated `docs/metrics.md`) and a generator for the platform artifacts; README results that came from an earlier 269-star experiment are marked superseded, the CNN figures follow their confusion matrix, NLL copied from ECE is removed, and unsourced UI numbers are gone ([#10](https://github.com/yeshika-02/ASTRA/pull/10)).
 - Golden test pinning preprocessing v1, characterisation tests for its detrending and BLS period search, and clear input errors in the pipeline scripts and `process_star` ([#11](https://github.com/yeshika-02/ASTRA/pull/11)).
+- Test-free, grouped, nested cross-validation with bootstrap CIs (ADR-0062) ([#12](https://github.com/yeshika-02/ASTRA/pull/12)).
+- `training/baselines.py`: EXP-0001 metadata baselines reproduced exactly and a light-curve-statistics baseline, reported beside the model ([#13](https://github.com/yeshika-02/ASTRA/pull/13)).
 
 ### Security
 - **Command injection in `POST /api/upload` fixed.** Request fields were interpolated into a shell command; inference now spawns Python with an argument array (`shell: false`), sends flux over stdin, and validates every input. `upload_inference.py` no longer reads a server file when `--flux` is a path.
