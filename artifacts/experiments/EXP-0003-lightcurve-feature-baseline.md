@@ -47,6 +47,7 @@ If simple shape statistics of the **same** inputs the network sees reach the net
 
 - **The network is not shown to beat the statistics:** 12 statistics of its own inputs match it. The difference (2 stars) is well inside both intervals.
 - **Not a paired test:** the comparison is not a paired test on the same stars. The published model's per-star predictions are not available (ADR-0061). A paired test (McNemar) becomes possible once the checkpoint is recovered and `training/evaluate.py` produces per-star predictions.
+- **Platform sensitivity:** the statistics can differ in the last bits between platforms, which can move one test star. On Linux CI the logistic regression gets 103/142 instead of 104/142, and the random forest stays within the tests' one-star tolerance.
 - **The folded channel still carries the period choice:** the folded statistics depend on the selected period, which is the catalog period for the variable classes, so the period is still indirectly present.
 
 ## Decision
