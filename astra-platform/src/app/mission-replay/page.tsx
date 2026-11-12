@@ -187,6 +187,7 @@ export default function MissionReplayPage() {
 
   return (
     <div className="flex gap-4 h-[calc(100vh-7rem)] select-text">
+      <h1 className="sr-only">Mission Replay</h1>
       
       {/* Target Selector Sidebar */}
       <div className="w-64 shrink-0 rounded astra-glass flex flex-col">
