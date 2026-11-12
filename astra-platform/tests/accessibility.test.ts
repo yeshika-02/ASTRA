@@ -62,3 +62,30 @@ describe('keyboard navigation', () => {
     expect(sidebar).toContain('<nav aria-label="Main"');
   });
 });
+
+describe('headings', () => {
+  const pages = [
+    'app/page.tsx',
+    'app/search/page.tsx',
+    'app/analysis/page.tsx',
+    'app/dataset/page.tsx',
+    'app/model/page.tsx',
+    'app/research/page.tsx',
+    'app/mission-replay/page.tsx',
+    'app/osint/page.tsx',
+    'app/visualization/page.tsx',
+    'app/target/[id]/page.tsx',
+  ];
+
+  it.each(pages)('%s has a level-one heading', (file) => {
+    expect(read(file)).toMatch(/<h1[\s>]/);
+  });
+
+  it('panel titles are level-two headings', () => {
+    expect(read('components/shared/UI.tsx')).toMatch(/<h2 className="[^"]*">\{title\}<\/h2>/);
+  });
+
+  it('no page skips from h1 to h4', () => {
+    for (const file of pages) expect(read(file)).not.toMatch(/<h4[\s>]/);
+  });
+});

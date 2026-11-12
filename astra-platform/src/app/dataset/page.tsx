@@ -197,7 +197,7 @@ export default function DatasetIntelligencePage() {
                       </span>
                     )}
                   </div>
-                  <h4 className="font-semibold text-[#D7DEE7] leading-tight truncate">{node.label}</h4>
+                  <h3 className="font-semibold text-[#D7DEE7] leading-tight truncate">{node.label}</h3>
                   <p className="text-[#8B97A7] leading-tight mt-1 line-clamp-3 text-[10px]" title={node.description}>
                     {node.description}
                   </p>

@@ -168,6 +168,7 @@ export default function AnalysisPage() {
 
   return (
     <div className="flex gap-0 h-[calc(100vh-7rem)]">
+      <h1 className="sr-only">Light Curve Analysis</h1>
       {/* Star Selector Sidebar */}
       <div className="w-56 shrink-0 rounded-l astra-glass border-r-0 flex flex-col">
         <div className="px-3 py-2.5 border-b border-white/5">
