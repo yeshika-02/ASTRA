@@ -1,6 +1,7 @@
 'use client';
 
 import { MetricCard, Panel, HashBadge, DataRow } from '@/components/shared/UI';
+import { ChartFrame, describeSeries } from '@/components/shared/ChartFrame';
 import { PageError, PageLoading } from '@/components/shared/DataState';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails } from '@/lib/hooks';
@@ -111,6 +112,7 @@ export default function DatasetIntelligencePage() {
         {/* Class distribution */}
         <Panel title="Class Distribution" subtitle="Relative occurrences of star classes in final dataset">
           <div className="h-64">
+            <ChartFrame label={`Bar chart of stars per class: ${describeSeries(classChartData.map((d) => ({ name: d.name, value: d.count })))}.`} className="h-full w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={classChartData}
@@ -143,6 +145,7 @@ export default function DatasetIntelligencePage() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            </ChartFrame>
           </div>
         </Panel>
 

@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useStar, useLightCurve, usePredict } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
 import { Panel, DataRow, ConfidenceBar, EmptyState, InferenceUnavailable } from '@/components/shared/UI';
+import { ChartFrame } from '@/components/shared/ChartFrame';
 import { LoadError, PageError } from '@/components/shared/DataState';
 import { ApiError } from '@/lib/hooks/fetchJson';
 import { formatRA, formatDec, formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS, confidenceToColor } from '@/lib/utils';
@@ -273,6 +274,7 @@ export default function TargetPage() {
               </div>
             )}
             {lc && rawChartData.length > 0 && (
+              <ChartFrame label={`Raw light curve of TIC ${star.tic_id}: normalised flux, ${rawChartData.length} sampled points.`}>
               <ResponsiveContainer width="100%" height={176}>
                 <LineChart data={rawChartData}>
                   <CartesianGrid strokeDasharray="2 4" stroke="#1A2430" />
@@ -291,6 +293,7 @@ export default function TargetPage() {
                   <Line type="monotone" dataKey="y" stroke="#6EA8FE" strokeWidth={1} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
+              </ChartFrame>
             )}
           </div>
 
@@ -308,6 +311,7 @@ export default function TargetPage() {
               </div>
             )}
             {lc && foldedChartData.length > 0 && (
+              <ChartFrame label={`Phase-folded light curve of TIC ${star.tic_id}: ${foldedChartData.length} phase bins.`}>
               <ResponsiveContainer width="100%" height={176}>
                 <LineChart data={foldedChartData}>
                   <CartesianGrid strokeDasharray="2 4" stroke="#1A2430" />
@@ -326,6 +330,7 @@ export default function TargetPage() {
                   <Line type="monotone" dataKey="y" stroke="#A78BFA" strokeWidth={1} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
+              </ChartFrame>
             )}
           </div>
         </div>

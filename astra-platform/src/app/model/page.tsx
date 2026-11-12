@@ -1,6 +1,7 @@
 'use client';
 
 import { MetricCard, Panel, HashBadge } from '@/components/shared/UI';
+import { ChartFrame, describeSeries } from '@/components/shared/ChartFrame';
 import { PageError, PageLoading } from '@/components/shared/DataState';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useModelDetails, useCheckpoints, useCalibrationDetails, useBenchmarkMetrics } from '@/lib/hooks';
@@ -284,6 +285,7 @@ export default function ModelOperationsPage() {
         <Panel title="Per-Class F1 Performance" subtitle="Accuracy representation per verified target class">
           <div className="h-64 flex flex-col justify-between">
             <div className="flex-1">
+              <ChartFrame label={`Bar chart of F1 score per class: ${describeSeries(classF1Data.map((d) => ({ name: d.name, value: d.f1 })), (v) => v.toFixed(2))}.`} className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={classF1Data} margin={{ left: -10, right: 10, top: 10, bottom: 5 }}>
                   <XAxis dataKey="name" stroke="#5A6878" tick={{ fontSize: 9 }} tickLine={false} />
@@ -311,6 +313,7 @@ export default function ModelOperationsPage() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              </ChartFrame>
             </div>
             <div className="mt-4 text-[11px] text-[#5A6878] leading-normal bg-[#05070B] p-2.5 rounded border border-[#1A2430] font-sans">
               Conclusion: The architecture excels at identifying <span className="text-amber-400 font-semibold">RR Lyrae</span> (F1: {performance.per_class_f1.rr_lyrae.toFixed(4)}) and <span className="text-emerald-400 font-semibold">Eclipsing Binaries</span> (F1: {performance.per_class_f1.eclipsing_binary.toFixed(4)}), but struggles with <span className="text-purple-400 font-semibold">Solar-like</span> stars (F1: {performance.per_class_f1.solar_like.toFixed(4)}) due to lower signal amplitudes.
