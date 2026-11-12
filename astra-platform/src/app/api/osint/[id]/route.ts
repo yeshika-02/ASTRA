@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseSync } from 'node:sqlite';
-import { pathToFileURL } from 'node:url';
-import * as path from 'path';
+import { getDatabase } from '@/lib/server/db';
+import { serverError } from '@/lib/server/errors';
 import { parseTicId } from '@/lib/server/validation';
-import { errorMessage } from '@/lib/server/errors';
 import type { StarRow } from '@/lib/types/artifacts';
 
 export const dynamic = 'force-dynamic';
@@ -27,10 +25,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid TIC identifier.' }, { status: 400 });
     }
 
-    const dbPath = path.join(process.cwd(), 'data', 'astra.sqlite');
-    const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
-    
-    const stmt = db.prepare('SELECT * FROM stars WHERE tic_id = ?');
+    const stmt = getDatabase().prepare('SELECT * FROM stars WHERE tic_id = ?');
     const r = stmt.get(ticId) as StarRow | undefined;
     
     if (!r) {
@@ -102,9 +97,6 @@ export async function GET(
       audit_hash: star.preprocessing_hash ?? 'N/A',
     });
   } catch (error) {
-    return NextResponse.json({ 
-      error: 'Failed to generate OSINT report', 
-      details: errorMessage(error)
-    }, { status: 500 });
+    return serverError('/api/osint/[id]', error, 'Failed to generate OSINT report');
   }
 }
