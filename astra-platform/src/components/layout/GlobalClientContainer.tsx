@@ -51,6 +51,13 @@ export function GlobalClientContainer({ children }: { children: React.ReactNode 
     // reducedMotion="user": framer-motion drops transform animations when the OS asks for less motion.
     <MotionConfig reducedMotion="user">
     <div className="flex h-screen overflow-hidden text-[#D7DEE7]">
+      {/* First focusable element: lets keyboard users jump past the sidebar and top bar. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded focus:bg-[#0B1118] focus:text-[#D7DEE7] focus:border focus:border-[#6EA8FE] text-[0.8125rem]"
+      >
+        Skip to content
+      </a>
       {/* 3D Cosmic Starfield Layer (behind everything) */}
       <CosmicBackground />
       <ParticleLayer />
@@ -64,7 +71,7 @@ export function GlobalClientContainer({ children }: { children: React.ReactNode 
         <TopBar />
 
         {/* Dynamic Transition Area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 relative select-text">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4 md:p-6 relative select-text focus:outline-none">
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
