@@ -165,3 +165,19 @@ describe('filter controls', () => {
     expect(read('app/visualization/page.tsx')).toMatch(/aria-label=\{`Interactive 3D sky map of \$\{data\.stars\.length\} stars/);
   });
 });
+
+describe('mission replay controls', () => {
+  const replay = read('app/mission-replay/page.tsx');
+
+  it('pipeline stages are keyboard-operable buttons', () => {
+    expect(replay).toContain('<motion.button');
+    // No <motion.div ...> whose props (up to the next tag) include onClick.
+    expect(replay).not.toMatch(/<motion\.div(?:(?!<)[\s\S])*?onClick/);
+    expect(replay).toContain("aria-current={isActive ? 'step' : undefined}");
+  });
+
+  it('autoplay reports its state and the attention map describes itself', () => {
+    expect(replay).toContain('aria-pressed={isPlaying}');
+    expect(replay).toMatch(/role="img"\s+aria-label=\{`Attention map:/);
+  });
+});
