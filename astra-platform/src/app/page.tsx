@@ -3,8 +3,10 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { Panel } from '@/components/shared/UI';
+import { PageError, PageLoading } from '@/components/shared/DataState';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails, useModelDetails } from '@/lib/hooks';
+import { combineQueries } from '@/lib/hooks/queryState';
 import { AUDIT_EVENTS, CLASS_LABELS, CLASS_COLORS, SHARED_BEST_VAL_ACCURACY } from '@/lib/data/constants';
 import { formatParams } from '@/lib/utils';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
@@ -119,36 +121,24 @@ export default function Home() {
       .catch(() => setHealth({ status: 'BLOCKED' }));
   }, []);
 
-  const { data: datasetDetails, isLoading: datasetLoading } = useDatasetDetails();
-  const { data: modelDetails, isLoading: modelLoading } = useModelDetails();
+  const datasetQuery = useDatasetDetails();
+  const modelQuery = useModelDetails();
+  const { data: datasetDetails } = datasetQuery;
+  const { data: modelDetails } = modelQuery;
+  const state = combineQueries([datasetQuery, modelQuery]);
 
-  if (datasetLoading || modelLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-[#D7DEE7]">Mission Control</h1>
-          <p className="text-[11px] text-[#8B97A7] mt-0.5 animate-pulse font-mono">
-            Loading stellar intelligence parameters…
-          </p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 astra-glass rounded animate-pulse" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="h-64 astra-glass rounded animate-pulse" />
-          <div className="h-64 astra-glass rounded animate-pulse" />
-        </div>
-      </div>
-    );
+  if (state.isLoading) {
+    return <PageLoading title="Mission Control" message="Loading stellar intelligence parameters…" panels={2} />;
   }
 
-  if (!datasetDetails || !modelDetails) {
+  if (state.isError || !datasetDetails || !modelDetails) {
     return (
-      <div className="p-6 text-center text-red-400 font-mono border border-red-500/20 bg-red-950/10 rounded">
-        System Error: Failed to retrieve dynamic registry configurations. Check API status.
-      </div>
+      <PageError
+        heading="Mission Control"
+        title="Could not load the registry and model summaries"
+        error={state.error}
+        onRetry={state.retry}
+      />
     );
   }
 
