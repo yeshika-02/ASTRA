@@ -1,6 +1,7 @@
 'use client';
 
 import { MetricCard, Panel, HashBadge, DataRow } from '@/components/shared/UI';
+import { PageError, PageLoading } from '@/components/shared/DataState';
 import { StatusBadge } from '@/components/shared/Badges';
 import { useDatasetDetails } from '@/lib/hooks';
 import { DATASET_LINEAGE, AUDIT_EVENTS } from '@/lib/data/constants';
@@ -8,32 +9,21 @@ import { CLASS_COLORS, CLASS_LABELS } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 export default function DatasetIntelligencePage() {
-  const { data: datasetDetails, isLoading: datasetLoading } = useDatasetDetails();
+  const datasetQuery = useDatasetDetails();
+  const { data: datasetDetails } = datasetQuery;
 
-  if (datasetLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold text-[#D7DEE7]">Dataset Intelligence</h1>
-          <p className="text-[0.8125rem] text-[#8B97A7] mt-0.5 animate-pulse">
-            Loading dataset intelligence parameters…
-          </p>
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 astra-glass rounded" />
-          ))}
-        </div>
-        <div className="h-64 astra-glass rounded animate-pulse" />
-      </div>
-    );
+  if (datasetQuery.isLoading) {
+    return <PageLoading title="Dataset Intelligence" message="Loading dataset intelligence parameters…" />;
   }
 
-  if (!datasetDetails) {
+  if (datasetQuery.isError || !datasetDetails) {
     return (
-      <div className="p-6 text-center text-red-400 font-mono border border-red-500/20 bg-red-950/10 rounded">
-        System Error: Failed to retrieve dynamic dataset intelligence.
-      </div>
+      <PageError
+        heading="Dataset Intelligence"
+        title="Could not load dataset details"
+        error={datasetQuery.error}
+        onRetry={() => void datasetQuery.refetch()}
+      />
     );
   }
 
