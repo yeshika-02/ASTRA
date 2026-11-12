@@ -143,7 +143,7 @@ python training/cross_validate.py --seeds 42 100 2026 --folds 5 --epochs 50 --ou
 Writes `fold_metrics.csv`, `aggregate_metrics.json` (with protocol and provenance) and `statistical_report.md`.
 
 > [!NOTE]
-> The current protocol draws folds from all 944 stars, test stars included, and picks each fold's best epoch on that fold's own validation data, so its scores are optimistic. Sprint task SP-21 fixes this.
+> The pool is the 802 frozen train + validation stars; the 142 test stars are excluded (`--test-ids`). Duplicate groups never straddle folds, the epoch is chosen on an inner selection set (`--inner-folds`), and each outer fold is scored once. The report gives the outer-fold mean and a bootstrap CI per seed ([ADR-0062](../artifacts/decisions/ADR-0062-evaluation-protocol.md)). Earlier versions of this script drew folds from all 944 stars and scored each fold with its own best epoch.
 
 ---
 

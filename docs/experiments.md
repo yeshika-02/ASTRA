@@ -84,7 +84,7 @@ The cross, separate and only rows used to read 74.47%, 75.18% and 73.05% with ap
 
 ## Cross-Validation Results
 
-No cross-validation results for the frozen 944-star dataset are in the repository: `fold_metrics.csv` and the per-fold confusion matrices were never committed. The CV summary in `phase7_benchmark_report.md` (mean validation accuracy 84.68%) comes from an earlier 269-star experiment. The current protocol also draws folds from the test stars; sprint task SP-21 fixes it.
+No cross-validation results for the frozen 944-star dataset are in the repository: `fold_metrics.csv` and the per-fold confusion matrices were never committed. The CV summary in `phase7_benchmark_report.md` (mean validation accuracy 84.68%) comes from an earlier 269-star experiment. The script now runs a test-free, grouped, nested protocol ([ADR-0062](../artifacts/decisions/ADR-0062-evaluation-protocol.md)); no full run has been done yet.
 
 ---
 

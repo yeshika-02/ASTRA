@@ -81,7 +81,7 @@ Accuracy and F1 are recomputed from each model's committed test confusion matrix
 ### 📊 Cross-Validation
 
 > [!NOTE]
-> No cross-validation result exists yet for the frozen 944-star dataset. The 5-fold, 3-seed table that used to be here (mean validation accuracy 84.68%) came from an earlier experiment on a 269-star dataset ([`phase7_benchmark_report.md`](docs/engineering-log/phase7_benchmark_report.md)). The current cross-validation script also draws folds from the test stars; sprint task SP-21 fixes the protocol.
+> No cross-validation result exists yet for the frozen 944-star dataset. The 5-fold, 3-seed table that used to be here (mean validation accuracy 84.68%) came from an earlier experiment on a 269-star dataset ([`phase7_benchmark_report.md`](docs/engineering-log/phase7_benchmark_report.md)). `training/cross_validate.py` now excludes the frozen test stars, groups duplicates, picks each fold's epoch on an inner selection set and scores the outer fold once, with bootstrap CIs ([ADR-0062](artifacts/decisions/ADR-0062-evaluation-protocol.md)); a full run takes hours on CPU and has not been done yet.
 
 ---
 
@@ -339,7 +339,7 @@ python training/uncertainty.py --checkpoint outputs/run_shared/best_star_transfo
 Every script has `--help`. Reports and plots go to `outputs/` (`--out-dir` to change).
 
 > [!NOTE]
-> Cross-validation currently selects each fold's best epoch on that fold's own validation data and includes the test stars, so its score is optimistic. Fixing this is sprint task SP-21.
+> Cross-validation uses only the frozen train + validation stars: the epoch is chosen on an inner selection set and each outer fold is scored once ([ADR-0062](artifacts/decisions/ADR-0062-evaluation-protocol.md)). It needs the frozen test-id file to exclude the test stars (`--test-ids`, default `data/phase6/splits/test_ids.json`).
 
 ### Phase 4 — Evaluation & Export
 
