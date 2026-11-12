@@ -1,7 +1,7 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { LoadError, PageLoading } from '@/components/shared/DataState';
+import { LoadError, PageError, PageLoading } from '@/components/shared/DataState';
 import { combineQueries } from '@/lib/hooks/queryState';
 
 /** Depth-first search of a rendered element tree for the first element of `type`. */
@@ -72,6 +72,17 @@ describe('LoadError', () => {
     const html = renderToStaticMarkup(<LoadError title="Failed" compact />);
     expect(html).toContain('p-3');
     expect(html).not.toContain('nothing is shown in its place');
+  });
+});
+
+describe('PageError', () => {
+  it('keeps the page heading above the alert', () => {
+    const html = renderToStaticMarkup(
+      <PageError heading="Research Findings" title="Could not load research findings" onRetry={() => {}} />,
+    );
+    expect(html.indexOf('<h1')).toBeLessThan(html.indexOf('role="alert"'));
+    expect(html).toContain('Research Findings');
+    expect(html).toContain('Retry');
   });
 });
 
