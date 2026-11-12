@@ -84,3 +84,18 @@ export function LoadError({ title, error, onRetry, compact = false, className }:
     </div>
   );
 }
+
+interface PageErrorProps extends Omit<LoadErrorProps, 'compact' | 'className'> {
+  /** The page heading, kept so the reader knows which view failed. */
+  heading: string;
+}
+
+/** Full-page failure: the page heading followed by a LoadError. */
+export function PageError({ heading, ...props }: PageErrorProps) {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-xl font-semibold text-[#D7DEE7]">{heading}</h1>
+      <LoadError {...props} />
+    </div>
+  );
+}
