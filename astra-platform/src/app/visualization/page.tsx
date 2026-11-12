@@ -6,6 +6,7 @@ import { useStars } from '@/lib/hooks';
 import { useAstraStore } from '@/lib/store';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
 import { Panel, EmptyState } from '@/components/shared/UI';
+import { LoadError } from '@/components/shared/DataState';
 import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -23,7 +24,7 @@ export default function VisualizationPage() {
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const { selectedStar, setSelectedStar } = useAstraStore();
 
-  const { data, isLoading } = useStars({
+  const { data, isLoading, isError, error, refetch } = useStars({
     class: selectedClass !== 'all' ? selectedClass : undefined,
     limit: 944, // Fetch all stars matching class for full globe projection
   });
@@ -40,7 +41,7 @@ export default function VisualizationPage() {
         </div>
         <div className="font-mono text-[11px] text-[#5A6878]">
           Projection radius: R=25 kpc (scaled) · Stars shown:{' '}
-          {data ? data.stars.length.toLocaleString() : 'Loading…'}
+          {data ? data.stars.length.toLocaleString() : isError ? 'unavailable' : 'Loading…'}
         </div>
       </div>
 
@@ -84,10 +85,22 @@ export default function VisualizationPage() {
       <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-6">
         {/* Three.js Globe rendering */}
         <div className="flex-1 astra-glass rounded overflow-hidden relative">
-          {!isLoading && data ? (
+          {isError ? (
+            <div className="w-full h-full flex items-center justify-center p-6">
+              <LoadError
+                title="Could not load the star registry"
+                error={error}
+                onRetry={() => void refetch()}
+                className="max-w-sm"
+              />
+            </div>
+          ) : !isLoading && data ? (
             <StarGlobe stars={data.stars} />
           ) : (
-            <div className="w-full h-full flex items-center justify-center font-mono text-[11px] text-[#5A6878]">
+            <div
+              role="status"
+              className="w-full h-full flex items-center justify-center font-mono text-[11px] text-[#5A6878]"
+            >
               Loading targets database…
             </div>
           )}
