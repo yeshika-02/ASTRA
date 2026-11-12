@@ -183,6 +183,7 @@ export default function AnalysisPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="TIC ID or class…"
+            aria-label="Filter targets by TIC ID or class"
             className="w-full bg-[#05070B]/50 border border-white/5 rounded px-2 py-1.5 text-[0.75rem] text-[#D7DEE7] placeholder-[#5A6878] focus:outline-none focus:border-[#6EA8FE]"
           />
         </div>
@@ -265,6 +266,7 @@ export default function AnalysisPage() {
                 <button
                   key={t}
                   onClick={() => setActiveChart(t)}
+                  aria-pressed={activeChart === t}
                   className={`px-4 py-2 text-[0.75rem] border-b-2 transition-colors ${
                     activeChart === t
                       ? 'border-[#6EA8FE] text-[#6EA8FE]'

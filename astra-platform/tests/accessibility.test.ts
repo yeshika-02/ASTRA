@@ -132,3 +132,36 @@ describe('charts', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('filter controls', () => {
+  it('search filters are labelled groups of toggle buttons', () => {
+    const search = read('app/search/page.tsx');
+    for (const id of ['filter-class', 'filter-source', 'filter-split']) {
+      expect(search).toContain(`id="${id}"`);
+      expect(search).toContain(`aria-labelledby="${id}"`);
+    }
+    expect(search.match(/aria-pressed=/g)?.length).toBe(4);
+    // A <label> must point at its control; group captions are plain text.
+    expect(search).not.toMatch(/<label className/);
+    expect(search).toContain('<label htmlFor="target-search"');
+    expect(search).toMatch(/<input\s+id="target-search"/);
+  });
+
+  it('globe filters and chart tabs report their state', () => {
+    expect(read('app/visualization/page.tsx').match(/aria-pressed=/g)?.length).toBe(2);
+    expect(read('app/analysis/page.tsx')).toContain('aria-pressed={activeChart === t}');
+  });
+
+  it.each(['app/analysis/page.tsx', 'app/mission-replay/page.tsx', 'app/osint/page.tsx'])(
+    '%s names its search input beyond the placeholder',
+    (file) => {
+      const src = read(file);
+      const input = src.slice(src.indexOf('<input'), src.indexOf('/>', src.indexOf('<input')));
+      expect(input).toContain('aria-label=');
+    },
+  );
+
+  it('the 3D globe has a text alternative pointing to the keyboard route', () => {
+    expect(read('app/visualization/page.tsx')).toMatch(/aria-label=\{`Interactive 3D sky map of \$\{data\.stars\.length\} stars/);
+  });
+});
