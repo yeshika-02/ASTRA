@@ -161,7 +161,7 @@ export default function TargetSearchPage() {
 
       {/* Results Panel */}
       <div className="astra-glass rounded overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Search results table" tabIndex={0}>
           <table className="w-full text-left text-[11px] text-[#D7DEE7]">
             <thead>
               <tr className="bg-[#05070B]/50 border-b border-white/5">
