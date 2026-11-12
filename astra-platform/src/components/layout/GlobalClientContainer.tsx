@@ -9,30 +9,20 @@ import { CosmicBackground } from '../three/CosmicBackground';
 import { ParticleLayer } from '../shared/ParticleLayer';
 import { useAstraStore } from '@/lib/store';
 import { spaceHumSynth } from '@/lib/utils/SpaceHum';
+import { browserStorage, readPreferences } from '@/lib/store/preferences';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function GlobalClientContainer({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { 
-    audioState, 
-    setAudioState, 
-    audioVolume, 
-    setAudioVolume, 
-    setQualityState 
-  } = useAstraStore();
+  const { audioState, audioVolume, setAudioVolume, setQualityState } = useAstraStore();
 
-  // Load from localStorage on mount
+  // Restore display preferences on mount. Audio on/off is never restored: sound starts only
+  // when the visitor turns it on.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedAudio = localStorage.getItem('astra-audio-state') as 'muted' | 'playing' | null;
-      const savedVolume = localStorage.getItem('astra-audio-volume');
-      const savedQuality = localStorage.getItem('astra-quality-state') as 'low' | 'medium' | 'high' | null;
-
-      if (savedAudio) setAudioState(savedAudio);
-      if (savedVolume) setAudioVolume(parseFloat(savedVolume));
-      if (savedQuality) setQualityState(savedQuality);
-    }
-  }, [setAudioState, setAudioVolume, setQualityState]);
+    const prefs = readPreferences(browserStorage());
+    if (prefs.audioVolume !== undefined) setAudioVolume(prefs.audioVolume);
+    if (prefs.qualityState !== undefined) setQualityState(prefs.qualityState);
+  }, [setAudioVolume, setQualityState]);
 
   // Manage programmatic deep-space hum synthesis
   useEffect(() => {
