@@ -671,7 +671,7 @@ export default function Home() {
             {/* Audit log table in Launch section */}
             <div className="pt-8">
               <Panel title="Mission Milestones" subtitle="Verified project gate releases and audits">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto" role="region" aria-label="Mission milestones table" tabIndex={0}>
                   <table className="w-full text-left text-[11px] text-[#D7DEE7]">
                     <thead>
                       <tr className="border-b border-white/5">

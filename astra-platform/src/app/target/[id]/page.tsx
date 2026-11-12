@@ -334,7 +334,7 @@ export default function TargetPage() {
       {/* Section E — Observation Coverage */}
       {star.sector_information && star.sector_information.length > 0 && (
         <Panel title="E. Observation Coverage" subtitle="Physical TESS mission sector recordings">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" role="region" aria-label="Observation coverage table" tabIndex={0}>
             <table className="w-full text-left text-[11px] text-[#D7DEE7]">
               <thead>
                 <tr className="border-b border-[#1A2430] bg-[#05070B]/50">

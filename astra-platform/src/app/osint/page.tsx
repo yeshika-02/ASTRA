@@ -153,7 +153,7 @@ export default function SpaceOsintPage() {
 
             {/* Cross Matches */}
             <Panel title="Astronomical Database Cross-Matches" subtitle="Cross-identification with celestial registries">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" role="region" aria-label="Catalog cross-match table" tabIndex={0}>
                 <table className="w-full text-left text-[11px] text-[#D7DEE7]">
                   <thead>
                     <tr className="border-b border-[#1A2430] bg-[#05070B]/50">
@@ -181,7 +181,7 @@ export default function SpaceOsintPage() {
 
             {/* Observational History */}
             <Panel title="Astronomical Observations History" subtitle="Physical sensor logs">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" role="region" aria-label="Observation history table" tabIndex={0}>
                 <table className="w-full text-left text-[11px] text-[#D7DEE7]">
                   <thead>
                     <tr className="border-b border-[#1A2430] bg-[#05070B]/50">
@@ -213,7 +213,7 @@ export default function SpaceOsintPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Related objects */}
               <Panel title="Related Celestial Objects" subtitle="Nearby stellar coordinates in same sector">
-                <div className="overflow-x-auto text-[11px]">
+                <div className="overflow-x-auto text-[11px]" role="region" aria-label="Related objects table" tabIndex={0}>
                   <table className="w-full text-left text-[#D7DEE7]">
                     <thead>
                       <tr className="border-b border-[#1A2430]">
