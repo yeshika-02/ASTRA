@@ -225,3 +225,19 @@ export interface SearchResult {
   period_source: string;
   n_sectors: number | null;
 }
+
+/** /api/osint/[id] report. Fields the registry does not hold are null, never invented. */
+export interface OsintReport {
+  tic_id: number;
+  astra_class: string;
+  period: number;
+  period_source: string;
+  ra: number;
+  dec: number;
+  cross_matches: { catalog: string; identifier: string | null; otype: string | null; distance_arcsec: number | null; notes: string }[];
+  observational_history: { observatory: string; instrument: string; filters: string; observations: number | null; first_obs: string | null; last_obs: string | null; cadence: string | null }[];
+  related_objects: { identifier: string; class: string; ra: number; dec: number; separation: string; notes: string }[];
+  provenance: { step: string; agent: string; detail: string }[];
+  scientific_notes: string;
+  audit_hash: string;
+}

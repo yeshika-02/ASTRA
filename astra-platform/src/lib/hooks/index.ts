@@ -6,6 +6,7 @@ import type {
   CalibrationArtifact,
   CheckpointEntry,
   DatasetResponse,
+  OsintReport,
   ResearchResponse,
   SearchResult,
 } from '../types/artifacts';
@@ -61,6 +62,15 @@ export function useStar(id: string | number | null) {
   return useQuery<Star>({
     queryKey: ['star', id],
     queryFn: () => fetchJson<Star>(`/api/stars/${id}`),
+    enabled: id !== null,
+  });
+}
+
+// ─── OSINT report ──────────────────────────────────────────────────────────────
+export function useOsint(id: number | null) {
+  return useQuery<OsintReport>({
+    queryKey: ['osint', id],
+    queryFn: () => fetchJson<OsintReport>(`/api/osint/${id}`),
     enabled: id !== null,
   });
 }
