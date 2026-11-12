@@ -49,6 +49,7 @@ export default function SpaceOsintPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search Target ID…"
+            aria-label="Filter targets by TIC ID"
             className="w-full bg-[#05070B]/50 border border-white/5 rounded px-2.5 py-1.5 text-[0.75rem] text-[#D7DEE7] placeholder-[#5A6878] focus:outline-none focus:border-[#6EA8FE]"
           />
         </div>
