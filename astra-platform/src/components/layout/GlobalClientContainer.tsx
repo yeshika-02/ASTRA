@@ -72,7 +72,9 @@ export function GlobalClientContainer({ children }: { children: React.ReactNode 
 
         {/* Dynamic Transition Area */}
         <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4 md:p-6 relative select-text focus:outline-none">
-          <AnimatePresence mode="wait">
+          {/* initial={false}: no fade on the first load. Server rendering cannot know the
+              reduced-motion preference, so a first-load fade would reach those visitors too. */}
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}
               initial={reducedMotion ? false : { opacity: 0, y: 6, filter: 'blur(4px)' }}
