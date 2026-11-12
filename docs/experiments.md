@@ -17,8 +17,8 @@ the same frozen dataset (v2.0, 944 stars) and identical train/val/test splits.
 ## Primary Results: Test Set Performance
 
 > [!IMPORTANT]
-> The following metrics are **VERIFIED** via independent recomputation.
-> They were validated in the Phase 7C Ground Truth Audit with 0 mismatches.
+> These are the published metrics from the Phase 7C audit. Accuracy and F1 are recomputed from the committed test
+> confusion matrices; every number's source and status is in [metrics.md](metrics.md).
 
 ### Test Accuracy & F1 (95% Bootstrap Confidence Intervals)
 
@@ -26,9 +26,9 @@ the same frozen dataset (v2.0, 944 stars) and identical train/val/test splits.
 |-------------|---------|:---:|:---:|:---:|:---:|
 | **HybridTransformer** | shared ⭐ | **78.17%** | [71.13%, 85.21%] | **0.7677** | [0.6944, 0.8320] |
 | **CNN Dual Branch** | dual_aug | 78.17% | [71.83%, 84.51%] | 0.7635 | [0.6923, 0.8301] |
-| HybridTransformer | cross | 74.47% | — | — | — |
-| HybridTransformer | separate | 75.18% | — | — | — |
-| HybridTransformer | only | 73.05% | — | — | — |
+| HybridTransformer | cross | 80.99% | [73.94%, 87.32%] | 0.7949 | [0.7252, 0.8594] |
+| HybridTransformer | separate | 84.51% | [78.17%, 90.16%] | 0.8394 | [0.7712, 0.9012] |
+| HybridTransformer | only | 72.54% | [64.79%, 80.28%] | 0.7127 | [0.6420, 0.7834] |
 
 > **Note on tied test accuracy**: Both `shared` and `dual_aug` achieve 78.17% on
 > identical test samples. The Transformer Shared variant is preferred as the
@@ -74,24 +74,17 @@ From `phase7_benchmark_report.md` and `phase7_testset_benchmark.md`:
 |-------------|---------|:---:|:---:|:---:|:---:|
 | HybridTransformer | shared | 1,373,701 | 78.17% | 0.7677 | 0.7784 |
 | CNN Dual | dual_aug | 1,043,333 | 78.17% | 0.7635 | 0.7756 |
-| HybridTransformer | separate | ~1.37M | 75.18% | — | — |
-| HybridTransformer | cross | ~1.37M | 74.47% | — | — |
-| HybridTransformer | only | ~0.9M | 73.05% | — | — |
+| HybridTransformer | separate | 1,687,557 | 84.51% | 0.8394 | 0.8456 |
+| HybridTransformer | cross | 1,240,965 | 80.99% | 0.7949 | 0.8033 |
+| HybridTransformer | only | 316,933 | 72.54% | 0.7127 | 0.7247 |
+
+The cross, separate and only rows used to read 74.47%, 75.18% and 73.05% with approximate parameter counts; no report contains those accuracies, and the committed confusion matrices give the values above.
 
 ---
 
 ## Cross-Validation Results
 
-5-fold stratified CV across 3 seeds. CSV data in `fold_metrics.csv`.
-
-| Seed | Metric | Fold 0 | Fold 1 | Fold 2 | Fold 3 | Fold 4 | Mean |
-|------|--------|--------|--------|--------|--------|--------|------|
-| 42 | Val Acc | — | — | — | — | — | see fold_metrics.csv |
-| 100 | Val Acc | — | — | — | — | — | see fold_metrics.csv |
-| 2026 | Val Acc | — | — | — | — | — | see fold_metrics.csv |
-
-Confusion matrices for all 15 configurations are stored in
-`models/saved/confusion_matrix_seed{seed}_fold{k}.png`.
+No cross-validation results for the frozen 944-star dataset are in the repository: `fold_metrics.csv` and the per-fold confusion matrices were never committed. The CV summary in `phase7_benchmark_report.md` (mean validation accuracy 84.68%) comes from an earlier 269-star experiment. The script now runs a test-free, grouped, nested protocol ([ADR-0062](../artifacts/decisions/ADR-0062-evaluation-protocol.md)); no full run has been done yet.
 
 ---
 
@@ -174,7 +167,7 @@ ONNX explainability export: `models/saved/best_star_transformer_shared_explain.o
 
 ## Audit Trail
 
-All results have been independently verified:
+The original author's Phase 7C audit reports these checks. They are recorded, not reproducible from a clone; see [metrics.md](metrics.md).
 
 | Audit | Target | Status |
 |-------|--------|:---:|

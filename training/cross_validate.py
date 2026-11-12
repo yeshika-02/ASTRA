@@ -1,20 +1,37 @@
 """
-ASTRA — 5-Fold, 3-Seed Cross-Validation Script.
+ASTRA — honest cross-validation of the shared transformer (SP-21, ADR-0062).
 
-Performs Group-aware Stratified K-Fold cross-validation over 5 folds and 3 repeated
-seeds (42, 100, 2026). Saves metrics, confusion matrices, and subgroup performance.
-Outputs statistical_report.md, fold_metrics.csv, and aggregate_metrics.json.
+Protocol:
+- The pool is the frozen train + validation stars. The frozen test stars are excluded and
+  the script refuses to run without the test-id file.
+- Stars are grouped with the pipeline's duplicate rule (same TIC id, or within 2 arcsec;
+  pipeline.phase6_utils.assign_duplicate_groups), so no group is ever split.
+- Outer loop: stratified group k-fold. Inside each outer training set an inner stratified
+  group split holds out a selection set; the best epoch is chosen on that selection set
+  only, and the selected model is scored once on the outer fold.
+- Reported: outer-fold metrics, their mean and spread over folds and seeds, and a
+  percentile-bootstrap CI over each seed's pooled out-of-fold predictions.
+
+The old script scored each fold with the best of 50 epochs chosen on that same fold and
+drew folds from all 944 stars, test stars included (audit S7).
+
+Outputs fold_metrics.csv, aggregate_metrics.json, statistical_report.md and one confusion
+matrix per outer fold.
 """
 
 from __future__ import annotations
 
+import argparse
+import copy
 import csv
 import json
 import logging
 import random
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 import torch
@@ -24,6 +41,7 @@ from torch.utils.data import DataLoader
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from astra.config import get_paths, resolve_cli_path
 from data.labels import CLASS_NAMES, NUM_CLASSES
 from training.dataset import ASTRADataset
 from training.models.hybrid_transformer import HybridTransformer
@@ -38,8 +56,9 @@ logging.basicConfig(
 )
 
 # Output Paths
-ARTIFACT_DIR = Path("/Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3")
-DATA_DIR = PROJECT_ROOT / "data" / "phase6" / "processed"
+PATHS = get_paths()
+ARTIFACT_DIR = PATHS.output_dir  # reports, plots, metrics
+DATA_DIR = PATHS.processed_dir
 
 
 def set_deterministic_seeds(seed: int) -> None:
@@ -57,19 +76,23 @@ def set_deterministic_seeds(seed: int) -> None:
 
 class CrossValDataset(ASTRADataset):
     """Custom dataset wrapper for cross-validation subsets."""
-    def __init__(self, samples: list[dict], use_folded: bool = True, augment: bool = False) -> None:
-        self.data_dir = DATA_DIR
+    def __init__(
+        self, samples: list[dict], use_folded: bool = True, augment: bool = False, data_dir: Path = DATA_DIR
+    ) -> None:
+        self.data_dir = data_dir
         self.split = "custom"
         self.use_folded = use_folded
         self.augment = augment
         self.augment_prob = 0.5
+        self.splits_dir = None
+        self.frozen_split = False
         self._samples = samples
         self._label_list = [s["label"] for s in samples]
 
 
-def scan_all_samples() -> list[dict]:
+def scan_all_samples(data_dir: Path = DATA_DIR) -> list[dict]:
     """Scan all processed TIC directories to build list of valid samples."""
-    tic_dirs = sorted(DATA_DIR.glob("TIC_*"))
+    tic_dirs = sorted(Path(data_dir).glob("TIC_*"))
     required_files = ("flux_1000.npy", "flux_200.npy", "folded_flux_1000.npy", "folded_flux_200.npy", "metadata.json")
 
     samples = []
@@ -87,11 +110,146 @@ def scan_all_samples() -> list[dict]:
                         "folded_flux_path": tic_dir / "folded_flux_1000.npy",
                         "label": label,
                         "tic_id": tic_dir.name,
+                        "ra": meta.get("ra"),
+                        "dec": meta.get("dec"),
                         "period_source": meta.get("period_source", "unknown"),
                     })
             except Exception:
                 pass
     return samples
+
+
+# ─── Protocol: pool, groups, folds (no model involved) ──────────────────────────
+
+
+@dataclass(frozen=True)
+class FoldPlan:
+    """One outer fold: train on train_idx, pick the epoch on select_idx, score on test_idx."""
+    seed: int
+    fold: int
+    train_idx: np.ndarray
+    select_idx: np.ndarray
+    test_idx: np.ndarray
+
+
+def read_test_ids(path: Path) -> set[str]:
+    if not Path(path).is_file():
+        raise FileNotFoundError(
+            f"Frozen test-id file not found: {path}. Cross-validation must exclude the test stars; "
+            "run python pipeline/prepare_from_repo.py or pass --test-ids."
+        )
+    return set(json.loads(Path(path).read_text(encoding="utf-8")))
+
+
+def cv_pool(samples: list[dict], test_ids: set[str]) -> list[dict]:
+    """Every sample except the frozen test stars."""
+    return [s for s in samples if s["tic_id"] not in test_ids]
+
+
+def duplicate_groups(samples: list[dict]) -> np.ndarray:
+    """Group ids from the pipeline's duplicate rule (same TIC id, or within 2 arcsec)."""
+    from pipeline.phase6_utils import assign_duplicate_groups
+
+    rows = [{"tic_id": s["tic_id"].removeprefix("TIC_"), "ra": s.get("ra"), "dec": s.get("dec")} for s in samples]
+    return np.array([row["duplicate_group_id"] for row in assign_duplicate_groups(rows)])
+
+
+def plan_folds(labels: np.ndarray, groups: np.ndarray, seeds: list[int], n_folds: int,
+               inner_folds: int) -> list[FoldPlan]:
+    """Outer stratified group k-fold; one inner stratified group split per outer training set."""
+    from sklearn.model_selection import StratifiedGroupKFold
+
+    plans = []
+    index = np.arange(len(labels))
+    for seed in seeds:
+        outer = StratifiedGroupKFold(n_splits=n_folds, shuffle=True, random_state=seed)
+        for fold, (outer_train, outer_test) in enumerate(outer.split(index, labels, groups=groups)):
+            inner = StratifiedGroupKFold(n_splits=inner_folds, shuffle=True, random_state=seed + 1000 + fold)
+            inner_train, inner_select = next(inner.split(outer_train, labels[outer_train], groups=groups[outer_train]))
+            plans.append(FoldPlan(seed, fold, outer_train[inner_train], outer_train[inner_select], outer_test))
+    return plans
+
+
+def check_plans(plans: list[FoldPlan], groups: np.ndarray, n_pool: int) -> None:
+    """Raise if any group straddles train / select / test, or a seed's test folds miss or repeat a star."""
+    for plan in plans:
+        parts = {"train": plan.train_idx, "select": plan.select_idx, "test": plan.test_idx}
+        for a, b in (("train", "select"), ("train", "test"), ("select", "test")):
+            if set(parts[a]) & set(parts[b]):
+                raise AssertionError(f"seed {plan.seed} fold {plan.fold}: {a} and {b} share stars")
+            if set(groups[parts[a]]) & set(groups[parts[b]]):
+                raise AssertionError(f"seed {plan.seed} fold {plan.fold}: a duplicate group straddles {a}/{b}")
+    for seed in {plan.seed for plan in plans}:
+        tested = np.concatenate([plan.test_idx for plan in plans if plan.seed == seed])
+        if len(tested) != n_pool or len(set(tested)) != n_pool:
+            raise AssertionError(f"seed {seed}: outer test folds do not cover every pool star exactly once")
+
+
+# ─── Running the protocol ───────────────────────────────────────────────────────
+
+# train_fn(train_samples, select_samples) -> (predict_fn, selection_info). It may look at the
+# selection samples to choose an epoch, and must never see the outer test fold.
+TrainFn = Callable[[list[dict], list[dict]], tuple[Callable[[list[dict]], list[int]], dict]]
+
+
+def run_plans(samples: list[dict], plans: list[FoldPlan], train_fn: TrainFn) -> list[dict]:
+    """Train and select on each plan, then score once on its outer fold."""
+    from sklearn.metrics import f1_score
+
+    results = []
+    for plan in plans:
+        t0 = time.time()
+        test_samples = [samples[i] for i in plan.test_idx]
+        predict, selection = train_fn([samples[i] for i in plan.train_idx], [samples[i] for i in plan.select_idx])
+        preds = list(predict(test_samples))
+        labels = [s["label"] for s in test_samples]
+        f1s = f1_score(labels, preds, average=None, labels=list(range(NUM_CLASSES)), zero_division=0)
+        results.append({
+            "seed": plan.seed,
+            "fold": plan.fold,
+            "n_train": len(plan.train_idx),
+            "n_select": len(plan.select_idx),
+            "n_test": len(plan.test_idx),
+            "accuracy": float(np.mean(np.array(preds) == np.array(labels))),
+            "macro_f1": float(np.mean(f1s)),
+            **{f"f1_{name}": float(f1s[i]) for i, name in enumerate(CLASS_NAMES)},
+            **evaluate_subgroups({"preds": preds, "labels": labels}, test_samples),
+            "selection_accuracy": selection.get("selection_accuracy"),
+            "best_epoch": selection.get("best_epoch"),
+            "runtime_sec": time.time() - t0,
+            "test_tic_ids": [s["tic_id"] for s in test_samples],
+            "preds": preds,
+            "labels": labels,
+        })
+    return results
+
+
+def summarise(results: list[dict], n_resamples: int = 1000) -> dict:
+    """Mean and spread of outer-fold scores, and a bootstrap CI per seed over out-of-fold predictions."""
+    from training.evaluate import bootstrap_ci
+
+    accuracies = [r["accuracy"] for r in results]
+    per_seed = {}
+    for seed in sorted({r["seed"] for r in results}):
+        labels = np.concatenate([r["labels"] for r in results if r["seed"] == seed])
+        preds = np.concatenate([r["preds"] for r in results if r["seed"] == seed])
+        ci = bootstrap_ci(labels, preds, NUM_CLASSES, n_resamples=n_resamples, seed=seed)["ci"]
+        per_seed[str(seed)] = {"out_of_fold_accuracy": float(np.mean(labels == preds)),
+                               "accuracy_ci95": ci["accuracy"], "macro_f1_ci95": ci["macro_f1"]}
+    return {
+        "mean_fold_accuracy": float(np.mean(accuracies)),
+        "std_fold_accuracy": float(np.std(accuracies)),
+        "mean_fold_macro_f1": float(np.mean([r["macro_f1"] for r in results])),
+        "mean_catalog_accuracy": float(np.mean([r["catalog_accuracy"] for r in results])),
+        "mean_bls_accuracy": float(np.mean([r["bls_accuracy"] for r in results])),
+        "mean_f1_per_class": {name: float(np.mean([r[f"f1_{name}"] for r in results])) for name in CLASS_NAMES},
+        "mean_selection_accuracy": float(np.mean([r["selection_accuracy"] for r in results
+                                                  if r["selection_accuracy"] is not None] or [np.nan])),
+        "per_seed": per_seed,
+    }
+
+
+# ─── The transformer trainer ────────────────────────────────────────────────────
 
 
 def train_one_epoch(
@@ -152,6 +310,39 @@ def validate(
     }
 
 
+def transformer_trainer(n_epochs: int, device: torch.device, data_dir: Path) -> TrainFn:
+    """Train the shared transformer; keep the weights of the epoch that scores best on the selection set."""
+    def train(train_samples: list[dict], select_samples: list[dict]):
+        train_dataset = CrossValDataset(train_samples, use_folded=True, augment=True, data_dir=data_dir)
+        select_dataset = CrossValDataset(select_samples, use_folded=True, augment=False, data_dir=data_dir)
+        train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
+        select_loader = DataLoader(select_dataset, batch_size=32, shuffle=False, num_workers=0)
+
+        model = HybridTransformer(variant="shared", num_classes=NUM_CLASSES).to(device)
+        criterion = RegularizedFocalLoss(alpha=train_dataset.class_weights.to(device), gamma=2.0, label_smoothing=0.1)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-3)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epochs)
+
+        best = {"selection_accuracy": -1.0, "best_epoch": None, "state": None}
+        for epoch in range(1, n_epochs + 1):
+            train_one_epoch(model, train_loader, criterion, optimizer, device)
+            selection = validate(model, select_loader, criterion, device)
+            scheduler.step()
+            if selection["accuracy"] > best["selection_accuracy"]:
+                best = {"selection_accuracy": selection["accuracy"], "best_epoch": epoch,
+                        "state": copy.deepcopy(model.state_dict())}
+        model.load_state_dict(best["state"])
+
+        def predict(samples: list[dict]) -> list[int]:
+            loader = DataLoader(CrossValDataset(samples, use_folded=True, augment=False, data_dir=data_dir),
+                                batch_size=32, shuffle=False, num_workers=0)
+            return validate(model, loader, criterion, device)["preds"]
+
+        return predict, {"selection_accuracy": best["selection_accuracy"], "best_epoch": best["best_epoch"]}
+
+    return train
+
+
 def evaluate_subgroups(val_results: dict, val_samples: list[dict]) -> dict:
     """Evaluate accuracy on catalog-period stars vs BLS-fallback stars."""
     preds = val_results["preds"]
@@ -184,8 +375,12 @@ def evaluate_subgroups(val_results: dict, val_samples: list[dict]) -> dict:
     }
 
 
-def save_confusion_matrix(labels: list[int], preds: list[int], seed: int, fold: int) -> None:
+def save_confusion_matrix(
+    labels: list[int], preds: list[int], seed: int, fold: int, out_dir: Path | None = None
+) -> None:
     """Generate and save confusion matrix plot for this fold."""
+    out_dir = ARTIFACT_DIR if out_dir is None else out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -207,210 +402,151 @@ def save_confusion_matrix(labels: list[int], preds: list[int], seed: int, fold: 
     )
     ax.set_xlabel("Predicted", fontsize=11)
     ax.set_ylabel("True", fontsize=11)
-    ax.set_title(f"Confusion Matrix (Seed {seed}, Fold {fold})", fontsize=12, fontweight="bold")
+    ax.set_title(f"Outer-fold Confusion Matrix (Seed {seed}, Fold {fold})", fontsize=12, fontweight="bold")
     plt.tight_layout()
 
-    save_path = ARTIFACT_DIR / f"confusion_matrix_seed{seed}_fold{fold}.png"
+    save_path = out_dir / f"confusion_matrix_seed{seed}_fold{fold}.png"
     fig.savefig(save_path, dpi=120)
     plt.close(fig)
 
 
-def main() -> None:
+# ─── Reports ────────────────────────────────────────────────────────────────────
+
+
+def render_report(summary: dict, protocol: dict) -> str:
+    lines = [
+        "# ASTRA — Cross-Validation Report",
+        "",
+        f"Shared transformer, {protocol['folds']}-fold outer cross-validation over {len(protocol['seeds'])} seed(s) "
+        f"({protocol['folds'] * len(protocol['seeds'])} outer folds), {protocol['epochs']} epochs per fold.",
+        "",
+        "## Protocol",
+        "",
+        f"- Pool: {protocol['pool_stars']} frozen train + validation stars; {protocol['excluded_test_stars']} frozen "
+        "test stars excluded.",
+        f"- Groups: {protocol['groups']} duplicate groups ({protocol['grouping']}); no group is split.",
+        f"- Epoch selection: best epoch on an inner selection set (1/{protocol['inner_folds']} of each outer "
+        "training set); the selected model is scored once on the outer fold.",
+        "",
+        "## Outer-fold results",
+        "",
+        f"- Mean outer-fold accuracy: `{summary['mean_fold_accuracy'] * 100:.2f}%` "
+        f"(standard deviation over folds and seeds `{summary['std_fold_accuracy'] * 100:.2f}%`)",
+        f"- Mean outer-fold macro F1: `{summary['mean_fold_macro_f1']:.4f}`",
+        f"- Catalog-period / BLS-period accuracy: `{summary['mean_catalog_accuracy'] * 100:.2f}%` / "
+        f"`{summary['mean_bls_accuracy'] * 100:.2f}%`",
+        "",
+        "| Seed | Out-of-fold accuracy | 95% CI (bootstrap over stars) | Macro F1 95% CI |",
+        "|---|---:|---|---|",
+    ]
+    for seed, entry in summary["per_seed"].items():
+        lo, hi = entry["accuracy_ci95"]
+        flo, fhi = entry["macro_f1_ci95"]
+        lines.append(f"| {seed} | {entry['out_of_fold_accuracy'] * 100:.2f}% | [{lo * 100:.2f}%, {hi * 100:.2f}%] "
+                     f"| [{flo:.4f}, {fhi:.4f}] |")
+    lines += [
+        "",
+        "| Class | Mean outer-fold F1 |",
+        "|---|---:|",
+    ]
+    lines += [f"| {name} | {f1:.4f} |" for name, f1 in summary["mean_f1_per_class"].items()]
+    lines += [
+        "",
+        f"Mean selection-set accuracy of the chosen epochs: `{summary['mean_selection_accuracy'] * 100:.2f}%`. "
+        "It is the maximum over epochs on the set used for selection, so it is optimistic and is not an estimate "
+        "of performance; the outer-fold numbers above are.",
+        "",
+        "Details: [fold_metrics.csv](fold_metrics.csv), [aggregate_metrics.json](aggregate_metrics.json).",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Test-free, grouped, nested cross-validation of the shared transformer (ADR-0062)."
+    )
+    parser.add_argument("--seeds", type=int, nargs="+", default=[42, 100, 2026],
+                        help="Repeat seeds (default: 42 100 2026)")
+    parser.add_argument("--folds", type=int, default=5, help="Outer folds (default: 5)")
+    parser.add_argument("--inner-folds", type=int, default=5,
+                        help="One inner fold of each outer training set selects the epoch (default: 5, i.e. 20%%)")
+    parser.add_argument("--epochs", type=int, default=50, help="Epochs per fold (default: 50)")
+    parser.add_argument("--bootstrap", type=int, default=1000, help="Bootstrap resamples for the CIs (default: 1000)")
+    parser.add_argument("--data-dir", type=str, default=None,
+                        help="Processed arrays (default: configured processed dir)")
+    parser.add_argument("--test-ids", type=str, default=None,
+                        help="Frozen test-id file to exclude (default: <configured splits dir>/test_ids.json)")
+    parser.add_argument("--out-dir", type=str, default=None,
+                        help="Reports and plots (default: configured output dir)")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
+    args = build_arg_parser().parse_args(argv)
+    data_dir = resolve_cli_path(args.data_dir, DATA_DIR)
+    out_dir = resolve_cli_path(args.out_dir, ARTIFACT_DIR)
+    test_ids_path = resolve_cli_path(args.test_ids, PATHS.splits_dir / "test_ids.json")
+    seeds = list(args.seeds)
     print("=" * 70)
-    print("  ASTRA 5-Fold, 3-Seed Cross-Validation")
+    print(f"  ASTRA cross-validation: {args.folds} outer folds x {len(seeds)} seed(s), test stars excluded")
     print("=" * 70)
 
-    # 1. Device Selection
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
+    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
     print(f"Device: {device}")
 
-    # 2. Scan samples
-    samples = scan_all_samples()
-    n_samples = len(samples)
-    print(f"Found {n_samples} total valid stars in the dataset.")
+    all_samples = scan_all_samples(data_dir)
+    test_ids = read_test_ids(test_ids_path)
+    samples = cv_pool(all_samples, test_ids)
+    labels = np.array([s["label"] for s in samples])
+    groups = duplicate_groups(samples)
+    plans = plan_folds(labels, groups, seeds, args.folds, args.inner_folds)
+    check_plans(plans, groups, len(samples))
+    print(f"Pool: {len(samples)} stars ({len(all_samples) - len(samples)} test stars excluded), "
+          f"{len(set(groups))} duplicate groups.")
 
-    from sklearn.metrics import f1_score
-    from sklearn.model_selection import StratifiedGroupKFold
+    results = []
+    for plan in plans:
+        set_deterministic_seeds(plan.seed * 100 + plan.fold)
+        (result,) = run_plans(samples, [plan], transformer_trainer(args.epochs, device, data_dir))
+        save_confusion_matrix(result["labels"], result["preds"], plan.seed, plan.fold, out_dir=out_dir)
+        print(f"  Seed {plan.seed} fold {plan.fold}: outer accuracy {result['accuracy']:.4f} "
+              f"(epoch {result['best_epoch']} chosen on the selection set) in {result['runtime_sec']:.1f}s")
+        results.append(result)
 
-    labels_arr = np.array([s["label"] for s in samples])
-    groups_arr = np.array([s["tic_id"] for s in samples])
-
-    seeds = [42, 100, 2026]
-    all_fold_records = []
-
-    csv_rows = []
-
-    for seed in seeds:
-        print(f"\n[Seed {seed}] Running 5-Fold Cross-Validation...")
-        set_deterministic_seeds(seed)
-
-        sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=seed)
-
-        for fold, (train_idx, val_idx) in enumerate(sgkf.split(samples, labels_arr, groups=groups_arr)):
-            t0 = time.time()
-            train_samples = [samples[i] for i in train_idx]
-            val_samples = [samples[i] for i in val_idx]
-
-            # Setup datasets
-            train_dataset = CrossValDataset(train_samples, use_folded=True, augment=True)
-            val_dataset = CrossValDataset(val_samples, use_folded=True, augment=False)
-
-            train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
-            val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
-
-            # Setup Model
-            model = HybridTransformer(variant="shared", num_classes=NUM_CLASSES).to(device)
-
-            # Loss, Optimizer, Scheduler
-            class_weights = train_dataset.class_weights.to(device)
-            criterion = RegularizedFocalLoss(alpha=class_weights, gamma=2.0, label_smoothing=0.1)
-            optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-3)
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
-
-            # Training loop
-            best_val_acc = 0.0
-            best_val_results = None
-
-            for epoch in range(1, 51):
-                train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
-                val_res = validate(model, val_loader, criterion, device)
-                scheduler.step()
-
-                if val_res["accuracy"] > best_val_acc:
-                    best_val_acc = val_res["accuracy"]
-                    best_val_results = val_res
-
-            # Evaluate best model metrics
-            y_true = best_val_results["labels"]
-            y_pred = best_val_results["preds"]
-
-            # Per-class F1-scores
-            f1s = f1_score(y_true, y_pred, average=None, labels=list(range(NUM_CLASSES)), zero_division=0)
-            macro_f1 = np.mean(f1s)
-
-            # Subgroup metrics
-            subgroups = evaluate_subgroups(best_val_results, val_samples)
-
-            # Save confusion matrix
-            save_confusion_matrix(y_true, y_pred, seed, fold)
-
-            elapsed = time.time() - t0
-            print(f"  Fold {fold} finished in {elapsed:.1f}s | Val Acc: {best_val_acc:.4f} | Subgroups: Cat {subgroups['catalog_accuracy']:.4f}, BLS {subgroups['bls_accuracy']:.4f}")
-
-            # Save record
-            record = {
-                "seed": seed,
-                "fold": fold,
-                "accuracy": best_val_acc,
-                "macro_f1": macro_f1,
-                "f1_rr_lyrae": f1s[0],
-                "f1_cepheid": f1s[1],
-                "f1_eclipsing_binary": f1s[2],
-                "f1_solar_like": f1s[3],
-                "f1_stable": f1s[4],
-                "catalog_accuracy": subgroups["catalog_accuracy"],
-                "bls_accuracy": subgroups["bls_accuracy"],
-                "runtime_sec": elapsed,
-            }
-            all_fold_records.append(record)
-
-            # Write to CSV row list
-            csv_rows.append(record)
-
-    # Write to fold_metrics.csv
-    csv_path = ARTIFACT_DIR / "fold_metrics.csv"
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=csv_rows[0].keys())
+    out_dir.mkdir(parents=True, exist_ok=True)
+    columns = [k for k in results[0] if k not in ("test_tic_ids", "preds", "labels")]
+    with open(out_dir / "fold_metrics.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=columns, extrasaction="ignore")
         writer.writeheader()
-        writer.writerows(csv_rows)
-    print(f"\nFold metrics saved successfully → {csv_path}")
+        writer.writerows(results)
 
-    # Calculate statistics across all 15 runs
-    accuracies = [r["accuracy"] for r in all_fold_records]
-    macro_f1s = [r["macro_f1"] for r in all_fold_records]
-    cat_accs = [r["catalog_accuracy"] for r in all_fold_records]
-    bls_accs = [r["bls_accuracy"] for r in all_fold_records]
+    summary = summarise(results, args.bootstrap)
+    from astra import provenance
 
-    mean_acc = np.mean(accuracies)
-    std_acc = np.std(accuracies)
-    ci_95_acc = 1.96 * (std_acc / np.sqrt(len(accuracies)))
-
-    mean_f1_classes = [
-        np.mean([r[f"f1_{c}"] for r in all_fold_records]) for c in ["rr_lyrae", "cepheid", "eclipsing_binary", "solar_like", "stable"]
-    ]
-    var_f1_classes = [
-        np.var([r[f"f1_{c}"] for r in all_fold_records]) for c in ["rr_lyrae", "cepheid", "eclipsing_binary", "solar_like", "stable"]
-    ]
-
-    agg_metrics = {
-        "mean_accuracy": float(mean_acc),
-        "std_accuracy": float(std_acc),
-        "ci_95_accuracy": float(ci_95_acc),
-        "mean_macro_f1": float(np.mean(macro_f1s)),
-        "mean_catalog_accuracy": float(np.mean(cat_accs)),
-        "mean_bls_accuracy": float(np.mean(bls_accs)),
-        "mean_f1_per_class": {c: float(mean_f1_classes[i]) for i, c in enumerate(["rr_lyrae", "cepheid", "eclipsing_binary", "solar_like", "stable"])},
-        "variance_f1_per_class": {c: float(var_f1_classes[i]) for i, c in enumerate(["rr_lyrae", "cepheid", "eclipsing_binary", "solar_like", "stable"])},
+    protocol = {
+        "seeds": seeds, "folds": args.folds, "inner_folds": args.inner_folds, "epochs": args.epochs,
+        "pool_stars": len(samples), "excluded_test_stars": len(all_samples) - len(samples),
+        "test_ids_file": str(test_ids_path), "groups": len(set(groups)),
+        "grouping": "duplicate_group_id: same TIC id or within 2 arcsec (pipeline.phase6_utils)",
+        "score": "outer fold, once, with the epoch chosen on the inner selection set",
+        "data_dir": str(data_dir),
     }
-
-    # Write to aggregate_metrics.json
-    agg_path = ARTIFACT_DIR / "aggregate_metrics.json"
-    with open(agg_path, "w") as f:
-        json.dump(agg_metrics, f, indent=2)
-    print(f"Aggregate metrics saved successfully → {agg_path}")
-
-    # Write statistical_report.md
-    report_lines = [
-        "# ASTRA — Statistical Validation Report",
-        "",
-        "This report evaluates the statistical generalization of the ASTRA Hybrid Shared Transformer model under repeated Group-aware Stratified K-Fold cross-validation (5 folds, 3 seeds, 15 runs total).",
-        "",
-        "## 1. Overall Validation Summary",
-        "",
-        f"- **Mean Validation Accuracy**: `{mean_acc * 100:.2f}%`",
-        f"- **Standard Deviation**: `{std_acc * 100:.2f}%`",
-        f"- **95% Confidence Interval**: `[{ (mean_acc - ci_95_acc)*100 :.2f}%, { (mean_acc + ci_95_acc)*100 :.2f}%]`",
-        f"- **Mean Macro F1-score**: `{np.mean(macro_f1s):.4f}`",
-        "",
-        "## 2. Subgroup Performance Stability",
-        "",
-        "Evaluation on the catalog-period subgroup (N=32 per validation split on average) and BLS fallback subgroup (N=22 on average):",
-        f"- **Mean Catalog Subgroup Accuracy**: `{np.mean(cat_accs)*100:.2f}%` (standard deviation: `{np.std(cat_accs)*100:.2f}%`)",
-        f"- **Mean BLS Fallback Subgroup Accuracy**: `{np.mean(bls_accs)*100:.2f}%` (standard deviation: `{np.std(bls_accs)*100:.2f}%`)",
-        "",
-        "## 3. Class-Specific Generalization (F1-scores)",
-        "",
-        "| Class Name | Mean F1-score | Variance across F1 | Consistency Rating |",
-        "| :--- | :---: | :---: | :---: |",
-    ]
-    for i, c in enumerate(["rr_lyrae", "cepheid", "eclipsing_binary", "solar_like", "stable"]):
-        var = var_f1_classes[i]
-        rating = "High" if var < 0.005 else "Moderate" if var < 0.015 else "Low"
-        report_lines.append(f"| **{c.replace('_', ' ').title()}** | {mean_f1_classes[i]:.4f} | {var:.6f} | {rating} |")
-
-    report_lines.extend([
-        "",
-        "## 4. Discussion & Scientific Conclusions",
-        "",
-        "1. **Statistical Generalization**: The 5-fold cross-validation results show that the model's accuracy is stable, with a mean accuracy of "
-        f"`{mean_acc * 100:.2f}%` and a small standard deviation of `{std_acc * 100:.2f}%`. The previously achieved accuracy of `81.48%` falls within the **95% confidence interval** "
-        f"`[{ (mean_acc - ci_95_acc)*100 :.2f}%, { (mean_acc + ci_95_acc)*100 :.2f}%]`, proving the result is not a favorable split artifact.",
-        "2. **BLS Robustness Consistency**: The model maintains high accuracy on noisy BLS fallback stars "
-        f"(`{np.mean(bls_accs)*100:.2f}%`), confirming that the shared attention raw-to-folded mapping is a robust mechanism across all validation partitions.",
-        "3. **Cepheid Variance Note**: The Cepheid class shows moderate F1-score variance across splits, indicating sensitivity to small sample sizes (N=9 per validation fold). Additional data collection should prioritize Cepheid class representation.",
-        "",
-        "## 5. Reference Files",
-        "",
-        "- Detailed fold-level metrics: [fold_metrics.csv](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/fold_metrics.csv)",
-        "- Aggregate JSON metrics: [aggregate_metrics.json](file:///Users/soumyadebtripathy/.gemini/antigravity/brain/7aa41dc5-db47-45ef-8656-9ec7563f47c3/aggregate_metrics.json)",
-    ])
-
-    report_path = ARTIFACT_DIR / "statistical_report.md"
-    report_path.write_text("\n".join(report_lines) + "\n")
-    print(f"Statistical report saved successfully → {report_path}")
+    aggregate = {
+        **summary,
+        "protocol": protocol,
+        "out_of_fold_predictions": [{"seed": r["seed"], "fold": r["fold"], "tic_ids": r["test_tic_ids"],
+                                     "preds": r["preds"], "labels": r["labels"]} for r in results],
+        "provenance": provenance.collect(
+            device=str(device),
+            data={"manifest_sha256": provenance.file_sha256(PATHS.phase6_root / "scientific_dataset_freeze_v2.csv"),
+                  "test_ids_sha256": provenance.file_sha256(test_ids_path)},
+        ),
+    }
+    (out_dir / "aggregate_metrics.json").write_text(json.dumps(aggregate, indent=2) + "\n", encoding="utf-8")
+    (out_dir / "statistical_report.md").write_text(render_report(summary, protocol), encoding="utf-8")
+    print(f"\nMean outer-fold accuracy {summary['mean_fold_accuracy'] * 100:.2f}% -> {out_dir}")
 
 
 if __name__ == "__main__":

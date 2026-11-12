@@ -8,6 +8,7 @@ astra-platform/data/*.csv             -text
 astra-platform/public/data/*.json     -text
 data/*.json                           -text
 models/saved/*.json                   -text
+models/saved/optimal_temperature*.txt -text
 lineage.json                          -text
 
 # Binary data and model files

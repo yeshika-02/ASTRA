@@ -33,6 +33,7 @@ import torch
 from sklearn.model_selection import GroupShuffleSplit
 from torch.utils.data import Dataset
 
+from astra.config import get_paths
 from data.labels import CLASS_NAMES, LABEL_TO_NAME, NUM_CLASSES
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,7 @@ class ASTRADataset(Dataset):
         use_folded: bool = False,
         augment: bool = False,
         augment_prob: float = 0.5,
+        splits_dir: Path | str | None = None,
     ) -> None:
         super().__init__()
         self.data_dir = Path(data_dir)
@@ -82,6 +84,9 @@ class ASTRADataset(Dataset):
         self.use_folded = use_folded
         self.augment = augment
         self.augment_prob = augment_prob
+        # Where the split came from, for provenance: the frozen split files used (if any).
+        self.splits_dir: Path | None = None
+        self.frozen_split = False
         assert self.split in ("train", "val", "calibration", "test"), (
             f"split must be train, val, calibration, or test; got '{split}'"
         )
@@ -160,15 +165,16 @@ class ASTRADataset(Dataset):
             logger.warning("No valid samples found — dataset is empty.")
             return
 
-        # Check for frozen splits
-        if self.data_dir.name == "processed" and self.data_dir.parent.name == "phase6":
-            split_dir = self.data_dir.parent / "splits"
-        else:
-            split_dir = PROJECT_ROOT / "splits"
+        # Frozen split files: an explicit splits_dir; else the configured splits
+        # directory when reading the configured processed directory (astra.config);
+        # else a "splits" directory next to the data (the Phase 6 layout).
+        split_dir = self._resolve_splits_dir(splits_dir)
         split_file = split_dir / f"{self.split}_ids.json"
         metadata_file = split_dir / "split_metadata.json"
 
         if split_file.exists() and metadata_file.exists():
+            self.splits_dir = split_dir
+            self.frozen_split = True
             with open(split_file, "r") as f:
                 frozen_ids = set(json.load(f))
             with open(metadata_file, "r") as f:
@@ -219,7 +225,10 @@ class ASTRADataset(Dataset):
                 raise ValueError(
                     f"Frozen Phase 6 split file required for split '{self.split}'."
                 )
-            logger.info("Frozen split not found. Falling back to dynamic GroupShuffleSplit.")
+            logger.warning(
+                "Frozen split files not found in %s. Falling back to a random GroupShuffleSplit: "
+                "results are not comparable with the published ones.", split_dir
+            )
             gss = GroupShuffleSplit(
                 n_splits=1, test_size=val_fraction, random_state=random_seed
             )
@@ -238,6 +247,14 @@ class ASTRADataset(Dataset):
             f"ASTRADataset [{self.split}]: {len(self._samples)} samples "
             f"from {num_tic_groups} TIC groups"
         )
+
+    def _resolve_splits_dir(self, splits_dir: Path | str | None) -> Path:
+        if splits_dir is not None:
+            return Path(splits_dir)
+        paths = get_paths()
+        if self.data_dir.resolve() == paths.processed_dir.resolve():
+            return paths.splits_dir
+        return self.data_dir.parent / "splits"
 
     def __len__(self) -> int:
         return len(self._samples)
@@ -350,11 +367,13 @@ class ASTRADataset(Dataset):
 
 
 if __name__ == "__main__":
+    from astra.console import ensure_utf8_stdio
+    ensure_utf8_stdio()
     print("=" * 60)
     print("ASTRADataset — Statistics")
     print("=" * 60)
 
-    data_path = PROJECT_ROOT / "data" / "processed"
+    data_path = get_paths().processed_dir
     print(f"\nData directory: {data_path}")
     print(f"Exists: {data_path.exists()}")
 

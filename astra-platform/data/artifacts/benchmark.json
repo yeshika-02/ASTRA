@@ -11,6 +11,7 @@
       "BLS": 347,
       "catalog": 597
     },
+    "source": "astra-platform/data/scientific_dataset_freeze_v2.csv; docs/engineering-log/phase6_*_ids.json",
     "split_counts": {
       "test": 142,
       "train": 661,
@@ -18,28 +19,40 @@
     },
     "total_stars": 944
   },
-  "generated_at": "2026-06-13T02:15:04+00:00",
+  "generated_at": "2026-11-10",
+  "generator": "pipeline/build_platform_artifacts.py",
   "models": {
     "cnn_dual": {
-      "accuracy_ci": "[71.13%, 84.51%]",
+      "accuracy_ci": "[71.83%, 84.51%]",
       "label": "Cnn Dual",
-      "macro_f1": 0.7654,
-      "macro_f1_ci": "[0.6840, 0.8317]",
+      "macro_f1": 0.7635,
+      "macro_f1_ci": "[0.6923, 0.8301]",
       "per_class_f1": {
-        "cepheid": 0.8,
-        "eclipsing_binary": 0.8235,
-        "rr_lyrae": 0.9538,
-        "solar_like": 0.6341,
-        "stable": 0.6154
+        "cepheid": 0.7838,
+        "eclipsing_binary": 0.8696,
+        "rr_lyrae": 0.9394,
+        "solar_like": 0.5128,
+        "stable": 0.7119
+      },
+      "sources": {
+        "ci": "docs/engineering-log/ground_truth_metrics.md",
+        "point_metrics": "models/saved/test_confusion_matrix_cnn_dual.png",
+        "subgroups": "docs/engineering-log/phase7_testset_results.md"
+      },
+      "status": {
+        "ci": "recorded",
+        "point_metrics": "computed from the published confusion matrix",
+        "subgroups": "unverified"
       },
       "subgroups": {
-        "bls_accuracy": 0.5577000000000001,
+        "bls_accuracy": 0.5577,
         "bls_macro_f1": 0.2667,
         "catalog_accuracy": 0.9111,
         "catalog_macro_f1": 0.564
       },
-      "test_accuracy": 0.7817000000000001,
-      "weighted_f1": 0.7738
+      "test_accuracy": 0.7817,
+      "weighted_f1": 0.7756,
+      "weighted_f1_ci": "[0.7052, 0.8435]"
     },
     "cross": {
       "accuracy_ci": "[73.94%, 87.32%]",
@@ -52,6 +65,16 @@
         "rr_lyrae": 0.9394,
         "solar_like": 0.6286,
         "stable": 0.7097
+      },
+      "sources": {
+        "ci": "docs/engineering-log/phase7_testset_results.md",
+        "point_metrics": "models/saved/test_confusion_matrix_cross.png",
+        "subgroups": "docs/engineering-log/phase7_testset_results.md"
+      },
+      "status": {
+        "ci": "recorded",
+        "point_metrics": "computed from the published confusion matrix",
+        "subgroups": "recorded"
       },
       "subgroups": {
         "bls_accuracy": 0.6346,
@@ -74,10 +97,20 @@
         "solar_like": 0.4186,
         "stable": 0.6
       },
+      "sources": {
+        "ci": "docs/engineering-log/phase7_testset_results.md",
+        "point_metrics": "models/saved/test_confusion_matrix_only.png",
+        "subgroups": "docs/engineering-log/phase7_testset_results.md"
+      },
+      "status": {
+        "ci": "recorded",
+        "point_metrics": "computed from the published confusion matrix",
+        "subgroups": "recorded"
+      },
       "subgroups": {
         "bls_accuracy": 0.5192,
         "bls_macro_f1": 0.2258,
-        "catalog_accuracy": 0.8443999999999999,
+        "catalog_accuracy": 0.8444,
         "catalog_macro_f1": 0.5374
       },
       "test_accuracy": 0.7254,
@@ -95,13 +128,23 @@
         "solar_like": 0.7273,
         "stable": 0.7213
       },
+      "sources": {
+        "ci": "docs/engineering-log/phase7_testset_results.md",
+        "point_metrics": "models/saved/test_confusion_matrix_separate.png",
+        "subgroups": "docs/engineering-log/phase7_testset_results.md"
+      },
+      "status": {
+        "ci": "recorded",
+        "point_metrics": "computed from the published confusion matrix",
+        "subgroups": "recorded"
+      },
       "subgroups": {
         "bls_accuracy": 0.7308,
         "bls_macro_f1": 0.3055,
         "catalog_accuracy": 0.9111,
         "catalog_macro_f1": 0.7065
       },
-      "test_accuracy": 0.8451000000000001,
+      "test_accuracy": 0.8451,
       "weighted_f1": 0.8456
     },
     "shared": {
@@ -116,14 +159,25 @@
         "solar_like": 0.5238,
         "stable": 0.6552
       },
+      "sources": {
+        "ci": "docs/engineering-log/ground_truth_metrics.md",
+        "point_metrics": "models/saved/test_confusion_matrix_transformer_shared.png (identical: test_confusion_matrix_shared.png)",
+        "subgroups": "docs/engineering-log/phase7_testset_results.md (accuracy, macro F1); docs/engineering-log/phase7_subgroup_analysis.md (ECE)"
+      },
+      "status": {
+        "ci": "recorded",
+        "point_metrics": "computed from the published confusion matrix",
+        "subgroups": "recorded"
+      },
       "subgroups": {
         "bls_accuracy": 0.5769,
         "bls_macro_f1": 0.317,
         "catalog_accuracy": 0.9,
         "catalog_macro_f1": 0.5602
       },
-      "test_accuracy": 0.7817000000000001,
-      "weighted_f1": 0.7784
+      "test_accuracy": 0.7817,
+      "weighted_f1": 0.7784,
+      "weighted_f1_ci": "[0.7076, 0.8485]"
     }
   }
 }

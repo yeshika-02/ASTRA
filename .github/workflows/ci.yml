@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install ruff
-      - run: ruff check pipeline/ training/ data/ tests/
+      - run: ruff check astra/ pipeline/ training/ data/ tests/
 
   test:
     name: Python tests (${{ matrix.python-version }})
@@ -88,6 +88,79 @@ jobs:
               if overlap:
                   failed = True
                   print(f'FAIL leakage {a}/{b}: {len(overlap)} ids')
+          sys.exit(1 if failed else 0)
+          EOF
+
+  reproduction:
+    name: Fresh-clone reproduction
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-lock.txt
+      # Pinned environment: the test job above covers the latest versions allowed by
+      # requirements.txt; this job checks that the locked versions reproduce.
+      - name: Install locked dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-lock.txt
+          pip check
+      # Verifies all 944 stars x 5 files against the hash-locked manifest, rebuilds the
+      # frozen splits (split hash ebcdc44c...) and runs the dataset audit.
+      - name: Rebuild data/phase6 from the shipped files
+        run: python pipeline/prepare_from_repo.py
+      - name: One-epoch training smoke run on the frozen splits
+        run: |
+          mkdir -p outputs
+          python training/train_transformer.py --variant shared --seed 42 --epochs 1 \
+            --out-dir outputs/smoke > outputs/train.log 2>&1 || { tail -40 outputs/train.log; exit 1; }
+          tail -3 outputs/train.log
+      - name: Check recorded provenance
+        run: |
+          python - <<'EOF'
+          import json, os, sys
+          meta = json.load(open("outputs/smoke/experiment_metadata_shared.json"))
+          prov = meta["provenance"]
+          checks = {
+              "dataset_fingerprint_hash": (meta.get("dataset_fingerprint_hash"), "f99b4b06f16952033b5445bb0682d059e9ea4c3f99320a05d31aebb25c2dbf58"),
+              "split_hash_root": (meta.get("split_hash_root"), "ebcdc44c3dba849579675369b1559c77e50b6fead06abd40d3fc187425a7d4e4"),
+              "parameter_count": (meta.get("parameter_count"), 1373701),
+              "seed": (meta.get("seed"), 42),
+              "git commit": (prov["git"]["commit"], os.environ["GITHUB_SHA"]),
+              "git_commit field": (meta.get("git_commit"), os.environ["GITHUB_SHA"]),
+              "tree dirty": (prov["git"]["dirty"], False),
+              "frozen split used": (prov["data"]["frozen_split"], True),
+          }
+          failed = [k for k, (got, want) in checks.items() if got != want]
+          print("provenance:", {k: got for k, (got, _) in checks.items()})
+          print("failed:", failed)
+          sys.exit(1 if failed else 0)
+          EOF
+      # Shipped ONNX graphs and temperature file must match models/published_weights.json.
+      - name: Verify shipped model artifacts against the published hashes
+        run: python training/verify_weights.py
+      - name: Evaluate the smoke checkpoint on the frozen validation split
+        run: |
+          python training/evaluate.py --checkpoint outputs/smoke/best_star_transformer_shared.pt \
+            --split val --bootstrap 200 --out-dir outputs/eval > outputs/eval.log 2>&1 || { tail -40 outputs/eval.log; exit 1; }
+          python - <<'EOF'
+          import json, os, sys
+          record = json.load(open("outputs/eval/evaluation_best_star_transformer_shared_val.json"))
+          checks = {
+              "stars": (record["split"]["n"], 141),
+              # Same file name as the published checkpoint, different bytes: must not be trusted.
+              "published name, hash verified": (record["published"]["verified"], False),
+              "split hash": (record["provenance"]["data"]["split_hash"], "ebcdc44c3dba849579675369b1559c77e50b6fead06abd40d3fc187425a7d4e4"),
+              "commit": (record["provenance"]["git"]["commit"], os.environ["GITHUB_SHA"]),
+              "predictions": (len(record["predictions"]), 141),
+          }
+          failed = [k for k, (got, want) in checks.items() if got != want]
+          print("accuracy", round(record["metrics"]["accuracy"], 4), "CI", record["bootstrap"]["ci"]["accuracy"])
+          print("failed:", failed)
           sys.exit(1 if failed else 0)
           EOF
 
