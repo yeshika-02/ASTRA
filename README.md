@@ -68,6 +68,21 @@ Accuracy and F1 are recomputed from each model's committed test confusion matrix
 
 > **Note:** The `shared` variant is the production model selected for calibration, ONNX/TorchScript export, and the web platform — chosen for its balance of accuracy, parameter efficiency, and interpretable attention maps. The `separate` and `cross` variants achieved higher raw test accuracy but were not selected as the production model.
 
+### 🧪 Baselines on the same test split
+
+Simple models on the same frozen split ([`training/baselines.py`](training/baselines.py), [ADR-0062](artifacts/decisions/ADR-0062-evaluation-protocol.md)):
+
+| Baseline (random forest) | Inputs | Test Accuracy | 95% CI | Macro F1 |
+|:---|:---|:---:|:---:|:---:|
+| Pipeline shortcuts | cadence, sector count, period source | 62.68% | [54.93%, 70.42%] | 0.5722 |
+| Light-curve statistics | 12 statistics of the network's own inputs (no period, no amplitude) | 79.58% | [72.54%, 85.92%] | 0.7867 |
+| Physical scalars ¹ | log period, log amplitude, log SNR | 86.62% | [80.97%, 92.25%] | 0.8537 |
+| All metadata ¹ | the six features above | 90.85% | [85.92%, 95.09%] | 0.8972 |
+
+¹ For RR Lyrae, Cepheids and eclipsing binaries the period is the VSX catalog period, which is external information; for Solar-like and Stable stars it is a mostly unreliable BLS value.
+
+The published transformer (78.17%, macro F1 0.7677) does not beat any baseline except the pipeline shortcuts. Twelve statistics of its own inputs match it ([EXP-0003](artifacts/experiments/EXP-0003-lightcurve-feature-baseline.md)), and the metadata baselines reproduce [EXP-0001](artifacts/experiments/EXP-0001-metadata-baseline.md) exactly. Every baseline: [`docs/metrics.md`](docs/metrics.md).
+
 ### 🎯 Per-Class F1 — HybridTransformer (shared)
 
 | Class | F1 Score | Interpretation |
