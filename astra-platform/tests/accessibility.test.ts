@@ -89,3 +89,26 @@ describe('headings', () => {
     for (const file of pages) expect(read(file)).not.toMatch(/<h4[\s>]/);
   });
 });
+
+describe('scrollable tables', () => {
+  const pageFiles = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) return e.name === 'api' ? [] : pageFiles(full);
+      return e.name === 'page.tsx' ? [full] : [];
+    });
+
+  it('every horizontally scrolling table wrapper is a labelled, focusable region', () => {
+    const offenders: string[] = [];
+    for (const file of pageFiles(path.join(SRC, 'app'))) {
+      const lines = fs.readFileSync(file, 'utf-8').split('\n');
+      lines.forEach((line, i) => {
+        if (!line.includes('overflow-x-auto')) return;
+        const wrapsTable = lines.slice(i + 1, i + 4).some((l) => l.includes('<table'));
+        const ok = line.includes('role="region"') && line.includes('aria-label=') && line.includes('tabIndex={0}');
+        if (wrapsTable && !ok) offenders.push(`${path.relative(SRC, file)}:${i + 1}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+});

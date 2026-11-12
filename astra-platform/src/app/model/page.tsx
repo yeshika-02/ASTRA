@@ -160,7 +160,7 @@ export default function ModelOperationsPage() {
 
       {/* Checkpoint Registry */}
       <Panel title="Checkpoint Registry" subtitle="Historical models and training parameters verified during Phase 7C">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Checkpoint registry table" tabIndex={0}>
           <table className="w-full text-left text-[11px] text-[#D7DEE7]">
             <thead>
               <tr className="border-b border-[#1A2430] bg-[#05070B]/50">
@@ -250,7 +250,7 @@ export default function ModelOperationsPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="Calibration temperature scaling table" tabIndex={0}>
               <table className="w-full text-left text-[11px] text-[#D7DEE7]">
                 <thead>
                   <tr className="border-b border-[#1A2430]">

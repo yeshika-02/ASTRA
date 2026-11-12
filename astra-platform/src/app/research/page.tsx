@@ -233,7 +233,7 @@ export default function ResearchFindingsPage() {
       {/* Calibration Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Panel title="Calibration Comparison" subtitle="ECE comparison before and after temperature scaling">
-          <div className="overflow-x-auto text-[11px]">
+          <div className="overflow-x-auto text-[11px]" role="region" aria-label="Calibration comparison table" tabIndex={0}>
             <table className="w-full text-left text-[#D7DEE7]">
               <thead>
                 <tr className="border-b border-[#1A2430] bg-[#05070B]/50">
