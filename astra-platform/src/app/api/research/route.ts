@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
-import { errorMessage } from '@/lib/server/errors';
+import { serverError } from '@/lib/server/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,10 +22,7 @@ export async function GET() {
       uncertainty
     });
   } catch (error) {
-    return NextResponse.json({ 
-      error: 'Failed to load research findings', 
-      details: errorMessage(error)
-    }, { status: 500 });
+    return serverError('/api/research', error, 'Failed to load research findings');
   }
 }
 
