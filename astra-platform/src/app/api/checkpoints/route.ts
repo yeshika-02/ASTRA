@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
+import { serverError } from '@/lib/server/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +13,7 @@ export async function GET() {
     }
     const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
     return NextResponse.json(data.checkpoints || []);
-  } catch (error: any) {
-    return NextResponse.json({ 
-      error: 'Failed to load checkpoints', 
-      details: error.message || String(error) 
-    }, { status: 500 });
+  } catch (error) {
+    return serverError('/api/checkpoints', error, 'Failed to load checkpoints');
   }
 }

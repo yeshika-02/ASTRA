@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { DatabaseSync } from 'node:sqlite';
-import { pathToFileURL } from 'node:url';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getDatabase } from '@/lib/server/db';
+import { serverError } from '@/lib/server/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,9 +19,7 @@ export async function GET() {
     const lineage = JSON.parse(fs.readFileSync(lineagePath, 'utf-8'));
     
     // Compute split class matrix from database
-    const dbPath = path.join(process.cwd(), 'data', 'astra.sqlite');
-    const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
-    const splitClassCounts = db.prepare('SELECT split, astra_class, COUNT(*) as count FROM stars GROUP BY split, astra_class').all() as any[];
+    const splitClassCounts = getDatabase().prepare('SELECT split, astra_class, COUNT(*) as count FROM stars GROUP BY split, astra_class').all() as { split: string; astra_class: string; count: number }[];
     
     const classSplitMatrix: Record<string, Record<string, number>> = {
       rr_lyrae: { train: 0, val: 0, test: 0 },
@@ -42,11 +40,8 @@ export async function GET() {
       lineage,
       classSplitMatrix
     });
-  } catch (error: any) {
-    return NextResponse.json({ 
-      error: 'Failed to load dataset details', 
-      details: error.message || String(error)
-    }, { status: 500 });
+  } catch (error) {
+    return serverError('/api/dataset', error, 'Failed to load dataset details');
   }
 }
 

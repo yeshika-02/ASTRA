@@ -1,5 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Star, StarsResponse, LightCurveData, AstraClass } from '../types';
+import type {
+  ActiveModel,
+  BenchmarkArtifact,
+  CalibrationArtifact,
+  CheckpointEntry,
+  DatasetResponse,
+  OsintReport,
+  ResearchResponse,
+  SearchResult,
+} from '../types/artifacts';
+import { ApiError, fetchJson } from './fetchJson';
 
 export interface PredictResult {
   tic_id: number;
@@ -19,23 +30,6 @@ export interface ExplainResult {
   probabilities: Record<AstraClass, number>;
   attention_weights: number[][];
   source: 'model';
-}
-
-// Robust fetch helper that checks r.ok and parses the JSON error details if present
-async function fetchJson<T>(url: string): Promise<T> {
-  const r = await fetch(url);
-  if (!r.ok) {
-    const errorText = await r.text();
-    let errorMessage = `HTTP error! status: ${r.status}`;
-    try {
-      const errJson = JSON.parse(errorText);
-      errorMessage = errJson.error || errJson.details || errorMessage;
-    } catch {
-      // Not JSON
-    }
-    throw new Error(errorMessage);
-  }
-  return r.json();
 }
 
 // ─── Stars list ────────────────────────────────────────────────────────────────
@@ -72,6 +66,15 @@ export function useStar(id: string | number | null) {
   });
 }
 
+// ─── OSINT report ──────────────────────────────────────────────────────────────
+export function useOsint(id: number | null) {
+  return useQuery<OsintReport>({
+    queryKey: ['osint', id],
+    queryFn: () => fetchJson<OsintReport>(`/api/osint/${id}`),
+    enabled: id !== null,
+  });
+}
+
 // ─── Light curve ───────────────────────────────────────────────────────────────
 export function useLightCurve(id: string | number | null) {
   return useQuery<LightCurveData>({
@@ -86,7 +89,7 @@ export function useLightCurve(id: string | number | null) {
 export function useSearch(query: string) {
   return useQuery({
     queryKey: ['search', query],
-    queryFn: () => fetchJson<any>(`/api/search?q=${encodeURIComponent(query)}`),
+    queryFn: () => fetchJson<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(query)}`),
     enabled: query.length >= 2,
     staleTime: 30_000,
   });
@@ -96,7 +99,7 @@ export function useSearch(query: string) {
 export function useModelDetails() {
   return useQuery({
     queryKey: ['model-details'],
-    queryFn: () => fetchJson<any>('/api/model'),
+    queryFn: () => fetchJson<ActiveModel>('/api/model'),
   });
 }
 
@@ -104,7 +107,7 @@ export function useModelDetails() {
 export function useCheckpoints() {
   return useQuery({
     queryKey: ['checkpoints'],
-    queryFn: () => fetchJson<any>('/api/checkpoints'),
+    queryFn: () => fetchJson<CheckpointEntry[]>('/api/checkpoints'),
   });
 }
 
@@ -112,7 +115,7 @@ export function useCheckpoints() {
 export function useDatasetDetails() {
   return useQuery({
     queryKey: ['dataset-details'],
-    queryFn: () => fetchJson<any>('/api/dataset'),
+    queryFn: () => fetchJson<DatasetResponse>('/api/dataset'),
   });
 }
 
@@ -120,7 +123,7 @@ export function useDatasetDetails() {
 export function useResearchFindings() {
   return useQuery({
     queryKey: ['research-findings'],
-    queryFn: () => fetchJson<any>('/api/research'),
+    queryFn: () => fetchJson<ResearchResponse>('/api/research'),
   });
 }
 
@@ -128,7 +131,7 @@ export function useResearchFindings() {
 export function useBenchmarkMetrics() {
   return useQuery({
     queryKey: ['benchmark-metrics'],
-    queryFn: () => fetchJson<any>('/api/benchmark'),
+    queryFn: () => fetchJson<BenchmarkArtifact>('/api/benchmark'),
   });
 }
 
@@ -136,7 +139,7 @@ export function useBenchmarkMetrics() {
 export function useCalibrationDetails() {
   return useQuery({
     queryKey: ['calibration-details'],
-    queryFn: () => fetchJson<any>('/api/calibration'),
+    queryFn: () => fetchJson<CalibrationArtifact>('/api/calibration'),
   });
 }
 
@@ -155,7 +158,7 @@ async function fetchInference<T>(url: string): Promise<InferenceResult<T>> {
   }
   if (!r.ok) {
     const body = await r.json().catch(() => ({}));
-    throw new Error(body?.error || `HTTP error! status: ${r.status}`);
+    throw new ApiError(typeof body?.error === 'string' ? body.error : `Request failed (HTTP ${r.status}).`, r.status);
   }
   return { available: true, data: (await r.json()) as T };
 }

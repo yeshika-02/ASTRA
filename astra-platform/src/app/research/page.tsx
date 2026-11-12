@@ -1,7 +1,9 @@
 'use client';
 
-import { MetricCard, Panel } from '@/components/shared/UI';
+import { Panel } from '@/components/shared/UI';
+import { PageError, PageLoading } from '@/components/shared/DataState';
 import { useResearchFindings, useCalibrationDetails } from '@/lib/hooks';
+import { combineQueries } from '@/lib/hooks/queryState';
 import { CLASS_LABELS, CLASS_COLORS, formatPercent } from '@/lib/utils';
 import {
   LineChart,
@@ -18,28 +20,30 @@ import {
 } from 'recharts';
 
 export default function ResearchFindingsPage() {
-  const { data: researchData, isLoading: researchLoading } = useResearchFindings();
-  const { data: calibrationData, isLoading: calibrationLoading } = useCalibrationDetails();
+  const researchQuery = useResearchFindings();
+  const calibrationQuery = useCalibrationDetails();
+  const { data: researchData } = researchQuery;
+  const { data: calibrationData } = calibrationQuery;
+  const state = combineQueries([researchQuery, calibrationQuery]);
 
-  if (researchLoading || calibrationLoading) {
+  if (state.isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold text-[#D7DEE7]">Research Findings</h1>
-          <p className="text-[0.8125rem] text-[#8B97A7] mt-0.5 animate-pulse">
-            Loading research metrics and uncertainty coverage sweeps…
-          </p>
-        </div>
-        <div className="h-64 astra-glass rounded animate-pulse" />
-      </div>
+      <PageLoading
+        title="Research Findings"
+        message="Loading research metrics and uncertainty coverage sweeps…"
+        cards={0}
+      />
     );
   }
 
-  if (!researchData || !calibrationData) {
+  if (state.isError || !researchData || !calibrationData) {
     return (
-      <div className="p-6 text-center text-red-400 font-mono border border-red-500/20 bg-red-950/10 rounded">
-        System Error: Failed to retrieve dynamic research findings.
-      </div>
+      <PageError
+        heading="Research Findings"
+        title="Could not load research findings"
+        error={state.error}
+        onRetry={state.retry}
+      />
     );
   }
 
@@ -59,8 +63,8 @@ export default function ResearchFindingsPage() {
   const thresholds = [0.5, 0.6, 0.7, 0.8, 0.9];
   const sweep = uncertainty.coverage_sweep || [];
   const lineData = thresholds.map((t) => {
-    const cnnItem = sweep.find((d: any) => d.model === 'cnn_dual' && Math.abs(d.confidence_threshold - t) < 0.01);
-    const transItem = sweep.find((d: any) => d.model === 'shared' && Math.abs(d.confidence_threshold - t) < 0.01);
+    const cnnItem = sweep.find((d) => d.model === 'cnn_dual' && Math.abs(d.confidence_threshold - t) < 0.01);
+    const transItem = sweep.find((d) => d.model === 'shared' && Math.abs(d.confidence_threshold - t) < 0.01);
     
     return {
       threshold: t.toFixed(1),

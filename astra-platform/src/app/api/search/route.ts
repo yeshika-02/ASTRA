@@ -1,36 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseSync } from 'node:sqlite';
-import { pathToFileURL } from 'node:url';
-import * as path from 'path';
+import { getDatabase } from '@/lib/server/db';
+import { serverError } from '@/lib/server/errors';
+import { containsPattern, MIN_SEARCH_LENGTH, parseSearchQuery } from '@/lib/server/query';
+import type { StarRow } from '@/lib/types/artifacts';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const parsed = parseSearchQuery(request.nextUrl.searchParams);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+  const query = parsed.value;
+  if (query.length < MIN_SEARCH_LENGTH) {
+    return NextResponse.json({ results: [] });
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q')?.toLowerCase().trim() || '';
-    
-    if (!query || query.length < 2) {
-      return NextResponse.json({ results: [] });
-    }
-    
-    const dbPath = path.join(process.cwd(), 'data', 'astra.sqlite');
-    const db = new DatabaseSync(pathToFileURL(dbPath).toString() + '?immutable=1', { readOnly: true });
-    
-    // Fuzzy matching using SQLite parameters
-    const stmt = db.prepare(`
-      SELECT tic_id, astra_class, ra, dec, period, period_source, n_sectors 
-      FROM stars 
-      WHERE CAST(tic_id AS TEXT) LIKE ? 
-         OR LOWER(astra_class) LIKE ? 
-         OR LOWER(primary_source) LIKE ? 
-         OR LOWER(catalog_label) LIKE ?
+    // Substring match on the TIC number, class, source catalogue and catalogue label.
+    const stmt = getDatabase().prepare(`
+      SELECT tic_id, astra_class, ra, dec, period, period_source, n_sectors
+      FROM stars
+      WHERE CAST(tic_id AS TEXT) LIKE ? ESCAPE '\\'
+         OR LOWER(astra_class) LIKE ? ESCAPE '\\'
+         OR LOWER(primary_source) LIKE ? ESCAPE '\\'
+         OR LOWER(catalog_label) LIKE ? ESCAPE '\\'
       LIMIT 20
     `);
-    
-    const searchLike = `%${query}%`;
-    const rows = stmt.all(searchLike, searchLike, searchLike, searchLike) as any[];
-    
+
+    const pattern = containsPattern(query);
+    const rows = stmt.all(pattern, pattern, pattern, pattern) as unknown as StarRow[];
+
     const results = rows.map((r) => ({
       tic_id: r.tic_id,
       astra_class: r.astra_class,
@@ -40,12 +40,9 @@ export async function GET(request: NextRequest) {
       period_source: r.period_source,
       n_sectors: r.n_sectors,
     }));
-    
+
     return NextResponse.json({ results });
-  } catch (error: any) {
-    return NextResponse.json({ 
-      error: 'Failed to search database', 
-      details: error.message || String(error)
-    }, { status: 500 });
+  } catch (error) {
+    return serverError('/api/search', error, 'Failed to search database');
   }
 }

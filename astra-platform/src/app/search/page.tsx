@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useStars } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
 import { EmptyState, LoadingRows } from '@/components/shared/UI';
+import { LoadError } from '@/components/shared/DataState';
 import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
-import type { AstraClass, PeriodSource } from '@/lib/types';
+
 import Link from 'next/link';
 
 export default function TargetSearchPage() {
@@ -27,7 +28,7 @@ export default function TargetSearchPage() {
   }, [inputValue]);
 
   // Hook fetching data
-  const { data, isLoading, isError, error } = useStars({
+  const { data, isLoading, isError, error, refetch } = useStars({
     q: debouncedQuery || undefined,
     class: selectedClass !== 'all' ? selectedClass : undefined,
     source: selectedSource !== 'all' ? selectedSource : undefined,
@@ -62,7 +63,11 @@ export default function TargetSearchPage() {
           </p>
         </div>
         <div className="font-mono text-[11px] text-[#5A6878]">
-          {data && typeof data.total === 'number' ? `${data.total.toLocaleString()} targets match filter` : 'Loading registry…'}
+          {data && typeof data.total === 'number'
+            ? `${data.total.toLocaleString()} targets match filter`
+            : isError
+              ? 'Registry unavailable'
+              : 'Loading registry…'}
         </div>
       </div>
 
@@ -175,11 +180,8 @@ export default function TargetSearchPage() {
               {isLoading && <LoadingRows count={10} />}
               {!isLoading && isError && (
                 <tr>
-                  <td colSpan={9} className="py-8">
-                    <EmptyState
-                      message="Failed to load target registry"
-                      sub={error instanceof Error ? error.message : "An unknown error occurred."}
-                    />
+                  <td colSpan={9} className="p-4">
+                    <LoadError title="Could not load the target registry" error={error} onRetry={() => void refetch()} />
                   </td>
                 </tr>
               )}

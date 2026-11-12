@@ -1,42 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { useStars } from '@/lib/hooks';
-import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
+import { useOsint, useStars } from '@/lib/hooks';
+import { ClassBadge } from '@/components/shared/Badges';
 import { Panel, EmptyState, DataRow } from '@/components/shared/UI';
-import { formatRA, formatDec, formatPeriod, CLASS_LABELS } from '@/lib/utils';
+import { LoadError } from '@/components/shared/DataState';
+import { formatRA, formatDec, formatPeriod } from '@/lib/utils';
 import type { Star } from '@/lib/types';
-import { useQuery } from '@tanstack/react-query';
-
-interface OsintData {
-  tic_id: number;
-  astra_class: string;
-  period: number;
-  period_source: string;
-  ra: number;
-  dec: number;
-  cross_matches: { catalog: string; identifier: string | null; otype: string | null; distance_arcsec: number | null; notes: string }[];
-  observational_history: { observatory: string; instrument: string; filters: string; observations: number | null; first_obs: string | null; last_obs: string | null; cadence: string | null }[];
-  related_objects: { identifier: string; class: string; ra: number; dec: number; separation: string; notes: string }[];
-  provenance: { step: string; agent: string; detail: string }[];
-  scientific_notes: string;
-  audit_hash: string;
-}
 
 export default function SpaceOsintPage() {
   const [selectedStar, setSelectedStar] = useState<Star | null>(null);
   const [query, setQuery] = useState('');
 
-  const { data: starsData, isLoading: starsLoading } = useStars({
+  const {
+    data: starsData,
+    isLoading: starsLoading,
+    isError: starsError,
+    error: starsErrorValue,
+    refetch: refetchStars,
+  } = useStars({
     q: query || undefined,
     limit: 50,
   });
 
-  const { data: osint, isLoading: osintLoading } = useQuery<OsintData>({
-    queryKey: ['osint', selectedStar?.tic_id],
-    queryFn: () => fetch(`/api/osint/${selectedStar?.tic_id}`).then((r) => r.json()),
-    enabled: !!selectedStar,
-  });
+  const {
+    data: osint,
+    isLoading: osintLoading,
+    isError: osintError,
+    error: osintErrorValue,
+    refetch: refetchOsint,
+  } = useOsint(selectedStar?.tic_id ?? null);
 
   const handleSelectStar = (star: Star) => {
     setSelectedStar(star);
@@ -60,7 +53,19 @@ export default function SpaceOsintPage() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {starsLoading && (
-            <p className="text-[0.75rem] text-[#5A6878] p-3 font-mono">Loading registry…</p>
+            <p role="status" className="text-[0.75rem] text-[#5A6878] p-3 font-mono">Loading registry…</p>
+          )}
+          {starsError && (
+            <LoadError
+              compact
+              className="m-3"
+              title="Could not load the registry"
+              error={starsErrorValue}
+              onRetry={() => void refetchStars()}
+            />
+          )}
+          {starsData && starsData.stars.length === 0 && (
+            <p className="text-[0.75rem] text-[#5A6878] p-3 font-mono">No targets match “{query}”.</p>
           )}
           {starsData?.stars.map((star) => (
             <button
@@ -88,7 +93,17 @@ export default function SpaceOsintPage() {
           />
         ) : osintLoading ? (
           <div className="h-64 flex flex-col items-center justify-center space-y-2">
-            <span className="text-[11px] text-[#5A6878] font-mono animate-pulse">Running cross-matching algorithms…</span>
+            <span role="status" className="text-[11px] text-[#5A6878] font-mono animate-pulse">
+              Running cross-matching algorithms…
+            </span>
+          </div>
+        ) : osintError ? (
+          <div className="p-6">
+            <LoadError
+              title={`Could not generate the report for TIC ${selectedStar.tic_id}`}
+              error={osintErrorValue}
+              onRetry={() => void refetchOsint()}
+            />
           </div>
         ) : osint ? (
           <div className="flex-1 overflow-y-auto p-6 space-y-6">

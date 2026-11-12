@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useStars, useLightCurve } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
 import { Panel, EmptyState } from '@/components/shared/UI';
+import { LoadError } from '@/components/shared/DataState';
 import { formatRA, formatDec, formatPeriod } from '@/lib/utils';
 import type { Star } from '@/lib/types';
 import {
@@ -36,7 +37,7 @@ function LightCurveChart({
   title: string;
   type: 'raw' | 'folded';
 }) {
-  const { data, isLoading, isError } = useLightCurve(ticId);
+  const { data, isLoading, isError, error, refetch } = useLightCurve(ticId);
 
   const chartData =
     type === 'raw'
@@ -56,12 +57,12 @@ function LightCurveChart({
       <div className="p-4">
         {isLoading && (
           <div className="h-48 flex items-center justify-center">
-            <span className="text-[0.75rem] text-[#5A6878]">Loading light curve…</span>
+            <span role="status" className="text-[0.75rem] text-[#5A6878]">Loading light curve…</span>
           </div>
         )}
         {isError && (
           <div className="h-48 flex items-center justify-center">
-            <span className="text-[0.75rem] text-[#F85149]">Light curve unavailable</span>
+            <LoadError compact title="Could not load the light curve" error={error} onRetry={() => void refetch()} />
           </div>
         )}
         {!isLoading && !isError && chartData.length > 0 && (
@@ -102,10 +103,10 @@ function LightCurveChart({
                   border: '1px solid #1A2430',
                   borderRadius: 2,
                   fontSize: 11,
-                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontFamily: 'var(--font-plex-mono), monospace',
                   color: '#D7DEE7',
                 }}
-                formatter={(v: any) => [typeof v === 'number' ? v.toFixed(5) : String(v), 'Flux']}
+                formatter={(v: unknown) => [typeof v === 'number' ? v.toFixed(5) : String(v), 'Flux']}
               />
               {type === 'raw' && (
                 <Brush dataKey="x" height={16} stroke="#1A2430" fill="#0C1118" travellerWidth={4} />
@@ -156,7 +157,7 @@ export default function AnalysisPage() {
   const [query, setQuery] = useState('');
   const [activeChart, setActiveChart] = useState<'raw' | 'folded'>('raw');
 
-  const { data, isLoading, isError, error } = useStars({
+  const { data, isLoading, isError, error, refetch } = useStars({
     q: query || undefined,
     limit: 100,
   });
@@ -183,12 +184,19 @@ export default function AnalysisPage() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {isLoading && (
-            <p className="text-[0.75rem] text-[#5A6878] p-3">Loading…</p>
+            <p role="status" className="text-[0.75rem] text-[#5A6878] p-3">Loading…</p>
           )}
           {isError && (
-            <p className="text-[0.75rem] text-[#F85149] p-3 font-mono">
-              Err: {error instanceof Error ? error.message : "Failed to load"}
-            </p>
+            <LoadError
+              compact
+              className="m-3"
+              title="Could not load the registry"
+              error={error}
+              onRetry={() => void refetch()}
+            />
+          )}
+          {data && data.stars.length === 0 && (
+            <p className="text-[0.75rem] text-[#5A6878] p-3">No targets match “{query}”.</p>
           )}
           {!isLoading && !isError && data?.stars && Array.isArray(data.stars) && data.stars.map((star) => (
             <StarListItem

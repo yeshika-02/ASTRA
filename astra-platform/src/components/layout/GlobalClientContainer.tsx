@@ -18,7 +18,6 @@ export function GlobalClientContainer({ children }: { children: React.ReactNode 
     setAudioState, 
     audioVolume, 
     setAudioVolume, 
-    qualityState, 
     setQualityState 
   } = useAstraStore();
 
