@@ -3,21 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useAstraStore } from '@/lib/store';
 import { usePathname } from 'next/navigation';
-
-// ── Master Backdrop Component ────────────────────────────────────────
-function backgroundVideoFor(pathname: string): string {
-  if (pathname === '/') return '/blackhole.mp4';
-  if (pathname === '/search') return '/earth.mp4';
-  if (pathname === '/analysis') return '/solar-system.mp4';
-  if (pathname === '/dataset') return '/star-cluster.mp4';
-  if (pathname === '/model') return '/galaxy.mp4';
-  if (pathname === '/research') return '/nebula.mp4';
-  if (pathname === '/mission-replay') return '/pulsar.mp4';
-  if (pathname === '/osint') return '/satellite.mp4';
-  if (pathname === '/visualization') return '/space-dust.mp4';
-  if (pathname.startsWith('/target/')) return '/space-dust.mp4';
-  return '/space-backdrop.mp4';
-}
+import { backgroundVideoFor } from './backgroundVideo';
 
 export function CosmicBackground() {
   const pathname = usePathname();
@@ -43,6 +29,9 @@ export function CosmicBackground() {
 
   const opacity = 1.0; // Keep background container opaque to prevent double-dimming
   const videoSrc = backgroundVideoFor(pathname);
+  if (videoSrc === null) {
+    return <div className="fixed inset-0 z-0 bg-[#05070B] pointer-events-none" />;
+  }
 
   return (
     <div 
