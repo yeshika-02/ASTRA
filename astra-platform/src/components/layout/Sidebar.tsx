@@ -65,7 +65,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-2">
+      <nav aria-label="Main" className="flex-1 overflow-y-auto py-2">
         {NAV_ITEMS.map((item, idx) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -79,6 +79,7 @@ export function Sidebar() {
               <Link
                 href={item.href}
                 title={item.label}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex items-center h-9 text-[0.8125rem] transition-colors relative',
                   sidebarOpen ? 'px-3 gap-2.5' : 'justify-center px-0',
@@ -88,9 +89,9 @@ export function Sidebar() {
                 )}
               >
                 {isActive && (
-                  <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-r bg-[#6EA8FE]" />
+                  <span aria-hidden="true" className="absolute left-0 top-1 bottom-1 w-0.5 rounded-r bg-[#6EA8FE]" />
                 )}
-                <Icon className="w-4 h-4 shrink-0" />
+                <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
                 {sidebarOpen && (
                   <span className="truncate">{item.label}</span>
                 )}
