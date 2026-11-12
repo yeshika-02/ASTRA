@@ -43,7 +43,14 @@ function AttentionHeatmap({ matrix }: { matrix: number[][] }) {
   return (
     <div className="space-y-1.5 flex flex-col items-center">
       <div className="relative border border-white/10 bg-[#05070B] rounded overflow-hidden flex justify-center p-1">
-        <canvas ref={canvasRef} width={200} height={200} className="w-[180px] h-[180px]" />
+        <canvas
+          ref={canvasRef}
+          width={200}
+          height={200}
+          className="w-[180px] h-[180px]"
+          role="img"
+          aria-label={`Attention map: ${matrix.length} by ${matrix.length} self-attention weights from the model, brighter cells attend more strongly.`}
+        />
         <div className="absolute left-1 bottom-1 top-1 w-5 border-r border-white/5 bg-[#0C1118]/70 flex flex-col justify-around text-[6px] font-mono text-[#8B97A7] uppercase select-none pointer-events-none text-center">
           <span className="-rotate-90">Raw</span>
           <span className="-rotate-90">Fold</span>
@@ -201,6 +208,7 @@ export default function MissionReplayPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search TIC ID or class…"
+            aria-label="Filter targets by TIC ID or class"
             className="w-full bg-[#05070B] border border-white/10 rounded px-2.5 py-1.5 text-[0.75rem] text-[#D7DEE7] placeholder-[#5A6878] focus:outline-none focus:border-[#6EA8FE] font-mono"
           />
         </div>
@@ -258,17 +266,19 @@ export default function MissionReplayPage() {
               {/* Autoplay Controls */}
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setIsPlaying(!isPlaying)}
+                  aria-pressed={isPlaying}
                   className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border border-white/10 hover:bg-white/5 text-[#8B97A7] hover:text-[#D7DEE7]"
                 >
                   {isPlaying ? (
                     <>
-                      <Pause className="w-3 h-3 text-amber-500" />
+                      <Pause className="w-3 h-3 text-amber-500" aria-hidden="true" />
                       <span>Pause</span>
                     </>
                   ) : (
                     <>
-                      <Play className="w-3 h-3 text-emerald-400" />
+                      <Play className="w-3 h-3 text-emerald-400" aria-hidden="true" />
                       <span>Autoplay</span>
                     </>
                   )}
@@ -281,7 +291,7 @@ export default function MissionReplayPage() {
                   className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border border-white/10 hover:bg-white/5 text-[#8B97A7] hover:text-[#D7DEE7]"
                   title="Reset to start"
                 >
-                  <RotateCcw className="w-3 h-3" />
+                  <RotateCcw className="w-3 h-3" aria-hidden="true" />
                   <span>Reset</span>
                 </button>
               </div>
@@ -289,15 +299,18 @@ export default function MissionReplayPage() {
 
             {/* PIPELINE VISUAL FLOWCHART (Animated) */}
             <div className="px-4 py-3 border-b border-white/5 bg-[#05070B]/40 overflow-x-auto shrink-0 select-none">
-              <div className="flex items-center justify-between min-w-[760px] gap-1">
+              <div role="group" aria-label="Pipeline stages" className="flex items-center justify-between min-w-[760px] gap-1">
                 {FLOWCHART_NODES.map((node, index) => {
                   const isActive = activeStageId === node.id;
                   const isCompleted = activeStageId > node.id;
 
                   return (
                     <div key={node.id} className="flex items-center flex-1 gap-1">
-                      {/* Flowchart Node */}
-                      <motion.div
+                      {/* Flowchart Node: a button so the stages are reachable by keyboard */}
+                      <motion.button
+                        type="button"
+                        aria-current={isActive ? 'step' : undefined}
+                        aria-label={`Stage ${node.id + 1}: ${node.label}`}
                         animate={{
                           borderColor: isActive 
                             ? 'rgba(110, 168, 254, 0.5)' 
@@ -315,11 +328,11 @@ export default function MissionReplayPage() {
                           setActiveStep(node.steps[0]);
                           setIsPlaying(false);
                         }}
-                        className={`px-2 py-1.5 rounded border text-center flex-1 cursor-pointer transition-shadow ${
+                        className={`px-2 py-1.5 rounded border text-center flex-1 cursor-pointer transition-shadow focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#6EA8FE] ${
                           isActive ? 'shadow-[0_0_8px_rgba(110,168,254,0.15)]' : ''
                         }`}
                       >
-                        <p className={`text-[9px] font-mono font-medium leading-none ${
+                        <span className={`block text-[9px] font-mono font-medium leading-none ${
                           isActive 
                             ? 'text-[#6EA8FE]' 
                             : isCompleted 
@@ -327,17 +340,17 @@ export default function MissionReplayPage() {
                             : 'text-[#8B97A7]'
                         }`}>
                           {node.label}
-                        </p>
-                        <div className="flex items-center justify-center gap-1 mt-1 leading-none">
+                        </span>
+                        <span className="flex items-center justify-center gap-1 mt-1 leading-none">
                           <span className="text-[7px] text-white/30 font-mono">
                             STG 0{node.id + 1}
                           </span>
-                        </div>
-                      </motion.div>
+                        </span>
+                      </motion.button>
 
                       {/* Connection arrow */}
                       {index < FLOWCHART_NODES.length - 1 && (
-                        <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${
+                        <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 shrink-0 ${
                           isCompleted ? 'text-[#56D364]/50' : 'text-[#1A2430]'
                         }`} />
                       )}
