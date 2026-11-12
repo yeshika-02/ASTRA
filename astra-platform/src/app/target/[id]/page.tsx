@@ -4,6 +4,8 @@ import { useParams } from 'next/navigation';
 import { useStar, useLightCurve, usePredict } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge, SplitBadge } from '@/components/shared/Badges';
 import { Panel, DataRow, ConfidenceBar, EmptyState, InferenceUnavailable } from '@/components/shared/UI';
+import { LoadError, PageError } from '@/components/shared/DataState';
+import { ApiError } from '@/lib/hooks/fetchJson';
 import { formatRA, formatDec, formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS, confidenceToColor } from '@/lib/utils';
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -23,9 +25,27 @@ export default function TargetPage() {
   const id = params?.id as string;
   const ticId = id ? id.replace('TIC_', '') : '';
 
-  const { data: star, isLoading: starLoading, isError: starError } = useStar(ticId);
-  const { data: lc, isLoading: lcLoading, isError: lcError } = useLightCurve(ticId);
-  const { data: predictionResult, isLoading: predLoading, isError: predError } = usePredict(ticId);
+  const {
+    data: star,
+    isLoading: starLoading,
+    isError: starError,
+    error: starErrorValue,
+    refetch: refetchStar,
+  } = useStar(ticId);
+  const {
+    data: lc,
+    isLoading: lcLoading,
+    isError: lcError,
+    error: lcErrorValue,
+    refetch: refetchLc,
+  } = useLightCurve(ticId);
+  const {
+    data: predictionResult,
+    isLoading: predLoading,
+    isError: predError,
+    error: predErrorValue,
+    refetch: refetchPred,
+  } = usePredict(ticId);
   // Only real model output is ever shown. No defaults, no label-derived guesses.
   const prediction = predictionResult?.available ? predictionResult.data : null;
   const inferenceReasons = predictionResult && !predictionResult.available ? predictionResult.reasons : [];
@@ -33,19 +53,37 @@ export default function TargetPage() {
   if (starLoading) {
     return (
       <div className="h-64 flex flex-col items-center justify-center space-y-2">
-        <span className="text-[11px] text-[#5A6878] font-mono animate-pulse">Loading target dossier…</span>
+        <span role="status" className="text-[11px] text-[#5A6878] font-mono animate-pulse">
+          Loading target dossier…
+        </span>
       </div>
     );
   }
 
   if (starError || !star) {
+    // 404 and 400 are answers about the id; anything else is a failure worth retrying.
+    const status = starErrorValue instanceof ApiError ? starErrorValue.status : null;
+    if (status === 404 || status === 400) {
+      return (
+        <div className="p-6">
+          <EmptyState
+            message={status === 404 ? 'Target not found in ASTRA registry' : 'Not a valid TIC identifier'}
+            sub={
+              status === 404
+                ? `TIC ID ${ticId} could not be resolved to any verified observations.`
+                : 'Target pages take a TIC number, for example /target/100009973.'
+            }
+          />
+        </div>
+      );
+    }
     return (
-      <div className="p-6">
-        <EmptyState
-          message="Target not found in ASTRA registry"
-          sub={`TIC ID ${ticId} could not be resolved to any verified observations.`}
-        />
-      </div>
+      <PageError
+        heading={`TIC ${ticId}`}
+        title="Could not load the target dossier"
+        error={starErrorValue}
+        onRetry={() => void refetchStar()}
+      />
     );
   }
 
@@ -135,9 +173,12 @@ export default function TargetPage() {
               </div>
             </div>
           ) : predError ? (
-            <div className="text-[11px] text-red-400 font-mono py-4">
-              Error: the prediction request failed.
-            </div>
+            <LoadError
+              compact
+              title="The prediction request failed"
+              error={predErrorValue}
+              onRetry={() => void refetchPred()}
+            />
           ) : !prediction ? (
             <InferenceUnavailable reasons={inferenceReasons} />
           ) : (
@@ -227,8 +268,8 @@ export default function TargetPage() {
               </div>
             )}
             {lcError && (
-              <div className="h-44 flex items-center justify-center font-mono text-[10px] text-red-400">
-                Light curve data unavailable
+              <div className="h-44 flex items-center justify-center">
+                <LoadError compact title="Could not load the light curve" error={lcErrorValue} onRetry={() => void refetchLc()} />
               </div>
             )}
             {lc && rawChartData.length > 0 && (
@@ -262,8 +303,8 @@ export default function TargetPage() {
               </div>
             )}
             {lcError && (
-              <div className="h-44 flex items-center justify-center font-mono text-[10px] text-red-400">
-                Folded curve unavailable
+              <div className="h-44 flex items-center justify-center">
+                <LoadError compact title="Could not load the folded curve" error={lcErrorValue} onRetry={() => void refetchLc()} />
               </div>
             )}
             {lc && foldedChartData.length > 0 && (
