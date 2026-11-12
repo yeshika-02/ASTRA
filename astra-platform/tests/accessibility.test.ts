@@ -112,3 +112,23 @@ describe('scrollable tables', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('charts', () => {
+  it('every chart has a text alternative', () => {
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (e.name.endsWith('.tsx')) {
+          const src = fs.readFileSync(full, 'utf-8');
+          const charts = (src.match(/<ResponsiveContainer/g) ?? []).length;
+          const frames = (src.match(/<ChartFrame/g) ?? []).length;
+          if (charts > frames) offenders.push(`${path.relative(SRC, full)}: ${charts} charts, ${frames} frames`);
+        }
+      }
+    };
+    walk(path.join(SRC, 'app'));
+    expect(offenders).toEqual([]);
+  });
+});

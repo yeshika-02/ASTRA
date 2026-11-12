@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStars, useLightCurve, useExplain } from '@/lib/hooks';
 import { ClassBadge, PeriodSourceBadge } from '@/components/shared/Badges';
 import { ConfidenceBar, EmptyState } from '@/components/shared/UI';
+import { ChartFrame } from '@/components/shared/ChartFrame';
 import { formatPeriod, formatPercent, CLASS_LABELS, CLASS_COLORS } from '@/lib/utils';
 import { InferenceUnavailable } from '@/components/shared/UI';
 import { LoadError } from '@/components/shared/DataState';
@@ -422,6 +423,7 @@ export default function MissionReplayPage() {
                               Loading data arrays…
                             </p>
                           ) : lc ? (
+                            <ChartFrame label={`Raw light curve of TIC ${selectedStar.tic_id}: 1000 flux points drawn as 200 samples.`}>
                             <ResponsiveContainer width="100%" height={150}>
                               <LineChart data={sampleArray(lc.flux_1000, 200)}>
                                 <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.05)" />
@@ -430,6 +432,7 @@ export default function MissionReplayPage() {
                                 <Line type="monotone" dataKey="y" stroke="#6EA8FE" strokeWidth={1} dot={false} />
                               </LineChart>
                             </ResponsiveContainer>
+                            </ChartFrame>
                           ) : (
                             lightCurveError
                           )}
@@ -518,6 +521,7 @@ export default function MissionReplayPage() {
                               Loading data arrays…
                             </p>
                           ) : lc ? (
+                            <ChartFrame label={`Phase-folded light curve of TIC ${selectedStar.tic_id}: 200 phase bins.`}>
                             <ResponsiveContainer width="100%" height={150}>
                               <LineChart data={sampleArray(lc.folded_flux_200, 200)}>
                                 <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.05)" />
@@ -526,6 +530,7 @@ export default function MissionReplayPage() {
                                 <Line type="monotone" dataKey="y" stroke="#A78BFA" strokeWidth={1} dot={false} />
                               </LineChart>
                             </ResponsiveContainer>
+                            </ChartFrame>
                           ) : (
                             lightCurveError
                           )}
