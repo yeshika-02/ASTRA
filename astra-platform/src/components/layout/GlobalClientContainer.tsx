@@ -10,11 +10,13 @@ import { ParticleLayer } from '../shared/ParticleLayer';
 import { useAstraStore } from '@/lib/store';
 import { spaceHumSynth } from '@/lib/utils/SpaceHum';
 import { browserStorage, readPreferences } from '@/lib/store/preferences';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import { usePrefersReducedMotion } from '@/lib/hooks/useMotionPreferences';
 
 export function GlobalClientContainer({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { audioState, audioVolume, setAudioVolume, setQualityState } = useAstraStore();
+  const reducedMotion = usePrefersReducedMotion();
 
   // Restore display preferences on mount. Audio on/off is never restored: sound starts only
   // when the visitor turns it on.
@@ -46,6 +48,8 @@ export function GlobalClientContainer({ children }: { children: React.ReactNode 
   }, []);
 
   return (
+    // reducedMotion="user": framer-motion drops transform animations when the OS asks for less motion.
+    <MotionConfig reducedMotion="user">
     <div className="flex h-screen overflow-hidden text-[#D7DEE7]">
       {/* 3D Cosmic Starfield Layer (behind everything) */}
       <CosmicBackground />
@@ -64,10 +68,10 @@ export function GlobalClientContainer({ children }: { children: React.ReactNode 
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
-              initial={{ opacity: 0, y: 6, filter: 'blur(4px)' }}
+              initial={reducedMotion ? false : { opacity: 0, y: 6, filter: 'blur(4px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -6, filter: 'blur(4px)' }}
-              transition={{ duration: 0.35, ease: 'easeInOut' }}
+              exit={reducedMotion ? undefined : { opacity: 0, y: -6, filter: 'blur(4px)' }}
+              transition={{ duration: reducedMotion ? 0 : 0.35, ease: 'easeInOut' }}
               className="h-full w-full"
             >
               {children}
@@ -79,5 +83,6 @@ export function GlobalClientContainer({ children }: { children: React.ReactNode 
       {/* Global Shortcut Palette (Cmd+K / Ctrl+K) */}
       <CommandPalette />
     </div>
+    </MotionConfig>
   );
 }
