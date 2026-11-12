@@ -1,6 +1,6 @@
 # ASTRA — Project Status
 
-**As of:** 2026-11-09 (updated after Phase 0) · **Baseline commit:** `7821d3f` · **Phase 0 branch:** `phase0/integrity-security-hotfix` · **Source:** [PROJECT_AUDIT.md](PROJECT_AUDIT.md) (finding IDs in brackets)
+**As of:** 2026-11-09 (Phase 0 merged) · **`main`:** `1beca47` · **Phase 0:** [PR #1](https://github.com/yeshika-02/ASTRA/pull/1), merged by rebase · **Source:** [PROJECT_AUDIT.md](PROJECT_AUDIT.md) (finding IDs in brackets)
 
 Status is based on what the code, data and runs show, not on README or engineering-log claims.
 
@@ -29,13 +29,43 @@ Status is based on what the code, data and runs show, not on README or engineeri
 | Web platform: inference | 🟨 | Phase 0: fabricated output removed; honest 503 + "unavailable" UI [P1 ✅]. Still no real inference: no weights [R1], no runtime [P3, P4] |
 | Security | 🟨 | Command injection fixed (no shell, strict validation) [P2 ✅]; no rate limiting or dependency audit yet |
 | Tests | 🟨 | 21 Python + 88 web tests pass (API, security, health, no-fabrication, model smoke); `training/` coverage still low [E2] |
-| CI | ✅ | All 5 jobs green on GitHub (run 42519045208, first green run in the repo's history) [E1 ✅] |
-| Deployment | 🟨 | Vercel live still runs the old code until this branch is merged and deployed; Docker image broken [P4] |
+| CI | ✅ | All 5 jobs green on `main` after the merge (run 42520528644) [E1 ✅] |
+| Deployment | ⚠️ | Phase 0 is on `main`, but the live Vercel site (separate account) still serves the pre-Phase-0 code, including the fabricated predictions and the injection path. Deployment is out of scope until after the sprint. Docker image broken [P4] |
 | Documentation | 🟨 | Extensive, but contains false claims and broken links [E3] |
 
 ---
 
-## ✅ Phase 0 — completed 2026-11-09 (awaiting owner review; not merged or deployed)
+## 🟦 Current: 7-day sprint (2026-11-09 → 2026-11-15)
+
+- **Status:** Days 1–5 done, including Day 4's carried-over WS-09 and WS-10. PRs #3–#13 open, waiting for the Day 7 joint review; nothing from the sprint is on `main` yet.
+- **Day 1 results (pending merge):**
+  - ESLint 86 → 0 findings, and a page-crashing React hook bug fixed (#6).
+  - AgentOS validator 100/100 (#4).
+  - GitHub Actions on v7, with a coverage report in CI (#3).
+  - `training/` test coverage 7% → 22.5% (#5).
+- **Day 2 results (pending merge):**
+  - Hardcoded machine paths 27 → 0; scripts take `--seed`, `--data-dir`, `--out-dir`; `training/` coverage 56% (#7).
+  - A fresh clone can verify the shipped dataset, rebuild the frozen splits and train, checked in CI (#8).
+  - Pinned, universal Python lock file; every README command runs (#8).
+  - Model weights are still not in the repository, so the published metrics cannot be recomputed yet (SP-14, SP-15).
+- **Day 3 results (pending merge):**
+  - The weights were never on GitHub; every published artifact's hash is now in one manifest, and recovered files can be verified (`verify_weights.py`, ADR-0061) (#9).
+  - `training/evaluate.py`: test metrics with bootstrap CIs, a hash gate that keeps new models apart from the published one, checked against the published confusion matrices (#9).
+  - Training, CV and evaluation records name the git commit, environment, seed and data hashes, checked in CI (#9).
+  - Recomputing the published 78.17% still needs the original checkpoint (owner action D4).
+- **Day 4 results (pending merge):**
+  - Every published number now has one source with a status (`models/published_metrics.json`, `docs/metrics.md`); platform artifacts are generated, not hand-copied (#10).
+  - Corrected: README results that came from an earlier 269-star experiment, a CNN row contradicted by its own confusion matrix, NLL copied from ECE, unsourced variant accuracies and lineage counts (#10).
+- **Day 5 results (pending merge):**
+  - Preprocessing v1 is pinned by a golden test; its detrending and BLS behaviour (audit S4/S5) is measured and documented by tests (#11).
+  - Pipeline scripts reject bad arguments with clear messages; `process_star` checks inputs before downloading (#11).
+- **Day 4 carry-over results (pending merge):**
+  - Cross-validation no longer touches the test stars and scores each outer fold once after inner epoch selection (#12, ADR-0062).
+  - Baselines are reported beside the model: metadata baselines reproduce EXP-0001 exactly, and 12 statistics of the network's own inputs (79.58%) match the published transformer (78.17%) (#13).
+- **Plan:** [7_DAY_SPRINT.md](7_DAY_SPRINT.md). **Tasks:** SP-00…SP-35 in [TASK_CHECKLIST.md](TASK_CHECKLIST.md).
+- **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk), D6 (AgentOS framework lint debt).
+
+## ✅ Phase 0 — completed and merged to `main` 2026-11-09 (not deployed to production)
 
 | Task | Result | Evidence |
 |---|---|---|

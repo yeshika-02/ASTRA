@@ -1,13 +1,67 @@
 # Project Heartbeat & Task State
 
-> **Last Heartbeat:** 2026-11-09
-> **Project State:** PHASE 0 COMPLETE — awaiting owner review before Phase 1
+> **Last Heartbeat:** 2026-11-12
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–5 complete (WS-09/WS-10 caught up), PRs #3–#13 in review (see 7_DAY_SPRINT.md)
 
 ---
 
+## Session 2026-11-12 — Day 4 carry-over (WS-09, WS-10)
+
+- WS-09 [#12](https://github.com/yeshika-02/ASTRA/pull/12): test-free grouped nested CV, `check_plans`, injected trainer, synthetic leakage tests, ADR-0062. 5 commits.
+- WS-10 [#13](https://github.com/yeshika-02/ASTRA/pull/13): `training/baselines.py` (EXP-0001 exact), EXP-0003 light-curve baseline (79.58%), baselines in record, metrics page and README; light-curve baselines can move one star across platforms (found by Linux CI). 11 commits.
+- Next: Day 6 (WS-13 API reliability, WS-14 accessibility/media).
+
+## Session 2026-11-11 — Sprint Day 5
+
+- WS-11 [#11](https://github.com/yeshika-02/ASTRA/pull/11) (stacked on #10): golden fixture from unmodified v1, `tests/fake_lightkurve.py`, v1 steps extracted unchanged (byte-identical outputs), detrend/BLS characterisation, `pipeline/cli_validation.py` in 6 entry points, `process_star` input checks. 10 commits, 206 tests, `preprocess.py` coverage 57%.
+- Correction: Day 4's WS-09 (SP-21) and WS-10 (SP-22) were never started; carried over.
+- Next: WS-09/WS-10 carry-over or Day 6 (WS-13/WS-14), owner's call.
+
+## Session 2026-11-10 (c) — Sprint Day 4
+
+- WS-08 [#10](https://github.com/yeshika-02/ASTRA/pull/10) (stacked on #9): `models/published_metrics.json`, `pipeline/build_platform_artifacts.py`, generated `docs/metrics.md`, regenerated artifacts (CNN row, NLL null), unsourced UI numbers removed, README/docs/release notes fixed, ADR-0063. 19 commits, 173 tests.
+- Key findings: README's CV/ECE/NLL/selective-prediction numbers were from an earlier 269-star experiment; 7A CNN row contradicts its matrix; NLL was a copy of ECE.
+- Day 7 simulation incl. #10: no conflicts; merged suite 214 passed; merged frontend clean; validator 100/100.
+- Next: Day 5 (WS-11 preprocessing tests, SP-23–SP-25).
+
+## Session 2026-11-10 (b) — Review of PRs #2–#9
+
+- All open PRs reviewed; Day 7 rebase merge simulated: no conflicts, merged suite green, validator 100/100 on the final state.
+- Fixed in #9: training/calibration defaults no longer overwrite `models/saved/`; random-split provenance; strict `--require-published` with confusion-matrix check; `evaluate.py` input errors; CRLF refresh hint.
+- Routed: release notes before any tag (SP-18/SP-35), `--cov=astra` after merge (SP-34).
+- Slip: 14 #9 commits authored as `day7-sim` (simulation wrote shared git config). Identity restored; at the owner's request the 14 commits were re-authored to `yeshika-02` (same tree, messages and dates) and #9 force-pushed (head `e969753`).
+
+## Session 2026-11-10 — Sprint Day 3
+
+- WS-07 [#9](https://github.com/yeshika-02/ASTRA/pull/9) (stacked on #8): weights investigation (`docs/model_recovery.md`), `models/published_weights.json`, `verify_weights.py`, ADR-0061; `evaluate.py` with bootstrap CIs and hash gate; `astra.provenance`; CI provenance and evaluation checks; reproducibility guide rewritten. 22 commits, 132 tests in a clean locked venv.
+- Key facts: weights never on GitHub; upstream repo = this repo; `.onnx.data` hash recorded; published confusion matrices reproduce all published metrics.
+- SP-17 blocked (D1). Next: Day 4 (WS-08 metrics single source, SP-18–SP-20).
+
+## Session 2026-11-09 (e) — Sprint Day 2
+
+- WS-05 [#7](https://github.com/yeshika-02/ASTRA/pull/7): `astra.config` + `resolve_cli_path`, 27 machine paths → 0, real CLIs (train, CV, calibration, uncertainty), 5 fresh-clone crashes fixed, ADR-0065. 17 commits, 60 tests, `training/` coverage 56%. CI green.
+- WS-06 [#8](https://github.com/yeshika-02/ASTRA/pull/8) (stacked on #7): `prepare_from_repo.py`, CI fresh-clone job, `requirements-lock.txt`, `onnx`/`onnxscript` declared, export/attention CLIs fixed, README rewritten to match the code. 23 commits, 92 tests in a clean locked venv.
+- Findings: three calibration temperatures (SP-18), split-script ratio mismatch (SP-21), weights absent incl. ONNX `.onnx.data` (SP-14).
+- Nothing merged (ADR-0060). Next: Day 3 (WS-07 weights plan ADR-0061, `evaluate.py`, provenance).
+
+## Session 2026-11-09 (d) — Sprint Day 1
+
+- WS-02 [#3](https://github.com/yeshika-02/ASTRA/pull/3): Actions v7, pip cache, coverage artifact, release workflow (gh-release v3, `git archive`). 5 commits.
+- WS-03 [#4](https://github.com/yeshika-02/ASTRA/pull/4): 24 doc links fixed → validator 100/100 (Windows + Linux CI), PR-template casing, `validate.yml` re-enabled; `lint.yml` manual (SP-36 / D6). 4 commits.
+- WS-04 [#5](https://github.com/yeshika-02/ASTRA/pull/5): 41 Python tests; `training/` coverage 7% → 22.5%; upload clipping issue pinned as xfail (SP-37). 5 commits.
+- WS-01 [#6](https://github.com/yeshika-02/ASTRA/pull/6) (stacked on #3): React #300 crash fixed (reproduced, then verified fixed in a production build); ESLint 86 → 0; lint CI gate. 9 commits.
+- All four PRs green. Nothing merged (per ADR-0060). Next: Day 2 (WS-05 config/paths, WS-06 reproduction docs).
+
+## Session 2026-11-09 (c) — Sprint planning
+
+- Verified the starting state: PR #1 merged, `main` = `1beca47`, post-merge CI green, no open PRs, `gh` user `yeshika-02`, author email linked to the account.
+- Weights search: never on GitHub (no history, LFS or releases; `Rexy-5097/ASTRA` redirects here).
+- Cross-checked the owner's 7-day sprint brief against the roadmap. Wrote `7_DAY_SPRINT.md` (final dossier) and the sprint task table SP-00..SP-35 in `TASK_CHECKLIST.md`; ADR-0060 (sprint workflow).
+- Day 1 not started. Open owner decisions: D1–D5 (see dossier §8).
+
 ## Session 2026-11-09 (b) — Phase 0: integrity and security hotfix
 
-Branch: `phase0/integrity-security-hotfix`, pushed to GitHub. Commits authored as yeshika-02 (repo-local git config). CI: 5/5 jobs green (run 42519045208). Not merged, not deployed.
+PR #1 rebase-merged to `main` (`1beca47`); post-merge CI run 42520528644 green. Commits authored as yeshika-02. Production not updated: deployed from a separate Vercel account, out of scope until after the sprint.
 
 **Done (all RESOLVED):**
 - T1: fabricated predictions, probabilities, attention maps and OSINT fields removed. Explicit 503 `inference_unavailable` contract plus UI state and site-wide notice (ADR-0058).
