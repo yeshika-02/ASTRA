@@ -37,6 +37,7 @@ export default function SpaceOsintPage() {
 
   return (
     <div className="flex gap-0 h-[calc(100vh-7rem)]">
+      <h1 className="sr-only">Space OSINT</h1>
       {/* Target Selector Sidebar */}
       <div className="w-64 shrink-0 rounded-l astra-glass border-r-0 flex flex-col">
         <div className="px-3 py-2.5 border-b border-white/5">
@@ -113,7 +114,7 @@ export default function SpaceOsintPage() {
                 <span className="text-[10px] text-emerald-400 font-mono tracking-widest uppercase block mb-1">
                   Target Intelligence Report · SECURE
                 </span>
-                <h1 className="text-xl font-bold text-[#D7DEE7] font-mono">TIC {selectedStar.tic_id}</h1>
+                <h2 className="text-xl font-bold text-[#D7DEE7] font-mono">TIC {selectedStar.tic_id}</h2>
                 <p className="text-[11px] text-[#8B97A7] mt-1">
                   Source: TESS Input Catalog · Preprocessing: {selectedStar.preprocessing_version} · Hash: {osint.audit_hash.slice(0, 16)}…
                 </p>
