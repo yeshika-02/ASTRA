@@ -28,6 +28,23 @@ Point metrics: *computed* from each model's published test confusion matrix. CIs
 | HybridTransformer (separate) | 0.9538 | 0.8857 | 0.9091 | 0.7273 | 0.7213 |
 | HybridTransformer (only) | 0.9062 | 0.7500 | 0.8889 | 0.4186 | 0.6000 |
 
+## Baselines on the same test split — *computed*
+
+| Features | Model | Accuracy | 95% CI | Macro F1 | 95% CI |
+|---|---|---:|---|---:|---|
+| cadence, sectors (pipeline artefacts) | LogReg | 43.66% | [35.92%, 52.11%] | 0.3100 | [0.2584, 0.3587] |
+| cadence, sectors (pipeline artefacts) | RandomForest | 43.66% | [36.60%, 51.41%] | 0.3528 | [0.2842, 0.4219] |
+| cadence, sectors, period source (pipeline artefacts) | LogReg | 61.97% | [54.23%, 69.72%] | 0.5578 | [0.4984, 0.6091] |
+| cadence, sectors, period source (pipeline artefacts) | RandomForest | 62.68% | [54.93%, 70.42%] | 0.5722 | [0.5054, 0.6336] |
+| log period, amplitude, SNR | LogReg | 81.69% | [75.35%, 88.03%] | 0.7920 | [0.7169, 0.8582] |
+| log period, amplitude, SNR | RandomForest | 86.62% | [80.97%, 92.25%] | 0.8537 | [0.7881, 0.9095] |
+| all six metadata features | LogReg | 88.03% | [82.39%, 92.96%] | 0.8605 | [0.7932, 0.9161] |
+| all six metadata features | RandomForest | 90.85% | [85.92%, 95.09%] | 0.8972 | [0.8404, 0.9482] |
+| 12 statistics of the network's own inputs | LogReg | 73.24% | [65.49%, 80.28%] | 0.7347 | [0.6519, 0.8006] |
+| 12 statistics of the network's own inputs | RandomForest | 79.58% | [72.54%, 85.92%] | 0.7867 | [0.7137, 0.8560] |
+
+Source: `training/baselines.py (EXP-0001 metadata baselines; EXP-0003 light-curve statistics)`; fit on the frozen train split (661), evaluated once on the frozen test split (142); bootstrap: percentile, 1000 resamples over the test stars, seed 42. Period features use the VSX catalog period for RR Lyrae, Cepheids and eclipsing binaries (external information) and a mostly unreliable BLS period for Solar-like and Stable stars. A model counts as better only if it beats these on the same split (ADR-0062).
+
 ## Validation (best epoch, 141 stars) — *computed*
 
 | Model | Best validation accuracy | Epoch | Source |
