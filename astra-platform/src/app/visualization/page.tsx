@@ -46,8 +46,12 @@ export default function VisualizationPage() {
       </div>
 
       {/* Class filters bar */}
-      <div className="p-3 rounded astra-glass flex flex-wrap gap-2 items-center shrink-0">
-        <span className="text-[10px] text-[#8B97A7] uppercase font-mono tracking-wider mr-2">
+      <div
+        role="group"
+        aria-labelledby="globe-filter"
+        className="p-3 rounded astra-glass flex flex-wrap gap-2 items-center shrink-0"
+      >
+        <span id="globe-filter" className="text-[10px] text-[#8B97A7] uppercase font-mono tracking-wider mr-2">
           Filter globe:
         </span>
         <button
@@ -55,6 +59,7 @@ export default function VisualizationPage() {
             setSelectedClass('all');
             setSelectedStar(null);
           }}
+          aria-pressed={selectedClass === 'all'}
           className={`px-2.5 py-1 text-[11px] font-medium rounded transition-colors ${
             selectedClass === 'all'
               ? 'bg-[#6EA8FE]/20 text-[#6EA8FE] border border-[#6EA8FE]/30'
@@ -70,6 +75,7 @@ export default function VisualizationPage() {
               setSelectedClass(key);
               setSelectedStar(null);
             }}
+            aria-pressed={selectedClass === key}
             className={`px-2.5 py-1 text-[11px] font-medium rounded transition-colors ${
               selectedClass === key
                 ? 'bg-[#6EA8FE]/20 text-[#6EA8FE] border border-[#6EA8FE]/30'
@@ -95,7 +101,13 @@ export default function VisualizationPage() {
               />
             </div>
           ) : !isLoading && data ? (
-            <StarGlobe stars={data.stars} />
+            <div
+              role="img"
+              aria-label={`Interactive 3D sky map of ${data.stars.length} stars coloured by class. The same stars are listed, with keyboard access, on Target Search.`}
+              className="w-full h-full"
+            >
+              <StarGlobe stars={data.stars} />
+            </div>
           ) : (
             <div
               role="status"
