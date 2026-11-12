@@ -181,3 +181,23 @@ describe('mission replay controls', () => {
     expect(replay).toMatch(/role="img"\s+aria-label=\{`Attention map:/);
   });
 });
+
+describe('command palette', () => {
+  const palette = read('components/layout/CommandPalette.tsx');
+
+  it('is a modal dialog with a name', () => {
+    expect(palette).toContain('role="dialog"');
+    expect(palette).toContain('aria-modal="true"');
+    expect(palette).toContain('aria-label="Command palette"');
+  });
+
+  it('follows the combobox pattern so the highlighted result is announced', () => {
+    expect(palette).toContain('role="combobox"');
+    expect(palette).toContain('aria-controls="command-palette-results"');
+    expect(palette).toContain('aria-activedescendant=');
+    expect(palette).toContain('id="command-palette-results"');
+    expect(palette).toContain('role="listbox"');
+    expect(palette).toContain('role="option"');
+    expect(palette).toContain('aria-selected={isSelected}');
+  });
+});
