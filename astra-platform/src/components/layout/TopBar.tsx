@@ -176,9 +176,10 @@ export function TopBar() {
               else setQualityState('low');
             }}
             className="flex items-center gap-1 text-[10px] font-mono text-[#8B97A7] hover:text-[#D7DEE7] transition-colors"
-            title="Toggle graphics quality (low: static, medium: video, high: particle effects)"
+            title="Graphics quality (low: static, medium: landing-page video, high: video and particles)"
+            aria-label={`Graphics quality: ${qualityState}. Activate to change.`}
           >
-            <Cpu className="w-3.5 h-3.5" />
+            <Cpu className="w-3.5 h-3.5" aria-hidden="true" />
             <span className="text-[9px]">GFX:</span>
             <span className="text-[#6EA8FE] font-bold">
               {qualityState.toUpperCase()}
@@ -191,11 +192,13 @@ export function TopBar() {
               onClick={() => setAudioState(audioState === 'muted' ? 'playing' : 'muted')}
               className="flex items-center gap-1 text-[10px] font-mono text-[#8B97A7] hover:text-[#D7DEE7] transition-colors"
               title="Toggle elegant space ambient audio"
+              aria-label="Ambient audio"
+              aria-pressed={audioState === 'playing'}
             >
               {audioState === 'playing' ? (
-                <Volume2 className="w-3.5 h-3.5 text-[#56D364] animate-pulse" />
+                <Volume2 className="w-3.5 h-3.5 text-[#56D364] animate-pulse" aria-hidden="true" />
               ) : (
-                <VolumeX className="w-3.5 h-3.5 text-[#F85149]" />
+                <VolumeX className="w-3.5 h-3.5 text-[#F85149]" aria-hidden="true" />
               )}
             </button>
             <input
@@ -218,13 +221,15 @@ export function TopBar() {
                 background: `linear-gradient(to right, #6EA8FE 0%, #6EA8FE ${audioVolume * 100}%, #1A2430 ${audioVolume * 100}%, #1A2430 100%)`
               }}
               title="Ambient audio volume"
+              aria-label="Ambient audio volume"
+              aria-valuetext={`${Math.round(audioVolume * 100)}%`}
             />
           </div>
         </div>
 
         {/* Clock telemetry */}
         <div className="flex items-center gap-1.5 text-[#8B97A7]">
-          <Clock className="w-3.5 h-3.5 shrink-0" />
+          <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           <span className="text-[11px] font-mono tracking-wide">{time}</span>
         </div>
       </div>
