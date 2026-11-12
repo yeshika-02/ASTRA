@@ -39,11 +39,14 @@ class Exp0001ReproductionTests(unittest.TestCase):
         self.assertEqual(set(recorded), {(r["feature_set"], r["model"]) for r in self.all_results})
         for result in self.all_results:
             entry = recorded[(result["feature_set"], result["model"])]
-            # Metadata features are exact; light-curve statistics get one star of platform tolerance.
-            tolerance = 1 / 142 + 1e-9 if result["feature_set"] == "lightcurve" else 5e-5
             with self.subTest(feature_set=result["feature_set"], model=result["model"]):
-                self.assertLessEqual(abs(result["accuracy"] - entry["accuracy"]), tolerance)
-                if result["feature_set"] != "lightcurve":
+                if result["feature_set"] == "lightcurve":
+                    # Light-curve statistics can differ in the last bits across platforms, which moved one test
+                    # star for the logistic regression on Linux CI; compare whole stars, allowing one.
+                    n = result["n_test"]
+                    self.assertLessEqual(abs(round(result["accuracy"] * n) - round(entry["accuracy"] * n)), 1)
+                else:
+                    self.assertLessEqual(abs(result["accuracy"] - entry["accuracy"]), 5e-5)
                     self.assertEqual(round(result["macro_f1"], 4), entry["macro_f1"])
                     self.assertEqual([round(x, 4) for x in result["bootstrap"]["ci"]["accuracy"]], entry["accuracy_ci95"])
                     self.assertEqual([round(x, 4) for x in result["bootstrap"]["ci"]["macro_f1"]], entry["macro_f1_ci95"])
