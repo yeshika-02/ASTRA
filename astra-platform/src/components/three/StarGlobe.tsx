@@ -6,6 +6,7 @@ import { useRef, useMemo, useState, type ComponentRef } from 'react';
 import * as THREE from 'three';
 
 import { useAstraStore } from '@/lib/store';
+import { usePrefersReducedMotion } from '@/lib/hooks/useMotionPreferences';
 import { CLASS_COLORS } from '@/lib/utils';
 import type { Star } from '@/lib/types';
 
@@ -79,9 +80,11 @@ function StarGlobeScene({ stars }: { stars: Star[] }) {
   // Ref for pulsing selector ring
   const pulseRef = useRef<THREE.Mesh>(null);
 
-  // Slow rotation when no star is selected
+  const reducedMotion = usePrefersReducedMotion();
+
+  // Slow rotation when no star is selected (none for visitors who asked for reduced motion)
   useFrame((state, delta) => {
-    if (groupRef.current && !selectedStar) {
+    if (groupRef.current && !selectedStar && !reducedMotion) {
       groupRef.current.rotation.z += delta * 0.015;
     }
   });
@@ -93,17 +96,19 @@ function StarGlobeScene({ stars }: { stars: Star[] }) {
       const targetVec = new THREE.Vector3(...pos);
       
       // Interpolate controls target focus point
-      controlsRef.current.target.lerp(targetVec, 0.05);
+      // With reduced motion the camera jumps to the star instead of gliding there.
+      const step = reducedMotion ? 1 : 0.05;
+      controlsRef.current.target.lerp(targetVec, step);
 
       // Compute camera position (offset out to radius of 36)
       const camTargetVec = targetVec.clone().normalize().multiplyScalar(36);
-      state.camera.position.lerp(camTargetVec, 0.05);
+      state.camera.position.lerp(camTargetVec, step);
       
       controlsRef.current.update();
     }
 
     // Animate selected glow pulsing
-    if (pulseRef.current) {
+    if (pulseRef.current && !reducedMotion) {
       const time = state.clock.getElapsedTime();
       const scale = 1.0 + 0.15 * Math.sin(time * 6);
       pulseRef.current.scale.set(scale, scale, scale);
