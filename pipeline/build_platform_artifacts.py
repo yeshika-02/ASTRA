@@ -293,6 +293,30 @@ def build(record: dict, evaluations: dict[str, dict] | None = None) -> dict[str,
 # ─── docs/metrics.md ────────────────────────────────────────────────────────────
 
 
+BASELINE_LABELS = {
+    "shortcut_no_source": "cadence, sectors (pipeline artefacts)",
+    "shortcut": "cadence, sectors, period source (pipeline artefacts)",
+    "physical": "log period, amplitude, SNR",
+    "all": "all six metadata features",
+    "lightcurve": "12 statistics of the network's own inputs",
+}
+
+
+def render_baselines(baselines: dict | None) -> list[str]:
+    """Baselines on the same test split, reported beside the models (ADR-0062)."""
+    if not baselines:
+        return []
+    lines = ["", "## Baselines on the same test split — *computed*", "",
+             "| Features | Model | Accuracy | 95% CI | Macro F1 | 95% CI |", "|---|---|---:|---|---:|---|"]
+    for r in baselines["results"]:
+        lines.append(f"| {BASELINE_LABELS.get(r['feature_set'], r['feature_set'])} | {r['model']} | "
+                     f"{r['accuracy'] * 100:.2f}% | {_pct_interval(r['accuracy_ci95'])} | {r['macro_f1']:.4f} | "
+                     f"{_interval(r['macro_f1_ci95'])} |")
+    lines += ["", f"Source: `{baselines['source']}`; {baselines['split']}; bootstrap: {baselines['bootstrap']}. "
+              f"{baselines['caveat']} A model counts as better only if it beats these on the same split (ADR-0062)."]
+    return lines
+
+
 def render_markdown(record: dict, results: dict, calibration: dict, validation: dict) -> str:
     models, classes = record["models"], record["classes"]
     lines = [
@@ -328,6 +352,7 @@ def render_markdown(record: dict, results: dict, calibration: dict, validation: 
     for name, model in models.items():
         f1 = results[name]["metrics"]["per_class"]
         lines.append(f"| {model['label']} | " + " | ".join(f"{f1[c]['f1']:.4f}" for c in classes) + " |")
+    lines += render_baselines(record.get("baselines"))
     lines += ["", "## Validation (best epoch, 141 stars) — *computed*", "",
               "| Model | Best validation accuracy | Epoch | Source |", "|---|---:|---:|---|"]
     for name, model in models.items():
