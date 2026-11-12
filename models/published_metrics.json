@@ -630,5 +630,154 @@
       "where": "astra-platform/src/lib/data/constants.ts PER_CLASS_ECE",
       "note": "Per-class ECE halving after calibration; contradicts ground_truth_calibration.md; not used by any page."
     }
-  ]
+  ],
+  "baselines": {
+    "source": "training/baselines.py (EXP-0001 metadata baselines; EXP-0003 light-curve statistics)",
+    "split": "fit on the frozen train split (661), evaluated once on the frozen test split (142)",
+    "status": "computed",
+    "bootstrap": "percentile, 1000 resamples over the test stars, seed 42",
+    "caveat": "Period features use the VSX catalog period for RR Lyrae, Cepheids and eclipsing binaries (external information) and a mostly unreliable BLS period for Solar-like and Stable stars.",
+    "results": [
+      {
+        "feature_set": "shortcut_no_source",
+        "model": "LogReg",
+        "accuracy": 0.4366,
+        "accuracy_ci95": [
+          0.3592,
+          0.5211
+        ],
+        "macro_f1": 0.31,
+        "macro_f1_ci95": [
+          0.2584,
+          0.3587
+        ]
+      },
+      {
+        "feature_set": "shortcut_no_source",
+        "model": "RandomForest",
+        "accuracy": 0.4366,
+        "accuracy_ci95": [
+          0.366,
+          0.5141
+        ],
+        "macro_f1": 0.3528,
+        "macro_f1_ci95": [
+          0.2842,
+          0.4219
+        ]
+      },
+      {
+        "feature_set": "shortcut",
+        "model": "LogReg",
+        "accuracy": 0.6197,
+        "accuracy_ci95": [
+          0.5423,
+          0.6972
+        ],
+        "macro_f1": 0.5578,
+        "macro_f1_ci95": [
+          0.4984,
+          0.6091
+        ]
+      },
+      {
+        "feature_set": "shortcut",
+        "model": "RandomForest",
+        "accuracy": 0.6268,
+        "accuracy_ci95": [
+          0.5493,
+          0.7042
+        ],
+        "macro_f1": 0.5722,
+        "macro_f1_ci95": [
+          0.5054,
+          0.6336
+        ]
+      },
+      {
+        "feature_set": "physical",
+        "model": "LogReg",
+        "accuracy": 0.8169,
+        "accuracy_ci95": [
+          0.7535,
+          0.8803
+        ],
+        "macro_f1": 0.792,
+        "macro_f1_ci95": [
+          0.7169,
+          0.8582
+        ]
+      },
+      {
+        "feature_set": "physical",
+        "model": "RandomForest",
+        "accuracy": 0.8662,
+        "accuracy_ci95": [
+          0.8097,
+          0.9225
+        ],
+        "macro_f1": 0.8537,
+        "macro_f1_ci95": [
+          0.7881,
+          0.9095
+        ]
+      },
+      {
+        "feature_set": "all",
+        "model": "LogReg",
+        "accuracy": 0.8803,
+        "accuracy_ci95": [
+          0.8239,
+          0.9296
+        ],
+        "macro_f1": 0.8605,
+        "macro_f1_ci95": [
+          0.7932,
+          0.9161
+        ]
+      },
+      {
+        "feature_set": "all",
+        "model": "RandomForest",
+        "accuracy": 0.9085,
+        "accuracy_ci95": [
+          0.8592,
+          0.9509
+        ],
+        "macro_f1": 0.8972,
+        "macro_f1_ci95": [
+          0.8404,
+          0.9482
+        ]
+      },
+      {
+        "feature_set": "lightcurve",
+        "model": "LogReg",
+        "accuracy": 0.7324,
+        "accuracy_ci95": [
+          0.6549,
+          0.8028
+        ],
+        "macro_f1": 0.7347,
+        "macro_f1_ci95": [
+          0.6519,
+          0.8006
+        ]
+      },
+      {
+        "feature_set": "lightcurve",
+        "model": "RandomForest",
+        "accuracy": 0.7958,
+        "accuracy_ci95": [
+          0.7254,
+          0.8592
+        ],
+        "macro_f1": 0.7867,
+        "macro_f1_ci95": [
+          0.7137,
+          0.856
+        ]
+      }
+    ]
+  }
 }
