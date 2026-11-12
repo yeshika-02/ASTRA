@@ -28,3 +28,21 @@ describe('reduced motion', () => {
     expect(read('components/layout/GlobalClientContainer.tsx')).toContain('<MotionConfig reducedMotion="user">');
   });
 });
+
+describe('top bar controls', () => {
+  const topBar = read('components/layout/TopBar.tsx');
+
+  it('labels the volume slider beyond a title attribute', () => {
+    const slider = topBar.slice(topBar.indexOf('type="range"'), topBar.indexOf('/>', topBar.indexOf('type="range"')));
+    expect(slider).toContain('aria-label="Ambient audio volume"');
+    expect(slider).toContain('aria-valuetext=');
+  });
+
+  it('exposes the audio button as a toggle', () => {
+    expect(topBar).toContain("aria-pressed={audioState === 'playing'}");
+  });
+
+  it('names the graphics quality button with its current state', () => {
+    expect(topBar).toMatch(/aria-label=\{`Graphics quality: \$\{qualityState\}/);
+  });
+});
