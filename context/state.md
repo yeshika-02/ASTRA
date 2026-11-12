@@ -1,9 +1,15 @@
 # Project Heartbeat & Task State
 
-> **Last Heartbeat:** 2026-11-11
-> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–5 complete except WS-09/WS-10 (carried over), PRs #3–#11 in review (see 7_DAY_SPRINT.md)
+> **Last Heartbeat:** 2026-11-12
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–5 complete (WS-09/WS-10 caught up), PRs #3–#13 in review (see 7_DAY_SPRINT.md)
 
 ---
+
+## Session 2026-11-12 — Day 4 carry-over (WS-09, WS-10)
+
+- WS-09 [#12](https://github.com/yeshika-02/ASTRA/pull/12): test-free grouped nested CV, `check_plans`, injected trainer, synthetic leakage tests, ADR-0062. 5 commits.
+- WS-10 [#13](https://github.com/yeshika-02/ASTRA/pull/13): `training/baselines.py` (EXP-0001 exact), EXP-0003 light-curve baseline (79.58%), baselines in record, metrics page and README; light-curve baselines can move one star across platforms (found by Linux CI). 11 commits.
+- Next: Day 6 (WS-13 API reliability, WS-14 accessibility/media).
 
 ## Session 2026-11-11 — Sprint Day 5
 
