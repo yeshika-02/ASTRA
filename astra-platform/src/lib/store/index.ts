@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Star, AstraClass, PeriodSource } from '../types';
+import { STORAGE_KEYS, writePreference, type QualityState } from './preferences';
 
 interface SearchFilters {
   query: string;
@@ -28,8 +29,8 @@ interface AstraStore {
   setAudioState: (state: 'muted' | 'playing') => void;
   audioVolume: number;
   setAudioVolume: (volume: number) => void;
-  qualityState: 'low' | 'medium' | 'high';
-  setQualityState: (state: 'low' | 'medium' | 'high') => void;
+  qualityState: QualityState;
+  setQualityState: (state: QualityState) => void;
 }
 
 const defaultFilters: SearchFilters = {
@@ -56,25 +57,17 @@ export const useAstraStore = create<AstraStore>((set) => ({
   setReplayStep: (step) => set({ replayStep: step }),
   setReplayStarId: (id) => set({ replayStarId: id }),
 
+  // Not persisted: audio starts only from a click during the current visit.
   audioState: 'muted',
-  setAudioState: (audioState) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('astra-audio-state', audioState);
-    }
-    set({ audioState });
-  },
+  setAudioState: (audioState) => set({ audioState }),
   audioVolume: 0.5,
   setAudioVolume: (audioVolume) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('astra-audio-volume', String(audioVolume));
-    }
+    writePreference(STORAGE_KEYS.audioVolume, String(audioVolume));
     set({ audioVolume });
   },
   qualityState: 'high',
   setQualityState: (qualityState) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('astra-quality-state', qualityState);
-    }
+    writePreference(STORAGE_KEYS.quality, qualityState);
     set({ qualityState });
   },
 }));
