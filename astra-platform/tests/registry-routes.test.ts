@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeDatabase, getDatabase } from '@/lib/server/db';
 import { GET as starsGET } from '@/app/api/stars/route';
 import { GET as searchGET } from '@/app/api/search/route';
-import { snapshotEnv, tempDir } from './helpers';
+import { GET as starGET } from '@/app/api/stars/[id]/route';
+import { KNOWN_TIC, snapshotEnv, tempDir } from './helpers';
 
 // Counts measured on the shipped registry (data/astra.sqlite, 944 stars).
 const TOTAL_STARS = 944;
@@ -159,6 +160,42 @@ describe('GET /api/search', () => {
     expect(res.status).toBe(500);
     const text = await res.text();
     expect(JSON.parse(text)).toEqual({ error: 'Failed to search database' });
+    expect(text).not.toContain(dir);
+  });
+});
+
+describe('GET /api/stars/[id]', () => {
+  const params = (id: string) => ({ params: Promise.resolve({ id }) });
+  const star = async (id: string) => {
+    const res = await starGET(getReq(`/api/stars/${id}`), params(id));
+    return { status: res.status, body: await res.json() };
+  };
+
+  it.each([String(KNOWN_TIC), `TIC_${KNOWN_TIC}`])('returns the star for %s', async (id) => {
+    const { status, body } = await star(id);
+    expect(status).toBe(200);
+    expect(body.tic_id).toBe(KNOWN_TIC);
+    expect(Array.isArray(body.source_catalogs)).toBe(true);
+    expect(typeof body.has_folded_lc).toBe('boolean');
+  });
+
+  it('answers an unknown TIC with 404', async () => {
+    expect((await star('999999999999')).status).toBe(404);
+  });
+
+  // parseInt() used to accept these: "12abc" became TIC 12 and "abc" became NaN.
+  it.each(['abc', '12abc', '0', '-1', '1.5', 'TIC_', '1;DROP TABLE stars'])('rejects %j with 400', async (id) => {
+    const { status, body } = await star(id);
+    expect(status).toBe(400);
+    expect(body).toEqual({ error: 'Invalid TIC identifier.' });
+  });
+
+  it('answers a missing database with a generic 500', async () => {
+    const dir = useMissingDatabase();
+    const res = await starGET(getReq(`/api/stars/${KNOWN_TIC}`), params(String(KNOWN_TIC)));
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(JSON.parse(text)).toEqual({ error: 'Failed to query database' });
     expect(text).not.toContain(dir);
   });
 });
