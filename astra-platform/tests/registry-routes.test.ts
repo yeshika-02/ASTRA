@@ -4,6 +4,8 @@ import { closeDatabase, getDatabase } from '@/lib/server/db';
 import { GET as starsGET } from '@/app/api/stars/route';
 import { GET as searchGET } from '@/app/api/search/route';
 import { GET as starGET } from '@/app/api/stars/[id]/route';
+import { GET as osintGET } from '@/app/api/osint/[id]/route';
+import { GET as datasetGET } from '@/app/api/dataset/route';
 import { KNOWN_TIC, snapshotEnv, tempDir } from './helpers';
 
 // Counts measured on the shipped registry (data/astra.sqlite, 944 stars).
@@ -196,6 +198,44 @@ describe('GET /api/stars/[id]', () => {
     expect(res.status).toBe(500);
     const text = await res.text();
     expect(JSON.parse(text)).toEqual({ error: 'Failed to query database' });
+    expect(text).not.toContain(dir);
+  });
+});
+
+describe('GET /api/dataset', () => {
+  it('builds the class-by-split matrix from the shared handle', async () => {
+    const res = await datasetGET();
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const matrix = body.classSplitMatrix as Record<string, Record<string, number>>;
+    const total = Object.values(matrix).reduce(
+      (sum, splits) => sum + Object.values(splits).reduce((a, b) => a + b, 0),
+      0,
+    );
+    expect(total).toBe(TOTAL_STARS);
+    expect(Object.values(matrix).reduce((sum, splits) => sum + splits.test, 0)).toBe(TEST_SPLIT);
+    expect(matrix.cepheid.train + matrix.cepheid.val + matrix.cepheid.test).toBe(CEPHEIDS);
+  });
+
+  it('answers a missing database with a generic 500', async () => {
+    const dir = useMissingDatabase();
+    const res = await datasetGET();
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(JSON.parse(text)).toEqual({ error: 'Failed to load dataset details' });
+    expect(text).not.toContain(dir);
+  });
+});
+
+describe('GET /api/osint/[id]', () => {
+  it('answers a missing database with a generic 500', async () => {
+    const dir = useMissingDatabase();
+    const res = await osintGET(getReq(`/api/osint/${KNOWN_TIC}`), {
+      params: Promise.resolve({ id: String(KNOWN_TIC) }),
+    });
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(JSON.parse(text)).toEqual({ error: 'Failed to generate OSINT report' });
     expect(text).not.toContain(dir);
   });
 });
