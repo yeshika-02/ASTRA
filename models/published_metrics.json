@@ -636,7 +636,7 @@
     "split": "fit on the frozen train split (661), evaluated once on the frozen test split (142)",
     "status": "computed",
     "bootstrap": "percentile, 1000 resamples over the test stars, seed 42",
-    "caveat": "Period features use the VSX catalog period for RR Lyrae, Cepheids and eclipsing binaries (external information) and a mostly unreliable BLS period for Solar-like and Stable stars.",
+    "caveat": "Period features use the VSX catalog period for RR Lyrae, Cepheids and eclipsing binaries (external information) and a mostly unreliable BLS period for Solar-like and Stable stars. The light-curve baselines can differ by one test star between platforms (floating-point differences in the statistics; on Linux the logistic regression gets 103/142 instead of 104/142).",
     "results": [
       {
         "feature_set": "shortcut_no_source",
