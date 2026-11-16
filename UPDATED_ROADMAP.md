@@ -198,6 +198,12 @@ Details: ADR-0058, ADR-0059, `artifacts/reviews/phase0-gate-review.md`.
 | 5.5 Tests | Vitest for utilities and API handlers; Playwright smoke test for key pages; run in CI | M |
 | 5.6 Deploy configs | Fix the Dockerfile (copy `data/`, standalone output), align `render.yaml`, document env vars | S |
 
+**Sprint progress (2026-11-16, in review):**
+- 5.1: done except moving files out of git. No video on data pages, a lazy landing video, no autoplay audio (#15); deleting the now-unreferenced files is owner decision D7.
+- 5.2: done (#15), pending a Lighthouse run and a manual contrast check.
+- 5.3: shared connection, validated parameters and generic errors done (#14, ADR-0066; no zod, see the ADR). Rate limiting and security headers not started.
+- 5.5: Vitest covers API handlers and page states (#14/#15). Playwright not started.
+
 **Exit criteria:** Lighthouse performance ≥ 80 and accessibility ≥ 90 on the main pages; QG-003 and QG-006 pass.
 
 ---
