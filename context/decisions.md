@@ -77,6 +77,8 @@
 | ADR-0062 (file lands with [#12](https://github.com/yeshika-02/ASTRA/pull/12)) | Evaluation protocol: test-free grouped nested CV, bootstrap CIs, baselines beside every model | Accepted | 2026-11-12 | High |
 | ADR-0063 (file lands with [#10](https://github.com/yeshika-02/ASTRA/pull/10)) | Published metrics: one authoritative record, generated artifacts, explicit status | Accepted | 2026-11-10 | High |
 | ADR-0065 (file lands with [#7](https://github.com/yeshika-02/ASTRA/pull/7)) | Configuration and path policy: `astra.config` with environment overrides | Accepted | 2026-11-09 | Medium |
+| ADR-0066 (file lands with [#14](https://github.com/yeshika-02/ASTRA/pull/14)) | API input and error contract: validate before use, one read-only database handle, generic failures | Accepted | 2026-11-12 | Medium |
+| ADR-0067 (file lands with [#15](https://github.com/yeshika-02/ASTRA/pull/15)) | Decorative media and motion: landing page only, preference-gated; accessibility baseline enforced by tests | Accepted | 2026-11-12 | Medium |
 
 ---
 
