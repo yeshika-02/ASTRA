@@ -48,7 +48,7 @@ Phase 6  Research publication readiness (model card, external validation)
 
 | Phase | Goal | Priority | Effort | Depends on | Gate |
 |---|---|---|---|---|---|
-| 0 | No fabricated output, no RCE | ✅ Done 2026-11-09 (in review) | — | — | QG-005, QG-007 passed |
+| 0 | No fabricated output, no RCE | ✅ Done 2026-11-09 (merged) | — | — | QG-005, QG-007 passed |
 | 1 | Anyone can reproduce v1 from a clean clone; CI green | P0 | M–L (1–2 wks) | 0 | QG-002, QG-003 |
 | 2 | Credible, de-confounded scientific numbers vs baselines | P1 | L (2–3 wks) | 1 | QG-004 |
 | 3 | Real model inference on the platform, with one shared preprocessing implementation | P1 | L (2–3 wks) | 1, 2 (preprocessing frozen) | QG-001, QG-006 |
@@ -198,9 +198,9 @@ Details: ADR-0058, ADR-0059, `artifacts/reviews/phase0-gate-review.md`.
 | 5.5 Tests | Vitest for utilities and API handlers; Playwright smoke test for key pages; run in CI | M |
 | 5.6 Deploy configs | Fix the Dockerfile (copy `data/`, standalone output), align `render.yaml`, document env vars | S |
 
-**Sprint progress (2026-11-16, in review):**
+**Sprint progress (merged 2026-11-16):**
 - 5.1: done except moving files out of git. No video on data pages, a lazy landing video, no autoplay audio (#15); deleting the now-unreferenced files is owner decision D7.
-- 5.2: done (#15), pending a Lighthouse run and a manual contrast check.
+- 5.2: done (#15). Lighthouse accessibility 100 on all 10 main pages, colour contrast included.
 - 5.3: shared connection, validated parameters and generic errors done (#14, ADR-0066; no zod, see the ADR). Rate limiting and security headers not started.
 - 5.5: Vitest covers API handlers and page states (#14/#15). Playwright not started.
 
