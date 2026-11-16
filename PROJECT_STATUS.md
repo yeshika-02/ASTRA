@@ -37,7 +37,7 @@ Status is based on what the code, data and runs show, not on README or engineeri
 
 ## 🟦 Current: 7-day sprint (2026-11-09 → 2026-11-15)
 
-- **Status:** Days 1–5 done, including Day 4's carried-over WS-09 and WS-10. PRs #3–#13 open, waiting for the Day 7 joint review; nothing from the sprint is on `main` yet.
+- **Status:** Days 1–6 done, including Day 4's carried-over WS-09 and WS-10. PRs #3–#15 open, waiting for the Day 7 joint review; nothing from the sprint is on `main` yet.
 - **Day 1 results (pending merge):**
   - ESLint 86 → 0 findings, and a page-crashing React hook bug fixed (#6).
   - AgentOS validator 100/100 (#4).
@@ -62,8 +62,11 @@ Status is based on what the code, data and runs show, not on README or engineeri
 - **Day 4 carry-over results (pending merge):**
   - Cross-validation no longer touches the test stars and scores each outer fold once after inner epoch selection (#12, ADR-0062).
   - Baselines are reported beside the model: metadata baselines reproduce EXP-0001 exactly, and 12 statistics of the network's own inputs (79.58%) match the published transformer (78.17%) (#13).
+- **Day 6 results (pending merge):**
+  - API routes validate their input (400 with a reason), share one read-only database handle and never send exception text; every data page has loading and retryable error states (#14, ADR-0066).
+  - No background video on data pages, no autoplay audio, reduced motion honoured; axe-core finds no WCAG 2.1 A/AA violations on the 10 main pages; `/analysis` loads 0.91 MB (#15, ADR-0067). Lighthouse still to be run.
 - **Plan:** [7_DAY_SPRINT.md](7_DAY_SPRINT.md). **Tasks:** SP-00…SP-35 in [TASK_CHECKLIST.md](TASK_CHECKLIST.md).
-- **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk), D6 (AgentOS framework lint debt).
+- **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk), D6 (AgentOS framework lint debt), D7 (delete unreferenced media).
 
 ## ✅ Phase 0 — completed and merged to `main` 2026-11-09 (not deployed to production)
 

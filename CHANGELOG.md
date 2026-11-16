@@ -22,6 +22,8 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Golden test pinning preprocessing v1, characterisation tests for its detrending and BLS period search, and clear input errors in the pipeline scripts and `process_star` ([#11](https://github.com/yeshika-02/ASTRA/pull/11)).
 - Test-free, grouped, nested cross-validation with bootstrap CIs (ADR-0062) ([#12](https://github.com/yeshika-02/ASTRA/pull/12)).
 - `training/baselines.py`: EXP-0001 metadata baselines reproduced exactly and a light-curve-statistics baseline, reported beside the model ([#13](https://github.com/yeshika-02/ASTRA/pull/13)).
+- API input validation (400 with the reason), one shared read-only database handle, generic error answers, and retryable loading/error states on every data page (ADR-0066) ([#14](https://github.com/yeshika-02/ASTRA/pull/14)).
+- Accessibility and media: reduced motion honoured, skip link, chart text alternatives, keyboard-operable controls; no background video on data pages and no autoplay audio (ADR-0067) ([#15](https://github.com/yeshika-02/ASTRA/pull/15)).
 
 ### Security
 - **Command injection in `POST /api/upload` fixed.** Request fields were interpolated into a shell command; inference now spawns Python with an argument array (`shell: false`), sends flux over stdin, and validates every input. `upload_inference.py` no longer reads a server file when `--flux` is a path.
