@@ -8,9 +8,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-> On `main` since 2026-11-09 ([PR #1](https://github.com/yeshika-02/ASTRA/pull/1)); not yet released or deployed. The repository also carries a `v1.1.0` tag that has no matching entry in this file; to be reconciled in sprint task SP-35.
+> On `main`: Phase 0 since 2026-11-09 ([PR #1](https://github.com/yeshika-02/ASTRA/pull/1)), the 7-day sprint since 2026-11-16. Not yet released or deployed.
+>
+> **About the `v1.1.0` tag:** it is a lightweight tag on `98b1508` (a background-video styling commit dated 2026-06-13, the same day as the `[1.0.0]` entry). Its release workflow failed at the archive step (fixed in #3), so no GitHub release exists, and this file never had a `[1.1.0]` entry; `1.0.0` itself was never tagged. The tag is left as it is. The next release needs a new version number (owner decision D8).
 
-### Pending in open sprint PRs (not yet on `main`)
+### Sprint 2026-11-09 → 2026-11-16 (merged to `main` 2026-11-16)
 - Fixed a page crash (React error #300) when switching graphics quality to low; ESLint findings 86 → 0 and lint gated in CI ([#6](https://github.com/yeshika-02/ASTRA/pull/6)).
 - GitHub Actions upgraded to v7; Python coverage report in CI; release workflow fixed (`softprops/action-gh-release` v3, `git archive`) ([#3](https://github.com/yeshika-02/ASTRA/pull/3)).
 - 24 broken documentation links fixed; AgentOS validator 100/100; `validate` workflow re-enabled ([#4](https://github.com/yeshika-02/ASTRA/pull/4)).
@@ -24,6 +26,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `training/baselines.py`: EXP-0001 metadata baselines reproduced exactly and a light-curve-statistics baseline, reported beside the model ([#13](https://github.com/yeshika-02/ASTRA/pull/13)).
 - API input validation (400 with the reason), one shared read-only database handle, generic error answers, and retryable loading/error states on every data page (ADR-0066) ([#14](https://github.com/yeshika-02/ASTRA/pull/14)).
 - Accessibility and media: reduced motion honoured, skip link, chart text alternatives, keyboard-operable controls; no background video on data pages and no autoplay audio (ADR-0067) ([#15](https://github.com/yeshika-02/ASTRA/pull/15)).
+- CI coverage report now includes the `astra` package ([#16](https://github.com/yeshika-02/ASTRA/pull/16)).
 
 ### Security
 - **Command injection in `POST /api/upload` fixed.** Request fields were interpolated into a shell command; inference now spawns Python with an argument array (`shell: false`), sends flux over stdin, and validates every input. `upload_inference.py` no longer reads a server file when `--flux` is a path.

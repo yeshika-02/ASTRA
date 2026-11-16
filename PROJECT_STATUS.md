@@ -37,36 +37,36 @@ Status is based on what the code, data and runs show, not on README or engineeri
 
 ## 🟦 Current: 7-day sprint (2026-11-09 → 2026-11-15)
 
-- **Status:** Days 1–6 done, including Day 4's carried-over WS-09 and WS-10. PRs #3–#15 open, waiting for the Day 7 joint review; nothing from the sprint is on `main` yet.
-- **Day 1 results (pending merge):**
+- **Status:** Sprint complete. All workstream PRs (#3–#15) and the coverage follow-up (#16) were reviewed together and rebase-merged on 2026-11-16; the workstream code is `main` at `38dbdd1`, with this tracker PR merged on top; not released or deployed. Blocked: SP-17 (D1), SP-26 (D2), SP-36 (D6). Deferred (optional): SP-31.
+- **Day 1 results (merged 2026-11-16):**
   - ESLint 86 → 0 findings, and a page-crashing React hook bug fixed (#6).
   - AgentOS validator 100/100 (#4).
   - GitHub Actions on v7, with a coverage report in CI (#3).
   - `training/` test coverage 7% → 22.5% (#5).
-- **Day 2 results (pending merge):**
+- **Day 2 results (merged 2026-11-16):**
   - Hardcoded machine paths 27 → 0; scripts take `--seed`, `--data-dir`, `--out-dir`; `training/` coverage 56% (#7).
   - A fresh clone can verify the shipped dataset, rebuild the frozen splits and train, checked in CI (#8).
   - Pinned, universal Python lock file; every README command runs (#8).
   - Model weights are still not in the repository, so the published metrics cannot be recomputed yet (SP-14, SP-15).
-- **Day 3 results (pending merge):**
+- **Day 3 results (merged 2026-11-16):**
   - The weights were never on GitHub; every published artifact's hash is now in one manifest, and recovered files can be verified (`verify_weights.py`, ADR-0061) (#9).
   - `training/evaluate.py`: test metrics with bootstrap CIs, a hash gate that keeps new models apart from the published one, checked against the published confusion matrices (#9).
   - Training, CV and evaluation records name the git commit, environment, seed and data hashes, checked in CI (#9).
   - Recomputing the published 78.17% still needs the original checkpoint (owner action D4).
-- **Day 4 results (pending merge):**
+- **Day 4 results (merged 2026-11-16):**
   - Every published number now has one source with a status (`models/published_metrics.json`, `docs/metrics.md`); platform artifacts are generated, not hand-copied (#10).
   - Corrected: README results that came from an earlier 269-star experiment, a CNN row contradicted by its own confusion matrix, NLL copied from ECE, unsourced variant accuracies and lineage counts (#10).
-- **Day 5 results (pending merge):**
+- **Day 5 results (merged 2026-11-16):**
   - Preprocessing v1 is pinned by a golden test; its detrending and BLS behaviour (audit S4/S5) is measured and documented by tests (#11).
   - Pipeline scripts reject bad arguments with clear messages; `process_star` checks inputs before downloading (#11).
-- **Day 4 carry-over results (pending merge):**
+- **Day 4 carry-over results (merged 2026-11-16):**
   - Cross-validation no longer touches the test stars and scores each outer fold once after inner epoch selection (#12, ADR-0062).
   - Baselines are reported beside the model: metadata baselines reproduce EXP-0001 exactly, and 12 statistics of the network's own inputs (79.58%) match the published transformer (78.17%) (#13).
-- **Day 6 results (pending merge):**
+- **Day 6 results (merged 2026-11-16):**
   - API routes validate their input (400 with a reason), share one read-only database handle and never send exception text; every data page has loading and retryable error states (#14, ADR-0066).
   - No background video on data pages, no autoplay audio, reduced motion honoured; axe-core finds no WCAG 2.1 A/AA violations on the 10 main pages; `/analysis` loads 0.91 MB (#15, ADR-0067). Lighthouse still to be run.
 - **Plan:** [7_DAY_SPRINT.md](7_DAY_SPRINT.md). **Tasks:** SP-00…SP-35 in [TASK_CHECKLIST.md](TASK_CHECKLIST.md).
-- **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk), D6 (AgentOS framework lint debt), D7 (delete unreferenced media).
+- **Open owner decisions:** D1 (CPU reproduction run), D2 (preprocessing v2), D3 (delete merged branch), D4 (ask the original author for weights), D5 (production risk), D6 (AgentOS framework lint debt), D7 (delete unreferenced media), D8 (next release version).
 
 ## ✅ Phase 0 — completed and merged to `main` 2026-11-09 (not deployed to production)
 
