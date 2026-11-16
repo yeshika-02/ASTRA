@@ -50,7 +50,7 @@ jobs:
       - name: Run tests with coverage
         run: >-
           python -m pytest tests/ -v --tb=short
-          --cov=pipeline --cov=training --cov=data
+          --cov=astra --cov=pipeline --cov=training --cov=data
           --cov-report=term --cov-report=xml:coverage.xml
       - name: Upload coverage report
         if: matrix.python-version == '3.12'
