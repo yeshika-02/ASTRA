@@ -1,9 +1,17 @@
 # Project Heartbeat & Task State
 
-> **Last Heartbeat:** 2026-11-12
-> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–5 complete (WS-09/WS-10 caught up), PRs #3–#13 in review (see 7_DAY_SPRINT.md)
+> **Last Heartbeat:** 2026-11-16
+> **Project State:** PHASE 0 MERGED (`main` = `1beca47`) — sprint Days 1–6 complete, PRs #3–#15 in review (see 7_DAY_SPRINT.md)
 
 ---
+
+## Session 2026-11-12 / 2026-11-16 — Sprint Day 6
+
+- WS-13 [#14](https://github.com/yeshika-02/ASTRA/pull/14) (stacked on #6): `lib/server/db.ts`, `query.ts`, `serverError()`; all 10 leaking routes fixed; light-curve id validated; `DataState` components, `ApiError`, retry policy; OSINT crash fixed; ADR-0066. 25 commits.
+- WS-14 [#15](https://github.com/yeshika-02/ASTRA/pull/15) (stacked on #14): no autoplay audio, video only on `/` (lazy, preference-gated), reduced motion, skip link, ChartFrame labels, keyboard replay/palette; axe 0 violations on 10 pages; ADR-0067. 15 commits.
+- Day 7 simulation with #14/#15: 14 PRs, 250 commits, no conflicts; merged suite 264 passed + 1 xfail (2 hash tests needed the known CRLF refresh of the temperature file in the simulation worktree); merged frontend: tsc and ESLint clean, 351 Vitest, production build OK; validator 100/100.
+- Open: Lighthouse run (owner), D7 (delete unreferenced media).
+- Next: Day 7 consolidation (SP-32–SP-35); WS-15 optional.
 
 ## Session 2026-11-12 — Day 4 carry-over (WS-09, WS-10)
 
